@@ -100,7 +100,7 @@ your contract.  It is OK to leave this blank.]
 
 WE HELD OUR INITIAL TEAM MEETING ON [enter date and time]:
 AT [type location/provide meeting link of meeting; e.g., Olin 208]:
-
+Olin 107 10/08/25
 
 
 "BY TYPING OUR NAMES, EACH OF US INDICATES OUR AGREEMENT WITH THIS
@@ -117,6 +117,7 @@ Garrett George 10/08/25
 [Type your name above to indicate agreement.  Note: Each team member should
 type and commit his or her own name.  Please do not sign this agreement 
 on behalf of someone else.]
+
 
 
 
