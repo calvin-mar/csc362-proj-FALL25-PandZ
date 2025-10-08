@@ -108,7 +108,7 @@ CONTRACT. WE UNDERSTAND THAT TO MODIFY THIS CONTRACT, WE WILL HAVE TO
 HAVE UNANIMOUS AGREEMENT AT A MEETING WHEN ALL MEMBERS ARE PRESENT."
 
 SIGNED (Full name and date):
-Calvin Mar 10/09/26
+Calvin Mar 10/08/25
 
 
 
@@ -116,4 +116,5 @@ Calvin Mar 10/09/26
 [Type your name above to indicate agreement.  Note: Each team member should
 type and commit his or her own name.  Please do not sign this agreement 
 on behalf of someone else.]
+
 
