@@ -1,0 +1,63 @@
+# Field Specifications
+
+## General Elements
+
+| Field                 | Value                             |
+|-----------------------|-----------------------------------|
+| Field Name            |  technical_app_filing_date        |
+| Parent Table          |  technical_forms                  |
+| Alias(es)             |  NONE                             |
+| Specification Type    | [ ] Unique                        |
+|                       | [X] Generic                       |
+|                       | [ ] Replica                       |
+|                       |                                   |
+| Source Specification  |   NONE                            |
+| Shared By             |   NONE                            |
+| Description           |  Date that technical forms were filed on   |
+
+
+## Physical Elements
+
+| Field                 | Value                             |
+|-----------------------|-----------------------------------|
+| Data Type             | DATE                              |
+| Length                |   DATE length                     |
+| Decimal Places        |                                   |
+| Character Support     | [ ] Letters (A-Z)                 |
+|                       | [X] Numbers (0-9)                 |
+|                       | [ ] Keyboard (.,/$#%)             |
+|                       | [ ] Special (©®™Σπ)               |
+
+
+## Logical Elements
+
+| Field                 | Value                             |
+|-----------------------|-----------------------------------|
+| Key Type              | [X] Non                           |
+|                       | [ ] Primary                       |   
+|                       | [ ] Foreign                       |
+|                       | [ ] Alternate                     |
+|                       |                                   |
+| Key Structure         | [X] Simple                        |
+|                       | [ ] Composite                     |
+|                       |                                   |
+| Uniqueness            | [X] Non-unique                    |
+|                       | [ ] Unique                        |
+|                       |                                   |
+| Null Support          | [ ] Nulls OK                      |
+|                       | [X] No nulls                      |
+|                       |                                   |
+| Values Entered By     | [X] User                          |
+|                       | [ ] System                        |
+|                       |                                   |
+| Required Value        | [ ] No                            |
+|                       | [X] Yes                           |
+|                       |                                   |
+| Range of Values       | DATE VALUES                       |
+| Edit Rule             | [ ] Enter now, edits allowed      |
+|                       | [X] Enter now, edits not allowed  |
+|                       | [ ] Enter later, edits allowed    |
+|                       | [ ] Enter later, edits not allowed|
+|                       | [ ] Not determined at this time   |
+
+## Notes
