@@ -1,0 +1,63 @@
+# Field Specifications
+
+## General Elements
+
+| Field                 | Value                             |
+|-----------------------|-----------------------------------|
+| Field Name            | orr_receivable_datetime           |
+| Parent Table          | open_record_requests              |
+| Alias(es)             | NONE                              |
+| Specification Type    | [ ] Unique                        |
+|                       | [X] Generic                       |
+|                       | [ ] Replica                       |
+|                       |                                   |
+| Source Specification  | NONE                              |
+| Shared By             | NONE                              |
+| Description           | Date and time of receivable requests |
+
+
+## Physical Elements
+
+| Field                 | Value                             |
+|-----------------------|-----------------------------------|
+| Data Type             |  VARCHAR                          |
+| Length                |  255                              |
+| Decimal Places        |                                   |
+| Character Support     | [X] Letters (A-Z)                 |
+|                       | [X] Numbers (0-9)                 |
+|                       | [X] Keyboard (.,/$#%)             |
+|                       | [ ] Special (©®™Σπ)               |
+
+
+## Logical Elements
+
+| Field                 | Value                             |
+|-----------------------|-----------------------------------|
+| Key Type              | [X] Non                           |
+|                       | [ ] Primary                       |   
+|                       | [ ] Foreign                       |
+|                       | [ ] Alternate                     |
+|                       |                                   |
+| Key Structure         | [X] Simple                        |
+|                       | [ ] Composite                     |
+|                       |                                   |
+| Uniqueness            | [X] Non-unique                    |
+|                       | [ ] Unique                        |
+|                       |                                   |
+| Null Support          | [ ] Nulls OK                      |
+|                       | [X] No nulls                      |
+|                       |                                   |
+| Values Entered By     | [ ] User                          |
+|                       | [X] System                        |
+|                       |                                   |
+| Required Value        | [ ] No                            |
+|                       | [X] Yes                           |
+|                       |                                   |
+| Range of Values       |  Applicable date time             |
+| Edit Rule             | [ ] Enter now, edits allowed      |
+|                       | [X] Enter now, edits not allowed  |
+|                       | [ ] Enter later, edits allowed    |
+|                       | [ ] Enter later, edits not allowed|
+|                       | [ ] Not determined at this time   |
+
+## Notes
