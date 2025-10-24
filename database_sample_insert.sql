@@ -310,8 +310,8 @@ INSERT INTO minor_subdivision_plat_applications (form_id, surveyor_id, engineer_
 
 -- Zoning Permit Applications
 INSERT INTO zoning_permit_applications (form_id, surveyor_id, architect_id, land_architect_id, contractor_id, PVA_parcel_number, project_type, zpa_project_plans, zpa_preliminary_site_evaluation) VALUES 
-    (4, 1, 1, 1, 1, 200004, 'Commercial Office', 'professional_office_plans.pdf', 'main_street_site_eval.pdf'),
-    (15, 4, 3, 2, 3, 200008, 'Retail Commercial', 'retail_center_plans.pdf', 'bypass_site_evaluation.pdf');
+    (4, 1, 1, 1, 1, 200004, 'Commercial Use', 'professional_office_plans.pdf', 'main_street_site_eval.pdf'),
+    (15, 4, 3, 2, 3, 200008, 'Temporary Use', 'retail_center_plans.pdf', 'bypass_site_evaluation.pdf');
 
 -- Zoning Map Amendment Applications
 INSERT INTO zoning_map_amendment_applications (form_id, zoning_map_amendment_request) VALUES 
@@ -319,7 +319,7 @@ INSERT INTO zoning_map_amendment_applications (form_id, zoning_map_amendment_req
 
 -- General Development Plan Applications
 INSERT INTO general_development_plan_applications (form_id, gdpa_applicant_state, gdpa_applicant_zip, gdpa_applicant_phone, gdpa_plan_amendment_request, gdpa_proposed_conditions, required_findings_type, gdpa_concept_plan, gdpa_traffic_study, gdpa_geologic_analysis) VALUES 
-    (6, 'KY', '40422', '859-555-7500', 'Mixed use development with retail and residential components', 'Maximum building height 50 feet, minimum 150 parking spaces, landscape buffer along residential boundary', 'Comprehensive Plan Compliance', 'mixed_use_concept_plan.pdf', 'mixed_use_traffic_study.pdf', 'mixed_use_geologic_analysis.pdf');
+    (6, 'KY', '40422', '859-555-7500', 'Conditional Use Permit Application', 'Maximum building height 50 feet, minimum 150 parking spaces, landscape buffer along residential boundary', 'petition_movement', 'mixed_use_concept_plan.pdf', 'mixed_use_traffic_study.pdf', 'mixed_use_geologic_analysis.pdf');
 
 -- Variance Applications
 INSERT INTO variance_applications (form_id, va_variance_request, va_proposed_conditions) VALUES 

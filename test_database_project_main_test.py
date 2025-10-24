@@ -12,11 +12,12 @@ class TestDatabaseSchema(unittest.TestCase):
     """Unit tests for the Planning and Zoning database schema using MariaDB"""
     @classmethod
     def getDefaultPassword(cls):
-        return cls.config["default"]["mysqli.default_pw"]
+        return "roundtable"
+       # return cls.config["default"]["mysqli.default_pw"]
     
     @classmethod
     def runMariaDBTerminalCommandAsDefaultUser(cls, command: list):
-        DB_EXEC_COMMAND = ["mariadb", f"-p {cls.getDefaultPassword()}", "-e"]
+        DB_EXEC_COMMAND = ["mariadb", f"-proundtable", "-e"]
         return subprocess.run(DB_EXEC_COMMAND + command, check=True)
     
     @classmethod
@@ -29,13 +30,13 @@ class TestDatabaseSchema(unittest.TestCase):
         
         cls.runMariaDBTerminalCommandAsDefaultUser([f"SOURCE {cls.TEST_MAIN_FILE };"])
        
-        cls.conn = mariadb.connect(
+        cls.connection = mariadb.connect(
            password=cls.getDefaultPassword(),
            host="localhost",
            database=cls.TEST_DB_NAME
         )
        
-        cls.cur = cls.conn.cursor()
+        cls.cursor = cls.connection.cursor()
        
         return super().setUpClass()
     
@@ -114,14 +115,12 @@ class TestDatabaseSchema(unittest.TestCase):
     
     def get_table_count(self):
         """Get count of tables using subprocess"""
-        success, stdout, stderr = self.execute_sql_command(
-            "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE();"
-        )
-        if success:
-            lines = stdout.strip().split('\n')
-            if len(lines) > 1:
-                return int(lines[1])
-        return 0
+        tables_query = "SHOW TABLES;"
+        self.cursor.execute(tables_query)
+        select_query = "SELECT FOUND_ROWS();"
+        self.cursor.execute(select_query)
+        (num_tables,) = self.cursor.fetchone()
+        return num_tables
     
     # ==================== TABLE EXISTENCE TESTS ====================
     
