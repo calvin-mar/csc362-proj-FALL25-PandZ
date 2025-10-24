@@ -1,3 +1,7 @@
+/*
+Please use my link to view the table viewing webpage http://34.29.71.136/html/testing.php
+*/
+
 CREATE TABLE form_types (
     form_type VARCHAR(255),
     PRIMARY KEY (form_type)

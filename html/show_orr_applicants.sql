@@ -1,0 +1,2 @@
+SELECT orr_applicant_id, orr_applicant_first_name, orr_applicant_last_name, orr_applicant_telephone, orr_applicant_street, orr_applicant_city, orr_applicant_state, orr_applicant_zip_code
+  FROM orr_applicants;
