@@ -559,151 +559,113 @@ CREATE TABLE adjacent_neighbor_owners (
     form_id, adjacent_property_owner_id
   ),
   FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE CASCADE,
-  FOREIGN KEY (adjacent_property_owner_id) REFERENCES adjacent_neighbor_owners(adjacent_property_owner_id) ON DELETE CASCADE
+  FOREIGN KEY (adjacent_property_owner_id) REFERENCES adjacent_property_owners(adjacent_property_owner_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE signs (
     sign_id INT NOT NULL AUTO_INCREMENT,
     sp_owner_id INT,
-    sign_type VARCHAR(
-    255
-  ),
-    sign_square_footage DECIMAL(
-    12,2
-  ),
-    lettering_height VARCHAR(
-    255
-  ),
-    PRIMARY KEY (
-    sign_id
-  )
+    sign_type VARCHAR(255),
+    sign_square_footage DECIMAL(12,2),
+    lettering_height VARCHAR(255),
+    PRIMARY KEY (sign_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE zva_property_owners (
     zva_owner_id INT NOT NULL AUTO_INCREMENT,
-    zva_owner_first_name VARCHAR(
-    255
-  ),
-    zva_owner_last_name VARCHAR(
-    255
-  ),
-    zva_owner_street VARCHAR(
-    255
-  ),
-    zva_owner_city VARCHAR(
-    255
-  ),
-    zva_owner_state VARCHAR(
-    255
-  ),
-    zva_owner_zip_code VARCHAR(
-    50
-  ),
-    PRIMARY KEY (
-    zva_owner_id
-  )
+    zva_owner_first_name VARCHAR(255),
+    zva_owner_last_name VARCHAR(255),
+    zva_owner_street VARCHAR(255),
+    zva_owner_city VARCHAR(255),
+    zva_owner_state VARCHAR(255),
+    zva_owner_zip_code VARCHAR(50),
+    PRIMARY KEY (zva_owner_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE zva_applicants (
     zva_applicant_id INT NOT NULL AUTO_INCREMENT,
-    zva_applicant_first_name VARCHAR(
-    255
-  ),
-    zva_applicant_last_name VARCHAR(
-    255
-  ),
-    zva_applicant_street VARCHAR(
-    255
-  ),
-    zva_applicant_city VARCHAR(
-    255
-  ),
-    zva_applicant_state VARCHAR(
-    255
-  ),
-    zva_applicant_zip_code VARCHAR(
-    50
-  ),
-    zva_applicant_phone_number VARCHAR(
-    50
-  ),
-    zva_applicant_fax_number VARCHAR(
-    255
-  ),
-    PRIMARY KEY (
-    zva_applicant_id
-  )
+    zva_applicant_first_name VARCHAR(255),
+    zva_applicant_last_name VARCHAR(255),
+    zva_applicant_street VARCHAR(255),
+    zva_applicant_city VARCHAR(255),
+    zva_applicant_state VARCHAR(255),
+    zva_applicant_zip_code VARCHAR(50),
+    zva_applicant_phone_number VARCHAR(50),
+    zva_applicant_fax_number VARCHAR(255),
+    PRIMARY KEY (zva_applicant_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE sp_property_owners (
     sp_owner_id INT NOT NULL AUTO_INCREMENT,
-    sp_owner_first_name VARCHAR(
-    255
-  ),
-    sp_owner_last_name VARCHAR(
-    255
-  ),
-    sp_owner_street VARCHAR(
-    255
-  ),
-    sp_owner_city VARCHAR(
-    255
-  ),
-    sp_owner_state VARCHAR(
-    255
-  ),
-    sp_owner_zip_code VARCHAR(
-    50
-  ),
-    PRIMARY KEY (
-    sp_owner_id
-  )
+    sp_owner_first_name VARCHAR(255),
+    sp_owner_last_name VARCHAR(255),
+    sp_owner_street VARCHAR(255),
+    sp_owner_city VARCHAR(255),
+    sp_owner_state VARCHAR(255),
+    sp_owner_zip_code VARCHAR(50),
+    PRIMARY KEY (sp_owner_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE sp_businesses (
     sp_business_id INT NOT NULL AUTO_INCREMENT,
     sp_business_name VARCHAR(
-    255
-  ),
-    sp_business_street VARCHAR(
-    255
-  ),
-    sp_business_city VARCHAR(
-    255
-  ),
-    sp_business_state VARCHAR(
-    255
-  ),
-    sp_business_zip_code VARCHAR(
-    50
-  ),
-    PRIMARY KEY (
-    sp_business_id
-  )
+    255),
+    sp_business_street VARCHAR(255),
+    sp_business_city VARCHAR(255),
+    sp_business_state VARCHAR(255),
+    sp_business_zip_code VARCHAR(50),
+    PRIMARY KEY ( sp_business_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE permits_link_signs (
     form_id INT NOT NULL,
     sign_id INT NOT NULL,
     PRIMARY KEY (
-    form_id, sign_id
-  ),
+    form_id, sign_id),
   FOREIGN KEY (sign_id) REFERENCES signs(sign_id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE sp_contractors (
     sp_contractor_id INT NOT NULL AUTO_INCREMENT,
-    sp_contractor_first_name VARCHAR(
-    255
-  ),
-    sp_contractor_last_name VARCHAR(
-    255
-  ),
-    sp_contractor_phone_number VARCHAR(
-    50
-  ),
-    PRIMARY KEY (
-    sp_contractor_id
-  )
+    sp_contractor_first_name VARCHAR(255),
+    sp_contractor_last_name VARCHAR(255),
+    sp_contractor_phone_number VARCHAR(50),
+    PRIMARY KEY (sp_contractor_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- INSERT INTO VALIDATION TABLES
+INSERT INTO project_types (project_type) VALUES
+    ("Multi-Family Use"),
+    ("Commercial Use"),
+    ("Industrial Use"),
+    ("Temporary Use"),
+    ("Parking/ Display"),
+    ("Use Change");
+
+INSERT INTO gdpa_required_findings (required_findings_type, required_findings_description) VALUES
+    ("significant_change","There have been major changes of an economic, physical or social nature within the area
+of the property in question which were not anticipated at the time of the adoption of the
+development plan be amended."),
+    ("physical_development","There have developed physical conditions which would not permit development of property in
+question in accordance with the General Development Plan which is being amended."),
+    ("petition_movement","Any application to amend the General Development Plan shall require the signature of 100 percent of
+the property owners within the area covered by the General Development Plan and shall be amended
+by the same process as the original zoning amendment.");
+
+INSERT INTO form_types (form_type) VALUES
+    ("Administrative Appeal Request"),
+    ("Adjacent Property Owners Form"),
+    ("Conditional Use Permit Application"),
+    ("Development Plan Application (General)"),
+    ("Development Plan Application (Site)"),
+    ("Future Land Use Map (FLUM) Application"),
+    ("Open Records Request"),
+    ("Sign Permit Appplication"),
+    ("Major Subdivision Plat Application"),
+    ("Minor Subdivision Plat Application"),
+    ("Telecommunication Tower Uniform Application"),
+    ("Variance Applicatioin"),
+    ("Zoning Map Amendment Application"),
+    ("Zoning Permit Application"),
+    ("Zoning Verification Application");
 
