@@ -16,8 +16,12 @@ class TestDatabaseSchema(unittest.TestCase):
         return cls.config["default"]["mysqli.default_pw"]
     
     @classmethod
+    def getDefaultUsername(cls):
+        return cls.config["default"]["mysqli.default_user"]
+    
+    @classmethod
     def runMariaDBTerminalCommandAsDefaultUser(cls, command: list):
-        DB_EXEC_COMMAND = ["mariadb", f"-p{cls.getDefaultPassword()}", "-e"]
+        DB_EXEC_COMMAND = ["mariadb", f"-u{cls.getDefaultUsername()}", f"-p{cls.getDefaultPassword()}", "-e"]
         return subprocess.run(DB_EXEC_COMMAND + command, check=True)
     
     @classmethod
@@ -26,11 +30,18 @@ class TestDatabaseSchema(unittest.TestCase):
         # Read configuration
         cls.config = configparser.ConfigParser()
         
-        cls.config.read("/home/calvinmar/mysqli.ini")
+        this_file_dir = os.path.dirname(__file__)
+        two_dirs_up = os.path.join("/", *this_file_dir.split(os.sep)[:-1])
+        ini_path = os.path.join(two_dirs_up, "mysqli.ini")
+        read_files = cls.config.read(ini_path)
         
+        if not read_files:
+            print("Error: config.ini was not found or could not be read.")
+
         cls.runMariaDBTerminalCommandAsDefaultUser([f"SOURCE {cls.TEST_MAIN_FILE };"])
        
         cls.connection = mariadb.connect(
+           username=cls.getDefaultUsername(),
            password=cls.getDefaultPassword(),
            host="localhost",
            database=cls.TEST_DB_NAME
