@@ -12,12 +12,12 @@ class TestDatabaseSchema(unittest.TestCase):
     """Unit tests for the Planning and Zoning database schema using MariaDB"""
     @classmethod
     def getDefaultPassword(cls):
-        return "roundtable"
-       # return cls.config["default"]["mysqli.default_pw"]
+        #return "roundtable"
+        return cls.config["default"]["mysqli.default_pw"]
     
     @classmethod
     def runMariaDBTerminalCommandAsDefaultUser(cls, command: list):
-        DB_EXEC_COMMAND = ["mariadb", f"-proundtable", "-e"]
+        DB_EXEC_COMMAND = ["mariadb", f"-p{cls.getDefaultPassword()}", "-e"]
         return subprocess.run(DB_EXEC_COMMAND + command, check=True)
     
     @classmethod
