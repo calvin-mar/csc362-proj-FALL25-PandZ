@@ -14,6 +14,14 @@ CREATE TABLE forms (
     FOREIGN KEY (form_type) REFERENCES form_types(form_type) ON DELETE RESTRICT
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE clients (
+    client_id INT NOT NULL AUTO_INCREMENT,
+    client_username VARCHAR(255),
+    PRIMARY KEY (
+    client_id
+  )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE states (
     state_code CHAR(2),
     PRIMARY KEY(state_code)
@@ -30,6 +38,14 @@ CREATE TABLE surveyors (
     PRIMARY KEY (surveyor_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE surveyor_clients (
+    surveyor_id INT,
+    client_id INT,
+    PRIMARY KEY(surveyor_id, client_id),
+    FOREIGN KEY (surveyor_id) REFERENCES surveyors(surveyor_id) ON DELETE RESTRICT,
+    FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE RESTRICT
+);
+
 CREATE TABLE engineers (
     engineer_id INT NOT NULL AUTO_INCREMENT,
     engineer_first_name VARCHAR(255),
@@ -40,6 +56,14 @@ CREATE TABLE engineers (
     engineer_cell VARCHAR(255),
     PRIMARY KEY (engineer_id)
  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE engineer_clients (
+    engineer_id INT,
+    client_id INT,
+    PRIMARY KEY(engineer_id, client_id),
+    FOREIGN KEY (engineer_id) REFERENCES engineers(engineer_id) ON DELETE RESTRICT,
+    FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE RESTRICT
+);
 
 CREATE TABLE contractors (
     contractor_id INT NOT NULL AUTO_INCREMENT,
@@ -52,6 +76,14 @@ CREATE TABLE contractors (
     PRIMARY KEY (contractor_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE contractor_clients (
+    contractor_id INT,
+    client_id INT,
+    PRIMARY KEY(contractor_id, client_id),
+    FOREIGN KEY (contractor_id) REFERENCES contractors(contractor_id) ON DELETE RESTRICT,
+    FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE RESTRICT
+);
+
 CREATE TABLE architects (
     architect_id INT NOT NULL AUTO_INCREMENT,
     architect_first_name VARCHAR(255),
@@ -62,6 +94,14 @@ CREATE TABLE architects (
     architect_cell VARCHAR(255),
     PRIMARY KEY (architect_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE architect_clients (
+    architect_id INT,
+    client_id INT,
+    PRIMARY KEY(architect_id, client_id),
+    FOREIGN KEY (architect_id) REFERENCES architects(architect_id) ON DELETE RESTRICT,
+    FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE RESTRICT
+);
 
 CREATE TABLE land_architects (
     land_architect_id INT NOT NULL AUTO_INCREMENT,
@@ -74,6 +114,14 @@ CREATE TABLE land_architects (
     PRIMARY KEY (land_architect_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE land_architect_clients (
+    land_architect_id INT,
+    client_id INT,
+    PRIMARY KEY(land_architect_id, client_id),
+    FOREIGN KEY (land_architect_id) REFERENCES land_architects(land_architect_id) ON DELETE RESTRICT,
+    FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE RESTRICT
+);
+
 CREATE TABLE attorneys (
     attorney_id INT NOT NULL AUTO_INCREMENT,
     attorney_first_name VARCHAR( 255),
@@ -84,6 +132,14 @@ CREATE TABLE attorneys (
     attorney_cell VARCHAR(255),
     PRIMARY KEY (attorney_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE attorney_clients (
+    attorney_id INT,
+    client_id INT,
+    PRIMARY KEY(attorney_id, client_id),
+    FOREIGN KEY (attorney_id) REFERENCES attorneys(attorney_id) ON DELETE RESTRICT,
+    FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE RESTRICT
+);
 
 CREATE TABLE properties (
     PVA_parcel_number INT NOT NULL,
@@ -481,14 +537,6 @@ CREATE TABLE department_form_interactions (
     PRIMARY KEY (department_id, form_id),
   FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE RESTRICT,
   FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE clients (
-    client_id INT NOT NULL AUTO_INCREMENT,
-    client_username VARCHAR(255),
-    PRIMARY KEY (
-    client_id
-  )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE incomplete_client_forms (
