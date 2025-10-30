@@ -34,7 +34,7 @@ INSERT INTO departments (department_id, department_name) VALUES
 -- SECTION 2: PROPERTIES
 -- -------------------------------------------------------------------------
 
-INSERT INTO properties (PVA_parcel_number, property_street_address, property_city, property_state, property_zip_code, property_acreage, property_current_zoning) VALUES 
+INSERT INTO properties (PVA_parcel_number, property_street_address, property_city, state_code, property_zip_code, property_acreage, property_current_zoning) VALUES 
     (200001, '1500 Maple Street', 'Danville', 'KY', '40422', '0.25', 'R-1'),
     (200002, '2750 Oak Avenue', 'Danville', 'KY', '40422', '1.5', 'R-2'),
     (200003, '3200 Elm Drive', 'Danville', 'KY', '40422', '0.75', 'R-3'),
@@ -116,7 +116,7 @@ INSERT INTO clients (client_username) VALUES
 -- -------------------------------------------------------------------------
 
 -- Type One Applicants
-INSERT INTO type_one_applicants (t1_applicant_first_name, t1_applicant_last_name, t1_applicant_street_address, t1_applicant_city, t1_applicant_state, t1_applicant_zip_code, t1_applicant_phone_number, t1_applicant_cell_phone, t1_applicant_email) VALUES 
+INSERT INTO type_one_applicants (t1_applicant_first_name, t1_applicant_last_name, t1_applicant_street_address, t1_applicant_city, state_code, t1_applicant_zip_code, t1_applicant_phone_number, t1_applicant_cell_phone, t1_applicant_email) VALUES 
     ('Amanda', 'Thompson', '1234 Walnut Street', 'Danville', 'KY', '40422', '859-555-3000', '859-555-3001', 'athompson@email.com'),
     ('Brian', 'Martinez', '2345 Cherry Lane', 'Danville', 'KY', '40422', '859-555-3100', '859-555-3101', 'bmartinez@email.com'),
     ('Christine', 'Anderson', '3456 Birch Avenue', 'Danville', 'KY', '40422', '859-555-3200', '859-555-3201', 'canderson@email.com'),
@@ -149,19 +149,19 @@ INSERT INTO type_one_owners (t1o_owner_first_name, t1o_owner_last_name) VALUES
     ('Virginia', 'Parker');
 
 -- ZVA Applicants
-INSERT INTO zva_applicants (zva_applicant_first_name, zva_applicant_last_name, zva_applicant_street, zva_applicant_city, zva_applicant_state, zva_applicant_zip_code, zva_applicant_phone_number, zva_applicant_fax_number) VALUES 
+INSERT INTO zva_applicants (zva_applicant_first_name, zva_applicant_last_name, zva_applicant_street, zva_applicant_city, state_code, zva_applicant_zip_code, zva_applicant_phone_number, zva_applicant_fax_number) VALUES 
     ('Marcus', 'Edwards', '111 Application Lane', 'Danville', 'KY', '40422', '859-555-4000', '859-555-4001'),
     ('Laura', 'Collins', '222 Request Avenue', 'Danville', 'KY', '40422', '859-555-4100', '859-555-4101'),
     ('Nathan', 'Stewart', '333 Verification Drive', 'Danville', 'KY', '40422', '859-555-4200', '859-555-4201');
 
 -- ZVA Property Owners
-INSERT INTO zva_property_owners (zva_owner_first_name, zva_owner_last_name, zva_owner_street, zva_owner_city, zva_owner_state, zva_owner_zip_code) VALUES 
+INSERT INTO zva_property_owners (zva_owner_first_name, zva_owner_last_name, zva_owner_street, zva_owner_city, state_code, zva_owner_zip_code) VALUES 
     ('Peter', 'Morris', '444 Owner Boulevard', 'Danville', 'KY', '40422'),
     ('Sandra', 'Rogers', '555 Property Circle', 'Danville', 'KY', '40422'),
     ('Walter', 'Reed', '666 Parcel Parkway', 'Danville', 'KY', '40422');
 
 -- ORR Applicants
-INSERT INTO orr_applicants (orr_applicant_first_name, orr_applicant_last_name, orr_applicant_telephone, orr_applicant_street, orr_applicant_city, orr_applicant_state, orr_applicant_zip_code) VALUES 
+INSERT INTO orr_applicants (orr_applicant_first_name, orr_applicant_last_name, orr_applicant_telephone, orr_applicant_street, orr_applicant_city, state_code, orr_applicant_zip_code) VALUES 
     ('Timothy', 'Cook', '859-555-5000', '777 Records Lane', 'Danville', 'KY', '40422'),
     ('Michelle', 'Bell', '859-555-5100', '888 Information Street', 'Danville', 'KY', '40422'),
     ('Andrew', 'Murphy', '859-555-5200', '999 Document Drive', 'Danville', 'KY', '40422');
@@ -181,13 +181,13 @@ INSERT INTO aar_property_owners (aar_property_owner_name) VALUES
     ('Main Street Investors');
 
 -- Sign Permit Property Owners
-INSERT INTO sp_property_owners (sp_owner_first_name, sp_owner_last_name, sp_owner_street, sp_owner_city, sp_owner_state, sp_owner_zip_code) VALUES 
+INSERT INTO sp_property_owners (sp_owner_first_name, sp_owner_last_name, sp_owner_street, sp_owner_city, state_code, sp_owner_zip_code) VALUES 
     ('Albert', 'Long', '1111 Business Row', 'Danville', 'KY', '40422'),
     ('Gloria', 'Richardson', '1212 Commercial Drive', 'Danville', 'KY', '40422'),
     ('Arthur', 'Cox', '1313 Enterprise Boulevard', 'Danville', 'KY', '40422');
 
 -- Sign Permit Businesses
-INSERT INTO sp_businesses (sp_business_name, sp_business_street, sp_business_city, sp_business_state, sp_business_zip_code) VALUES 
+INSERT INTO sp_businesses (sp_business_name, sp_business_street, sp_business_city, state_code, sp_business_zip_code) VALUES 
     ('Danville Coffee & Bakery', '4500 Main Street', 'Danville', 'KY', '40422'),
     ('Kentucky Auto Service Center', '5100 Commerce Parkway', 'Danville', 'KY', '40422'),
     ('Bluegrass Medical Clinic', '1025 Stanford Road', 'Danville', 'KY', '40422'),
@@ -201,7 +201,7 @@ INSERT INTO sp_contractors (sp_contractor_first_name, sp_contractor_last_name, s
     ('Russell', 'Torres', '859-555-6200');
 
 -- Adjacent Property Owners
-INSERT INTO adjacent_property_owners (adjacent_property_owner_street, adjacent_property_owner_city, adjacent_property_owner_state, adjacent_property_owner_zip) VALUES 
+INSERT INTO adjacent_property_owners (adjacent_property_owner_street, adjacent_property_owner_city, state_code, adjacent_property_owner_zip) VALUES 
     ('2748 Oak Avenue', 'Danville', 'KY', '40422'),
     ('2752 Oak Avenue', 'Danville', 'KY', '40422'),
     ('2746 Oak Avenue', 'Danville', 'KY', '40422'),
@@ -210,7 +210,7 @@ INSERT INTO adjacent_property_owners (adjacent_property_owner_street, adjacent_p
     ('9102 Perryville Road', 'Danville', 'KY', '40422');
 
 -- APOF Neighbors
-INSERT INTO apof_neighbors (PVA_map_code, apof_neighbor_property_location, apof_neighbor_property_street, apof_neighbor_property_city, apof_neighbor_property_state, apof_neighbor_property_zip, apof_neighbor_property_deed_book, apof_property_street_pg_number) VALUES 
+INSERT INTO apof_neighbors (PVA_map_code, apof_neighbor_property_location, apof_neighbor_property_street, apof_neighbor_property_city, state_code, apof_neighbor_property_zip, apof_neighbor_property_deed_book, apof_property_street_pg_number) VALUES 
     ('MAP-42-A-001', 'North', 2748.00, 'Danville', 'KY', '40422', 145.00, '125'),
     ('MAP-42-A-002', 'South', 2752.00, 'Danville', 'KY', '40422', 145.00, '126'),
     ('MAP-42-A-003', 'East', 2746.00, 'Danville', 'KY', '40422', 146.00, '75'),
@@ -295,7 +295,7 @@ INSERT INTO type_one_forms (form_id) VALUES
 -- -------------------------------------------------------------------------
 
 -- Zoning Verification Letters
-INSERT INTO zoning_verification_letter (form_id, zva_letter_content, zva_zoning_letter_street, zva_zoning_letter_state, zva_zoning_letter_city, zva_zoning_letter_zip, zva_property_street, zva_property_state, zva_property_zip, property_city) VALUES 
+INSERT INTO zoning_verification_letter (form_id, zva_letter_content, zva_zoning_letter_street, zva_state_code, zva_zoning_letter_city, zva_zoning_letter_zip, zva_property_street, zva_property_state_code, zva_property_zip, property_city) VALUES 
     (1, 'Verification that property is zoned R-1 Single Family Residential', '101 City Hall Plaza', 'KY', 'Danville', '40422', '1500 Maple Street', 'KY', '40422', 'Danville'),
     (18, 'Verification that property is zoned B-2 General Business', '101 City Hall Plaza', 'KY', 'Danville', '40422', '5100 Commerce Parkway', 'KY', '40422', 'Danville');
 
@@ -318,7 +318,7 @@ INSERT INTO zoning_map_amendment_applications (form_id, zoning_map_amendment_req
     (5, 'Request to rezone from R-2 to R-3 for townhome development at 1025 Stanford Road');
 
 -- General Development Plan Applications
-INSERT INTO general_development_plan_applications (form_id, gdpa_applicant_state, gdpa_applicant_zip, gdpa_applicant_phone, gdpa_plan_amendment_request, gdpa_proposed_conditions, required_findings_type, gdpa_concept_plan, gdpa_traffic_study, gdpa_geologic_analysis) VALUES 
+INSERT INTO general_development_plan_applications (form_id, state_code, gdpa_applicant_zip, gdpa_applicant_phone, gdpa_plan_amendment_request, gdpa_proposed_conditions, required_findings_type, gdpa_concept_plan, gdpa_traffic_study, gdpa_geologic_analysis) VALUES 
     (6, 'KY', '40422', '859-555-7500', 'Conditional Use Permit Application', 'Maximum building height 50 feet, minimum 150 parking spaces, landscape buffer along residential boundary', 'petition_movement', 'mixed_use_concept_plan.pdf', 'mixed_use_traffic_study.pdf', 'mixed_use_geologic_analysis.pdf');
 
 -- Variance Applications
@@ -340,7 +340,7 @@ INSERT INTO site_development_plan_applications (form_id, surveyor_id, land_archi
     (10, 2, 3, 4, 2, 'Medical office complex with parking, landscaping, and stormwater management');
 
 -- Administrative Appeal Requests
-INSERT INTO administrative_appeal_requests (form_id, aar_hearing_date, aar_submit_date, aar_street_address, aar_city_address, aar_state_address, aar_zip_code, aar_property_location, aar_official_decision, aar_relevant_provisions) VALUES 
+INSERT INTO administrative_appeal_requests (form_id, aar_hearing_date, aar_submit_date, aar_street_address, aar_city_address, state_code, aar_zip_code, aar_property_location, aar_official_decision, aar_relevant_provisions) VALUES 
     (11, '2025-12-10', '2025-11-05', '1200 Fourth Street', 'Danville', 'KY', '40422', '1200 Fourth Street', 'Denial of variance for fence height exceeding 6 feet in front yard', 'Zoning Ordinance Section 8.2.4 - Fence Regulations');
 
 -- Link Appellants to Administrative Appeal
