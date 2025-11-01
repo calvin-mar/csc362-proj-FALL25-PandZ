@@ -7,11 +7,30 @@ CREATE TABLE form_types (
     PRIMARY KEY (form_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE correction_forms(
+  correction_form_id INT NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY(correction_form_id)
+);
+
+CREATE TABLE correction_boxes(
+  correction_box_id INT NOT NULL AUTO_INCREMENT,
+  correction_box_reviewer VARCHAR(255),
+  correction_box_text TEXT,
+  correction_form_id INT NOT NULL,
+  PRIMARY KEY(correction_box_id),
+  FOREIGN KEY (correction_form_id) REFERENCES correction_forms(correction_form_id)
+);
+
 CREATE TABLE forms (
     form_id INT NOT NULL AUTO_INCREMENT,
     form_type VARCHAR(255),
+    form_datetime_submitted DATETIME NOT NULL,
+    form_datetime_resolved DATETIME,
+    form_paid_bool BOOLEAN,
+    correction_form_id INT DEFAULT NULL,
     PRIMARY KEY (form_id),
-    FOREIGN KEY (form_type) REFERENCES form_types(form_type) ON DELETE RESTRICT
+    FOREIGN KEY (form_type) REFERENCES form_types(form_type) ON DELETE RESTRICT,
+    FOREIGN KEY (correction_form_id) REFERENCES correction_forms(correction_form_id) ON DELETE RESTRICT 
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE clients (

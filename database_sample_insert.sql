@@ -224,32 +224,32 @@ INSERT INTO apof_neighbors (PVA_map_code, apof_neighbor_property_location, apof_
 -- SECTION 6: BASE FORMS
 -- -------------------------------------------------------------------------
 
-INSERT INTO forms (form_type) VALUES 
-    ("Development Plan Application (General)"),
-    ("Administrative Appeal Request"),
-    ("Variance Applicatioin"),
-    ("Zoning Map Amendment Application"),
-    ("Zoning Permit Application"),
-    ("Development Plan Application (General)"),
-    ("Adjacent Property Owners Form"),
-    ("Conditional Use Permit Application"),
-    ("Development Plan Application (General)"),
-    ("Minor Subdivision Plat Application"),
-    ("Telecommunication Tower Uniform Application"),
-    ("Development Plan Application (Site)"),
-    ("Future Land Use Map (FLUM) Application"),
-    ("Open Records Request"),
-    ("Open Records Request"),
-    ("Sign Permit Appplication"),
-    ("Major Subdivision Plat Application"),
-    ("Minor Subdivision Plat Application"),
-    ("Telecommunication Tower Uniform Application"),
-    ("Variance Applicatioin"),
-    ("Zoning Map Amendment Application"),
-    ("Zoning Permit Application"),
-    ("Development Plan Application (General)"),
-    ("Development Plan Application (Site)"),
-    ("Zoning Verification Application");
+INSERT INTO forms (form_type, form_datetime_submitted) VALUES 
+    ("Development Plan Application (General)", '2024-10-10'),
+    ("Administrative Appeal Request", '2024-10-10'),
+    ("Variance Applicatioin", '2024-10-10'),
+    ("Zoning Map Amendment Application", '2024-10-10'),
+    ("Zoning Permit Application", '2024-10-10'),
+    ("Development Plan Application (General)", '2024-10-10'),
+    ("Adjacent Property Owners Form", '2024-10-10'),
+    ("Conditional Use Permit Application", '2024-10-10'),
+    ("Development Plan Application (General)", '2024-10-10'),
+    ("Minor Subdivision Plat Application", '2024-10-10'),
+    ("Telecommunication Tower Uniform Application", '2024-10-10'),
+    ("Development Plan Application (Site)", '2024-10-10'),
+    ("Future Land Use Map (FLUM) Application", '2024-10-10'),
+    ("Open Records Request", '2024-10-10'),
+    ("Open Records Request", '2024-10-10'),
+    ("Sign Permit Appplication", '2024-10-10'),
+    ("Major Subdivision Plat Application", '2024-10-10'),
+    ("Minor Subdivision Plat Application", '2024-10-10'),
+    ("Telecommunication Tower Uniform Application", '2024-10-10'),
+    ("Variance Applicatioin", '2024-10-10'),
+    ("Zoning Map Amendment Application", '2024-10-10'),
+    ("Zoning Permit Application", '2024-10-10'),
+    ("Development Plan Application (General)", '2024-10-10'),
+    ("Development Plan Application (Site)", '2024-10-10'),
+    ("Zoning Verification Application", '2024-10-10');
 
 -- -------------------------------------------------------------------------
 -- SECTION 7: LINK APPLICANTS AND CLIENTS TO FORMS
