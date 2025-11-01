@@ -322,9 +322,9 @@ INSERT INTO general_development_plan_applications (form_id, state_code, gdpa_app
     (6, 'KY', '40422', '859-555-7500', 'Conditional Use Permit Application', 'Maximum building height 50 feet, minimum 150 parking spaces, landscape buffer along residential boundary', 'petition_movement', 'mixed_use_concept_plan.pdf', 'mixed_use_traffic_study.pdf', 'mixed_use_geologic_analysis.pdf');
 
 -- Variance Applications
-INSERT INTO variance_applications (form_id, va_variance_request, va_proposed_conditions) VALUES 
-    (7, 'Request variance for reduced front setback - 20 feet instead of required 30 feet', 'Install enhanced landscaping, decorative fence along front property line'),
-    (16, 'Request variance for increased lot coverage - 40% instead of 35% maximum', 'Provide additional stormwater management, green roof on portion of building');
+INSERT INTO variance_applications (form_id, va_variance_request, va_proposed_conditions, PVA_parcel_number) VALUES 
+    (7, 'Request variance for reduced front setback - 20 feet instead of required 30 feet', 'Install enhanced landscaping, decorative fence along front property line', 200001),
+    (16, 'Request variance for increased lot coverage - 40% instead of 35% maximum', 'Provide additional stormwater management, green roof on portion of building', 200001);
 
 -- Future Land Use Map Applications
 INSERT INTO future_land_use_map_applications (form_id, future_land_use_map_amendment_prop, PVA_parcel_number) VALUES 
