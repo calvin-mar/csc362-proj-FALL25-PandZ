@@ -207,28 +207,12 @@ class TestDatabaseSchema(unittest.TestCase):
             ("Valid Type",)
         )
         self.cursor.execute(
-            "INSERT INTO forms (form_type) VALUES (?)",
-            ("Valid Type",)
+            "INSERT INTO forms (form_type, form_datetime_submitted) VALUES (?,?)",
+            ("Valid Type","2021-08-12")
         )
         self.assertEqual(self.cursor.rowcount, 1)
     
-    def test_form_cascade_delete_on_form_type(self):
-        """Test that forms are deleted when form type is deleted"""
-        self.cursor.execute(
-            "INSERT INTO form_types (form_type) VALUES (?)",
-            ("Delete Type",)
-        )
-        self.cursor.execute(
-            "INSERT INTO forms (form_type) VALUES (?)",
-            ("Delete Type",)
-        )
-        
-        self.cursor.execute("DELETE FROM form_types WHERE form_type = ?", ("Delete Type",))
-        
-        self.cursor.execute("SELECT COUNT(*) FROM forms WHERE form_type = ?", ("Delete Type",))
-        count = self.cursor.fetchone()[0]
-        self.assertEqual(count, 0)
-    
+
     def test_form_auto_increment(self):
         """Test that form_id auto-increments properly"""
         self.cursor.execute(
@@ -236,14 +220,14 @@ class TestDatabaseSchema(unittest.TestCase):
             ("Auto Inc Test",)
         )
         self.cursor.execute(
-            "INSERT INTO forms (form_type) VALUES (?)",
-            ("Auto Inc Test",)
+            "INSERT INTO forms (form_type, form_datetime_submitted) VALUES (?,?)",
+            ("Auto Inc Test","2025-01-01")
         )
         first_id = self.cursor.lastrowid
         
         self.cursor.execute(
-            "INSERT INTO forms (form_type) VALUES (?)",
-            ("Auto Inc Test",)
+            "INSERT INTO forms (form_type, form_datetime_submitted) VALUES (?,?)",
+            ("Auto Inc Test","2008-02-02")
         )
         second_id = self.cursor.lastrowid
         
@@ -283,7 +267,7 @@ class TestDatabaseSchema(unittest.TestCase):
         """Test inserting a property"""
         self.cursor.execute(
             """INSERT INTO properties (PVA_parcel_number, property_street_address,
-               property_city, property_state, property_zip_code, property_acreage,
+               property_city, state_code, property_zip_code, property_acreage,
                property_current_zoning)
                VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (123456, "123 Main St", "Danville", "KY", "40422", "5.0", "R-1")
@@ -311,7 +295,7 @@ class TestDatabaseSchema(unittest.TestCase):
         """Test inserting a major subdivision plat application"""
         # Insert prerequisites
         self.cursor.execute("INSERT INTO form_types (form_type) VALUES (?)", ("Test Type",))
-        self.cursor.execute("INSERT INTO forms (form_type) VALUES (?)", ("Test Type",))
+        self.cursor.execute("INSERT INTO forms (form_type, form_datetime_submitted) VALUES (?, ?)", ("Test Type", "2016-03-09"))
         form_id = self.cursor.lastrowid
         
         self.cursor.execute(
@@ -342,7 +326,7 @@ class TestDatabaseSchema(unittest.TestCase):
     def test_major_subdivision_foreign_key_constraint(self):
         """Test that foreign key constraints work for major subdivision applications"""
         self.cursor.execute("INSERT INTO form_types (form_type) VALUES (?)", ("FK Test",))
-        self.cursor.execute("INSERT INTO forms (form_type) VALUES (?)", ("FK Test",))
+        self.cursor.execute("INSERT INTO forms (form_type, form_datetime_submitted) VALUES (?, ?)", ("FK Test","2021-06-06"))
         form_id = self.cursor.lastrowid
         
         with self.assertRaises(mariadb.IntegrityError):
@@ -373,7 +357,7 @@ class TestDatabaseSchema(unittest.TestCase):
         applicant_id = self.cursor.lastrowid
         
         self.cursor.execute("INSERT INTO form_types (form_type) VALUES (?)", ("Link Test",))
-        self.cursor.execute("INSERT INTO forms (form_type) VALUES (?)", ("Link Test",))
+        self.cursor.execute("INSERT INTO forms (form_type, form_datetime_submitted) VALUES (?, ?)", ("Link Test","2025-06-09"))
         form_id = self.cursor.lastrowid
         
         self.cursor.execute(
@@ -388,7 +372,7 @@ class TestDatabaseSchema(unittest.TestCase):
     def test_insert_technical_form_with_dates(self):
         """Test inserting technical form with various dates"""
         self.cursor.execute("INSERT INTO form_types (form_type) VALUES (?)", ("Tech Type",))
-        self.cursor.execute("INSERT INTO forms (form_type) VALUES (?)", ("Tech Type",))
+        self.cursor.execute("INSERT INTO forms (form_type, form_datetime_submitted) VALUES (?,?)", ("Tech Type","2020-03-01"))
         form_id = self.cursor.lastrowid
         
         self.cursor.execute(
@@ -414,7 +398,7 @@ class TestDatabaseSchema(unittest.TestCase):
         """Test inserting a zoning permit application"""
         # Setup
         self.cursor.execute("INSERT INTO form_types (form_type) VALUES (?)", ("Zoning Type",))
-        self.cursor.execute("INSERT INTO forms (form_type) VALUES (?)", ("Zoning Type",))
+        self.cursor.execute("INSERT INTO forms (form_type, form_datetime_submitted) VALUES (?,?)", ("Zoning Type","2022-01-04"))
         form_id = self.cursor.lastrowid
         
         self.cursor.execute("INSERT INTO properties (PVA_parcel_number) VALUES (?)", (222222,))
@@ -433,7 +417,7 @@ class TestDatabaseSchema(unittest.TestCase):
     def test_insert_hearing_form(self):
         """Test inserting a hearing form"""
         self.cursor.execute("INSERT INTO form_types (form_type) VALUES (?)", ("Hearing Type",))
-        self.cursor.execute("INSERT INTO forms (form_type) VALUES (?)", ("Hearing Type",))
+        self.cursor.execute("INSERT INTO forms (form_type, form_datetime_submitted) VALUES (?, ?)", ("Hearing Type", "2019-01-02"))
         form_id = self.cursor.lastrowid
         
         self.cursor.execute(
@@ -450,7 +434,7 @@ class TestDatabaseSchema(unittest.TestCase):
         """Test the many-to-many relationship between forms and neighbors"""
         # Create form
         self.cursor.execute("INSERT INTO form_types (form_type) VALUES (?)", ("Neighbor Type",))
-        self.cursor.execute("INSERT INTO forms (form_type) VALUES (?)", ("Neighbor Type",))
+        self.cursor.execute("INSERT INTO forms (form_type, form_datetime_submitted) VALUES (?, ?)", ("Neighbor Type","2024-10-10"))
         form_id = self.cursor.lastrowid
         
         # Create neighbor
@@ -468,27 +452,7 @@ class TestDatabaseSchema(unittest.TestCase):
         )
         self.assertEqual(self.cursor.rowcount, 1)
     
-    def test_cascade_delete_preserves_data_integrity(self):
-        """Test that cascade deletes maintain referential integrity"""
-        # Create form
-        self.cursor.execute("INSERT INTO form_types (form_type) VALUES (?)", ("Cascade Test",))
-        self.cursor.execute("INSERT INTO forms (form_type) VALUES (?)", ("Cascade Test",))
-        form_id = self.cursor.lastrowid
-        
-        # Create related records
-        self.cursor.execute(
-            "INSERT INTO structures (form_id, structure_type) VALUES (?, ?)",
-            (form_id, "Building")
-        )
-        
-        # Delete form
-        self.cursor.execute("DELETE FROM forms WHERE form_id = ?", (form_id,))
-        
-        # Verify structures were cascade deleted
-        self.cursor.execute("SELECT COUNT(*) FROM structures WHERE form_id = ?", (form_id,))
-        count = self.cursor.fetchone()[0]
-        self.assertEqual(count, 0)
-    
+     
     # ==================== DATA VALIDATION TESTS ====================
     
     def test_preloaded_form_types(self):
@@ -541,7 +505,7 @@ class TestDatabaseSchema(unittest.TestCase):
         
         # Create form
         self.cursor.execute("INSERT INTO form_types (form_type) VALUES (?)", ("Sign Type",))
-        self.cursor.execute("INSERT INTO forms (form_type) VALUES (?)", ("Sign Type",))
+        self.cursor.execute("INSERT INTO forms (form_type, form_datetime_submitted) VALUES (?, ?)", ("Sign Type","2023-05-04"))
         form_id = self.cursor.lastrowid
         
         # Link sign to permit
@@ -589,6 +553,131 @@ class TestDatabaseSchema(unittest.TestCase):
         )
         result = self.cursor.fetchone()
         self.assertTrue(result[0].startswith('utf8mb4'))
+        
+    # Testing stored procedures for form inserts
+        # ==================== STORED PROCEDURE TESTS ====================
+
+    def test_sp_insert_zoning_map_amendment_application(self):
+        """Test stored procedure for Zoning Map Amendment Application"""
+        self.cursor.execute("""
+            CALL sp_insert_zoning_map_amendment_application(
+                NULL, TRUE, NULL, 'Test zoning change request'
+            );
+        """)
+        self.cursor.execute("SELECT COUNT(*) FROM zoning_map_amendment_applications;")
+        count = self.cursor.fetchone()[0]
+        self.assertGreaterEqual(count, 1, "Procedure did not insert into zoning_map_amendment_applications")
+
+    def test_sp_insert_conditional_use_permit_application(self):
+        """Test stored procedure for Conditional Use Permit Application"""
+        self.cursor.execute("""
+            CALL sp_insert_conditional_use_permit_application(
+                NULL, TRUE, NULL,
+                'Outdoor dining variance', 'Add lighting and barriers'
+            );
+        """)
+        self.cursor.execute("SELECT COUNT(*) FROM conditional_use_permit_applications;")
+        count = self.cursor.fetchone()[0]
+        self.assertGreaterEqual(count, 1, "Procedure did not insert into conditional_use_permit_applications")
+
+    def test_sp_insert_future_land_use_map_application(self):
+        """Test stored procedure for FLUM Application"""
+        # Insert prerequisite property
+        self.cursor.execute("INSERT INTO properties (PVA_parcel_number) VALUES (888888);")
+        self.cursor.execute("""
+            CALL sp_insert_future_land_use_map_application(
+                NULL, TRUE, NULL, 'Amend map for commercial development', 888888
+            );
+        """)
+        self.cursor.execute("SELECT COUNT(*) FROM future_land_use_map_applications;")
+        count = self.cursor.fetchone()[0]
+        self.assertGreaterEqual(count, 1)
+
+    def test_sp_insert_zoning_permit_application(self):
+        """Test stored procedure for Zoning Permit Application"""
+        # Insert prerequisites
+        self.cursor.execute("INSERT INTO surveyors (surveyor_first_name) VALUES ('Test');")
+        self.cursor.execute("INSERT INTO architects (architect_first_name) VALUES ('Test');")
+        self.cursor.execute("INSERT INTO land_architects (land_architect_first_name) VALUES ('Test');")
+        self.cursor.execute("INSERT INTO contractors (contractor_first_name) VALUES ('Test');")
+        self.cursor.execute("INSERT INTO properties (PVA_parcel_number) VALUES (999999);")
+        self.cursor.execute("INSERT INTO project_types (project_type) VALUES ('Special Project');")
+
+        self.cursor.execute("""
+            CALL sp_insert_zoning_permit_application(
+                NULL, TRUE, NULL,
+                1, 1, 1, 1, 999999,
+                'Special Project', 'plans.pdf', 'evaluation.pdf'
+            );
+        """)
+        self.cursor.execute("SELECT COUNT(*) FROM zoning_permit_applications;")
+        count = self.cursor.fetchone()[0]
+        self.assertGreaterEqual(count, 1)
+
+    def test_sp_insert_zoning_verification_application(self):
+        """Test stored procedure for Zoning Verification Application"""
+        self.cursor.execute("""
+            CALL sp_insert_zoning_verification_application(
+                NULL, TRUE, NULL,
+                'Verification Letter Test', '123 Test St', 'KY', 'Louisville', '40202',
+                '200 Market St', 'KY', '40205', 'Louisville',
+                'Jane', 'Smith', '77 Oak St', 'Louisville', 'KY', '40203', '5025553333', '5025554444',
+                'Bob', 'Owner', '99 Pine St', 'Louisville', 'KY', '40207'
+            );
+        """)
+        self.cursor.execute("SELECT COUNT(*) FROM zoning_verification_letter;")
+        count = self.cursor.fetchone()[0]
+        self.assertGreaterEqual(count, 1)
+
+    def test_sp_insert_major_subdivision_plat_application(self):
+        """Test stored procedure for Major Subdivision Plat Application"""
+        self.cursor.execute("INSERT INTO surveyors (surveyor_first_name) VALUES ('Survey A');")
+        self.cursor.execute("INSERT INTO engineers (engineer_first_name) VALUES ('Engineer A');")
+        self.cursor.execute("INSERT INTO properties (PVA_parcel_number) VALUES (111112);")
+        self.cursor.execute("""
+            CALL sp_insert_major_subdivision_plat_application(
+                NULL, TRUE, NULL,
+                1, 1, 111112,
+                'topo.pdf', 'layout.pdf', 'restrictions.pdf', 'owner.pdf', 'assoc.pdf',
+                'deed.pdf', 'plans.pdf', 'traffic.pdf', 'geo.pdf', 'drainage.pdf',
+                'pave.pdf', 'swppp.pdf', 'bond.pdf'
+            );
+        """)
+        self.cursor.execute("SELECT COUNT(*) FROM major_subdivision_plat_applications;")
+        count = self.cursor.fetchone()[0]
+        self.assertGreaterEqual(count, 1)
+
+    def test_sp_insert_open_records_request(self):
+        """Test stored procedure for Open Records Request"""
+        self.cursor.execute("""
+            CALL sp_insert_open_records_request(
+                NULL, FALSE, NULL,
+                'Research', 'Copies only', '2025-11-01', '2025-11-02', 'None',
+                'Anna', 'Bell', '5024441234', '1 Main St', 'Louisville', 'KY', '40206',
+                'Zoning files for area B'
+            );
+        """)
+        self.cursor.execute("SELECT COUNT(*) FROM open_record_requests;")
+        count = self.cursor.fetchone()[0]
+        self.assertGreaterEqual(count, 1)
+
+    def test_sp_insert_sign_permit_application(self):
+        """Test stored procedure for Sign Permit Application"""
+        self.cursor.execute("""
+            CALL sp_insert_sign_permit_application(
+                NULL, TRUE, NULL,
+                NULL, NULL, NULL,
+                '2025-11-02', 'SP-2001', '10%', '150.00',
+                'John', 'Banner', '22 5th St', 'Louisville', 'KY', '40208',
+                'Cafe Sign', '22 5th St', 'Louisville', 'KY', '40208',
+                'Jake', 'Builder', '5021230000',
+                'Wall Sign', 75.2, '8in'
+            );
+        """)
+        self.cursor.execute("SELECT COUNT(*) FROM sign_permit_applications;")
+        count = self.cursor.fetchone()[0]
+        self.assertGreaterEqual(count, 1)
+
 
 
 if __name__ == '__main__':

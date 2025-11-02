@@ -264,7 +264,7 @@ CREATE PROCEDURE sp_insert_open_records_request(
   IN p_orr_commercial_purpose VARCHAR(255),
   IN p_orr_request_for_copies VARCHAR(255),
   IN p_orr_received_on_datetime DATE,
-  IN p_orr_receievable_datetime DATE,
+  IN p_orr_receivable_datetime DATE,
   IN p_orr_denied_reasons TEXT,
   -- orr_applicant fields (optional)
   IN p_orr_applicant_first_name VARCHAR(255),
@@ -305,8 +305,8 @@ BEGIN
   );
 
   IF p_public_record_description IS NOT NULL THEN
-    INSERT INTO public_records(public_record_id, public_record_description)
-      VALUES(LAST_INSERT_ID()+1, p_public_record_description); -- crude attempt to create an id; if public_record_id is auto-managed elsewhere this may need adjustment
+    INSERT INTO public_records(public_record_description)
+      VALUES(p_public_record_description); -- crude attempt to create an id; if public_record_id is auto-managed elsewhere this may need adjustment
     -- get the id we just inserted (assuming auto-increment isn't declared; schema shows public_record_id INT NOT NULL but not auto_increment)
     SET @new_public_record_id = LAST_INSERT_ID();
     INSERT INTO orr_public_record_names(form_id, public_record_id) VALUES(@new_form_id, @new_public_record_id);

@@ -445,7 +445,7 @@ CREATE TABLE orr_applicants (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE public_records (
-    public_record_id INT NOT NULL,
+    public_record_id INT NOT NULL AUTO_INCREMENT,
     public_record_description TEXT,
     PRIMARY KEY (public_record_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -469,7 +469,7 @@ CREATE TABLE open_record_requests (
     255
   ),
     orr_received_on_datetime DATE,
-    orr_receievable_datetime DATE,
+    orr_receivable_datetime DATE,
     orr_denied_reasons TEXT,
     orr_applicant_id INT,
     PRIMARY KEY (

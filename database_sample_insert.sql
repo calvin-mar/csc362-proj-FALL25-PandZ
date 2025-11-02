@@ -8,16 +8,16 @@
 -- -------------------------------------------------------------------------
 -- Public Records
 INSERT INTO public_records (public_record_id, public_record_description) VALUES 
-    (101, 'Zoning ordinance text and maps'),
-    (102, 'Approved subdivision plats and final plans'),
-    (103, 'Site development plans and engineering drawings'),
-    (104, 'Variance applications and Board of Adjustments decisions'),
-    (105, 'Planning Commission meeting minutes and agendas'),
-    (106, 'Building permit applications and inspection records'),
-    (107, 'Comprehensive plan and future land use maps'),
-    (108, 'Conditional use permit applications and approvals'),
-    (109, 'Administrative appeals and hearing transcripts'),
-    (110, 'Sign permit applications and approved plans');
+    (1, 'Zoning ordinance text and maps'),
+    (2, 'Approved subdivision plats and final plans'),
+    (3, 'Site development plans and engineering drawings'),
+    (4, 'Variance applications and Board of Adjustments decisions'),
+    (5, 'Planning Commission meeting minutes and agendas'),
+    (6, 'Building permit applications and inspection records'),
+    (7, 'Comprehensive plan and future land use maps'),
+    (8, 'Conditional use permit applications and approvals'),
+    (9, 'Administrative appeals and hearing transcripts'),
+    (10, 'Sign permit applications and approved plans');
 
 -- Departments
 INSERT INTO departments (department_id, department_name) VALUES 
@@ -377,11 +377,11 @@ INSERT INTO open_record_requests (form_id, orr_commercial_purpose, orr_request_f
 
 -- Link Public Records to Open Record Requests
 INSERT INTO orr_public_record_names (form_id, public_record_id) VALUES 
-    (13, 101),
-    (13, 102),
-    (13, 105),
-    (20, 106),
-    (20, 107);
+    (13,1),
+    (13, 2),
+    (13, 3),
+    (20, 4),
+    (20, 5);
 
 -- -------------------------------------------------------------------------
 -- SECTION 9: TECHNICAL PROCESSING FORMS
