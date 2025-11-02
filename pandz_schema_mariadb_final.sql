@@ -342,7 +342,7 @@ CREATE TABLE zoning_permit_applications (
     FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT,
     FOREIGN KEY (surveyor_id) REFERENCES surveyors(surveyor_id) ON DELETE RESTRICT,
     FOREIGN KEY (architect_id) REFERENCES architects(architect_id) ON DELETE RESTRICT,
-    FOREIGN KEY (land_architect_id) REFERENCES architects(architect_id) ON DELETE RESTRICT,
+    FOREIGN KEY (land_architect_id) REFERENCES architects(land_architect_id) ON DELETE RESTRICT,
     FOREIGN KEY (contractor_id) REFERENCES contractors(contractor_id) ON DELETE RESTRICT,
     FOREIGN KEY (PVA_parcel_number) REFERENCES properties(PVA_parcel_number) ON DELETE RESTRICT,
     FOREIGN KEY (project_type) REFERENCES project_types(project_type) ON DELETE RESTRICT
@@ -700,7 +700,8 @@ CREATE TABLE permits_link_signs (
     sign_id INT NOT NULL,
     PRIMARY KEY (
     form_id, sign_id),
-  FOREIGN KEY (sign_id) REFERENCES signs(sign_id) ON DELETE RESTRICT 
+  FOREIGN KEY (sign_id) REFERENCES signs(sign_id) ON DELETE RESTRICT,
+  FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE sp_contractors (
