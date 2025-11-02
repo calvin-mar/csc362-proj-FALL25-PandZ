@@ -382,8 +382,10 @@ CREATE TABLE variance_applications (
     form_id INT NOT NULL,
     va_variance_request VARCHAR(255),
     va_proposed_conditions VARCHAR(255),
+    PVA_parcel_number INT,
     PRIMARY KEY (form_id),
-  FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
+    FOREIGN KEY (PVA_parcel_number) REFERENCES properties(PVA_parcel_number) ON DELETE RESTRICT,
+    FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE future_land_use_map_applications (
@@ -443,7 +445,7 @@ CREATE TABLE orr_applicants (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE public_records (
-    public_record_id INT NOT NULL,
+    public_record_id INT NOT NULL AUTO_INCREMENT,
     public_record_description TEXT,
     PRIMARY KEY (public_record_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -467,7 +469,7 @@ CREATE TABLE open_record_requests (
     255
   ),
     orr_received_on_datetime DATE,
-    orr_receievable_datetime DATE,
+    orr_receivable_datetime DATE,
     orr_denied_reasons TEXT,
     orr_applicant_id INT,
     PRIMARY KEY (

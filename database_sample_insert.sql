@@ -8,16 +8,16 @@
 -- -------------------------------------------------------------------------
 -- Public Records
 INSERT INTO public_records (public_record_id, public_record_description) VALUES 
-    (101, 'Zoning ordinance text and maps'),
-    (102, 'Approved subdivision plats and final plans'),
-    (103, 'Site development plans and engineering drawings'),
-    (104, 'Variance applications and Board of Adjustments decisions'),
-    (105, 'Planning Commission meeting minutes and agendas'),
-    (106, 'Building permit applications and inspection records'),
-    (107, 'Comprehensive plan and future land use maps'),
-    (108, 'Conditional use permit applications and approvals'),
-    (109, 'Administrative appeals and hearing transcripts'),
-    (110, 'Sign permit applications and approved plans');
+    (1, 'Zoning ordinance text and maps'),
+    (2, 'Approved subdivision plats and final plans'),
+    (3, 'Site development plans and engineering drawings'),
+    (4, 'Variance applications and Board of Adjustments decisions'),
+    (5, 'Planning Commission meeting minutes and agendas'),
+    (6, 'Building permit applications and inspection records'),
+    (7, 'Comprehensive plan and future land use maps'),
+    (8, 'Conditional use permit applications and approvals'),
+    (9, 'Administrative appeals and hearing transcripts'),
+    (10, 'Sign permit applications and approved plans');
 
 -- Departments
 INSERT INTO departments (department_id, department_name) VALUES 
@@ -322,9 +322,9 @@ INSERT INTO general_development_plan_applications (form_id, state_code, gdpa_app
     (6, 'KY', '40422', '859-555-7500', 'Conditional Use Permit Application', 'Maximum building height 50 feet, minimum 150 parking spaces, landscape buffer along residential boundary', 'petition_movement', 'mixed_use_concept_plan.pdf', 'mixed_use_traffic_study.pdf', 'mixed_use_geologic_analysis.pdf');
 
 -- Variance Applications
-INSERT INTO variance_applications (form_id, va_variance_request, va_proposed_conditions) VALUES 
-    (7, 'Request variance for reduced front setback - 20 feet instead of required 30 feet', 'Install enhanced landscaping, decorative fence along front property line'),
-    (16, 'Request variance for increased lot coverage - 40% instead of 35% maximum', 'Provide additional stormwater management, green roof on portion of building');
+INSERT INTO variance_applications (form_id, va_variance_request, va_proposed_conditions, PVA_parcel_number) VALUES 
+    (7, 'Request variance for reduced front setback - 20 feet instead of required 30 feet', 'Install enhanced landscaping, decorative fence along front property line', 200001),
+    (16, 'Request variance for increased lot coverage - 40% instead of 35% maximum', 'Provide additional stormwater management, green roof on portion of building', 200001);
 
 -- Future Land Use Map Applications
 INSERT INTO future_land_use_map_applications (form_id, future_land_use_map_amendment_prop, PVA_parcel_number) VALUES 
@@ -371,17 +371,17 @@ INSERT INTO permits_link_signs (form_id, sign_id) VALUES
     (17, 3);
 
 -- Open Record Requests
-INSERT INTO open_record_requests (form_id, orr_commercial_purpose, orr_request_for_copies, orr_received_on_datetime, orr_receievable_datetime, orr_denied_reasons, orr_applicant_id) VALUES 
+INSERT INTO open_record_requests (form_id, orr_commercial_purpose, orr_request_for_copies, orr_received_on_datetime, orr_receivable_datetime, orr_denied_reasons, orr_applicant_id) VALUES 
     (13, 'No', 'Yes', '2025-10-18', '2025-10-21', NULL, 1),
     (20, 'Yes', 'No', '2025-10-25', '2025-10-28', NULL, 2);
 
 -- Link Public Records to Open Record Requests
 INSERT INTO orr_public_record_names (form_id, public_record_id) VALUES 
-    (13, 101),
-    (13, 102),
-    (13, 105),
-    (20, 106),
-    (20, 107);
+    (13,1),
+    (13, 2),
+    (13, 3),
+    (20, 4),
+    (20, 5);
 
 -- -------------------------------------------------------------------------
 -- SECTION 9: TECHNICAL PROCESSING FORMS
