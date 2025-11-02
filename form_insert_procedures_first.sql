@@ -4,7 +4,6 @@
   Target: MariaDB / MySQL (uses DELIMITER and LAST_INSERT_ID())
   Note: Procedures insert into `forms` table first (with CURRENT_TIMESTAMP) and then
   insert into related tables using LAST_INSERT_ID() as form_id.
-  Updated to handle insertion of related entities (surveyors, engineers, etc.) when IDs are NULL.
 */
 
 /* ---------------------------
@@ -202,39 +201,10 @@ CREATE PROCEDURE sp_insert_site_development_plan_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
   IN p_correction_form_id INT,
-  -- surveyor parameters
   IN p_surveyor_id INT,
-  IN p_surveyor_first_name VARCHAR(255),
-  IN p_surveyor_last_name VARCHAR(255),
-  IN p_surveyor_firm VARCHAR(255),
-  IN p_surveyor_email VARCHAR(255),
-  IN p_surveyor_phone VARCHAR(50),
-  IN p_surveyor_cell VARCHAR(255),
-  -- land architect parameters
   IN p_land_architect_id INT,
-  IN p_land_architect_first_name VARCHAR(255),
-  IN p_land_architect_last_name VARCHAR(255),
-  IN p_land_architect_law_firm VARCHAR(255),
-  IN p_land_architect_email VARCHAR(255),
-  IN p_land_architect_phone VARCHAR(50),
-  IN p_land_architect_cell VARCHAR(255),
-  -- engineer parameters
   IN p_engineer_id INT,
-  IN p_engineer_first_name VARCHAR(255),
-  IN p_engineer_last_name VARCHAR(255),
-  IN p_engineer_firm VARCHAR(255),
-  IN p_engineer_email VARCHAR(255),
-  IN p_engineer_phone VARCHAR(50),
-  IN p_engineer_cell VARCHAR(255),
-  -- architect parameters
   IN p_architect_id INT,
-  IN p_architect_first_name VARCHAR(255),
-  IN p_architect_last_name VARCHAR(255),
-  IN p_architect_law_firm VARCHAR(255),
-  IN p_architect_email VARCHAR(255),
-  IN p_architect_phone VARCHAR(50),
-  IN p_architect_cell VARCHAR(255),
-  -- application data
   IN p_site_plan_request VARCHAR(255)
 )
 BEGIN
@@ -243,60 +213,8 @@ BEGIN
     VALUES('Development Plan Application (Site)', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
   SET @new_form_id = LAST_INSERT_ID();
 
-  -- Handle surveyor
-  IF p_surveyor_id IS NULL THEN
-    IF p_surveyor_first_name IS NOT NULL OR p_surveyor_last_name IS NOT NULL THEN
-      INSERT INTO surveyors(surveyor_first_name, surveyor_last_name, surveyor_firm, surveyor_email, surveyor_phone, surveyor_cell)
-        VALUES(p_surveyor_first_name, p_surveyor_last_name, p_surveyor_firm, p_surveyor_email, p_surveyor_phone, p_surveyor_cell);
-      SET @insert_surveyor_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_surveyor_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_surveyor_id = p_surveyor_id;
-  END IF;
-
-  -- Handle land architect
-  IF p_land_architect_id IS NULL THEN
-    IF p_land_architect_first_name IS NOT NULL OR p_land_architect_last_name IS NOT NULL THEN
-      INSERT INTO land_architects(land_architect_first_name, land_architect_last_name, land_architect_law_firm, land_architect_email, land_architect_phone, land_architect_cell)
-        VALUES(p_land_architect_first_name, p_land_architect_last_name, p_land_architect_law_firm, p_land_architect_email, p_land_architect_phone, p_land_architect_cell);
-      SET @insert_land_architect_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_land_architect_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_land_architect_id = p_land_architect_id;
-  END IF;
-
-  -- Handle engineer
-  IF p_engineer_id IS NULL THEN
-    IF p_engineer_first_name IS NOT NULL OR p_engineer_last_name IS NOT NULL THEN
-      INSERT INTO engineers(engineer_first_name, engineer_last_name, engineer_firm, engineer_email, engineer_phone, engineer_cell)
-        VALUES(p_engineer_first_name, p_engineer_last_name, p_engineer_firm, p_engineer_email, p_engineer_phone, p_engineer_cell);
-      SET @insert_engineer_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_engineer_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_engineer_id = p_engineer_id;
-  END IF;
-
-  -- Handle architect
-  IF p_architect_id IS NULL THEN
-    IF p_architect_first_name IS NOT NULL OR p_architect_last_name IS NOT NULL THEN
-      INSERT INTO architects(architect_first_name, architect_last_name, architect_law_firm, architect_email, architect_phone, architect_cell)
-        VALUES(p_architect_first_name, p_architect_last_name, p_architect_law_firm, p_architect_email, p_architect_phone, p_architect_cell);
-      SET @insert_architect_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_architect_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_architect_id = p_architect_id;
-  END IF;
-
   INSERT INTO site_development_plan_applications(form_id, surveyor_id, land_architect_id, engineer_id, architect_id, site_plan_request)
-    VALUES(@new_form_id, @insert_surveyor_id, @insert_land_architect_id, @insert_engineer_id, @insert_architect_id, p_site_plan_request);
+    VALUES(@new_form_id, p_surveyor_id, p_land_architect_id, p_engineer_id, p_architect_id, p_site_plan_request);
 
   COMMIT;
 END$$
@@ -388,7 +306,8 @@ BEGIN
 
   IF p_public_record_description IS NOT NULL THEN
     INSERT INTO public_records(public_record_description)
-      VALUES(p_public_record_description);
+      VALUES(p_public_record_description); -- crude attempt to create an id; if public_record_id is auto-managed elsewhere this may need adjustment
+    -- get the id we just inserted (assuming auto-increment isn't declared; schema shows public_record_id INT NOT NULL but not auto_increment)
     SET @new_public_record_id = LAST_INSERT_ID();
     INSERT INTO orr_public_record_names(form_id, public_record_id) VALUES(@new_form_id, @new_public_record_id);
   END IF;
@@ -511,23 +430,8 @@ CREATE PROCEDURE sp_insert_major_subdivision_plat_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
   IN p_correction_form_id INT,
-  -- surveyor parameters
   IN p_surveyor_id INT,
-  IN p_surveyor_first_name VARCHAR(255),
-  IN p_surveyor_last_name VARCHAR(255),
-  IN p_surveyor_firm VARCHAR(255),
-  IN p_surveyor_email VARCHAR(255),
-  IN p_surveyor_phone VARCHAR(50),
-  IN p_surveyor_cell VARCHAR(255),
-  -- engineer parameters
   IN p_engineer_id INT,
-  IN p_engineer_first_name VARCHAR(255),
-  IN p_engineer_last_name VARCHAR(255),
-  IN p_engineer_firm VARCHAR(255),
-  IN p_engineer_email VARCHAR(255),
-  IN p_engineer_phone VARCHAR(50),
-  IN p_engineer_cell VARCHAR(255),
-  -- application data
   IN p_PVA_parcel_number INT,
   IN p_mspa_topographic_survey VARCHAR(255),
   IN p_mspa_proposed_plot_layout VARCHAR(255),
@@ -549,39 +453,13 @@ BEGIN
     VALUES('Major Subdivision Plat Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
   SET @new_form_id = LAST_INSERT_ID();
 
-  -- Handle surveyor
-  IF p_surveyor_id IS NULL THEN
-    IF p_surveyor_first_name IS NOT NULL OR p_surveyor_last_name IS NOT NULL THEN
-      INSERT INTO surveyors(surveyor_first_name, surveyor_last_name, surveyor_firm, surveyor_email, surveyor_phone, surveyor_cell)
-        VALUES(p_surveyor_first_name, p_surveyor_last_name, p_surveyor_firm, p_surveyor_email, p_surveyor_phone, p_surveyor_cell);
-      SET @insert_surveyor_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_surveyor_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_surveyor_id = p_surveyor_id;
-  END IF;
-
-  -- Handle engineer
-  IF p_engineer_id IS NULL THEN
-    IF p_engineer_first_name IS NOT NULL OR p_engineer_last_name IS NOT NULL THEN
-      INSERT INTO engineers(engineer_first_name, engineer_last_name, engineer_firm, engineer_email, engineer_phone, engineer_cell)
-        VALUES(p_engineer_first_name, p_engineer_last_name, p_engineer_firm, p_engineer_email, p_engineer_phone, p_engineer_cell);
-      SET @insert_engineer_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_engineer_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_engineer_id = p_engineer_id;
-  END IF;
-
   INSERT INTO major_subdivision_plat_applications(
     form_id, surveyor_id, engineer_id, PVA_parcel_number, mspa_topographic_survey, mspa_proposed_plot_layout,
     mspa_plat_restrictions, mspa_property_owner_convenants, mspa_association_covenants, mspa_master_deed,
     mspa_construction_plans, mspa_traffic_impact_study, mspa_geologic_study, mspa_drainage_plan,
     mspa_pavement_design, mspa_SWPPP_EPSC_plan, mspa_construction_bond_est
   ) VALUES (
-    @new_form_id, @insert_surveyor_id, @insert_engineer_id, p_PVA_parcel_number, p_mspa_topographic_survey, p_mspa_proposed_plot_layout,
+    @new_form_id, p_surveyor_id, p_engineer_id, p_PVA_parcel_number, p_mspa_topographic_survey, p_mspa_proposed_plot_layout,
     p_mspa_plat_restrictions, p_mspa_property_owner_convenants, p_mspa_association_covenants, p_mspa_master_deed,
     p_mspa_construction_plans, p_mspa_traffic_impact_study, p_mspa_geologic_study, p_mspa_drainage_plan,
     p_mspa_pavement_design, p_mspa_SWPPP_EPSC_plan, p_mspa_construction_bond_est
@@ -598,28 +476,13 @@ DELIMITER ;
    Tables: forms, minor_subdivision_plat_applications
    --------------------------- */
 
-DELIMITER $
+DELIMITER $$
 CREATE PROCEDURE sp_insert_minor_subdivision_plat_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
   IN p_correction_form_id INT,
-  -- surveyor parameters
   IN p_surveyor_id INT,
-  IN p_surveyor_first_name VARCHAR(255),
-  IN p_surveyor_last_name VARCHAR(255),
-  IN p_surveyor_firm VARCHAR(255),
-  IN p_surveyor_email VARCHAR(255),
-  IN p_surveyor_phone VARCHAR(50),
-  IN p_surveyor_cell VARCHAR(255),
-  -- engineer parameters
   IN p_engineer_id INT,
-  IN p_engineer_first_name VARCHAR(255),
-  IN p_engineer_last_name VARCHAR(255),
-  IN p_engineer_firm VARCHAR(255),
-  IN p_engineer_email VARCHAR(255),
-  IN p_engineer_phone VARCHAR(50),
-  IN p_engineer_cell VARCHAR(255),
-  -- application data
   IN p_PVA_parcel_number INT,
   IN p_minspa_topographic_survey VARCHAR(255),
   IN p_minspa_proposed_plot_layout VARCHAR(255),
@@ -634,37 +497,11 @@ BEGIN
     VALUES('Minor Subdivision Plat Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
   SET @new_form_id = LAST_INSERT_ID();
 
-  -- Handle surveyor
-  IF p_surveyor_id IS NULL THEN
-    IF p_surveyor_first_name IS NOT NULL OR p_surveyor_last_name IS NOT NULL THEN
-      INSERT INTO surveyors(surveyor_first_name, surveyor_last_name, surveyor_firm, surveyor_email, surveyor_phone, surveyor_cell)
-        VALUES(p_surveyor_first_name, p_surveyor_last_name, p_surveyor_firm, p_surveyor_email, p_surveyor_phone, p_surveyor_cell);
-      SET @insert_surveyor_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_surveyor_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_surveyor_id = p_surveyor_id;
-  END IF;
-
-  -- Handle engineer
-  IF p_engineer_id IS NULL THEN
-    IF p_engineer_first_name IS NOT NULL OR p_engineer_last_name IS NOT NULL THEN
-      INSERT INTO engineers(engineer_first_name, engineer_last_name, engineer_firm, engineer_email, engineer_phone, engineer_cell)
-        VALUES(p_engineer_first_name, p_engineer_last_name, p_engineer_firm, p_engineer_email, p_engineer_phone, p_engineer_cell);
-      SET @insert_engineer_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_engineer_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_engineer_id = p_engineer_id;
-  END IF;
-
   INSERT INTO minor_subdivision_plat_applications(
     form_id, surveyor_id, engineer_id, PVA_parcel_number, minspa_topographic_survey, minspa_proposed_plot_layout,
-    minspa_plat_restrictions, minspa_property_owner_covenants, minspa_association_covenants, minspa_master_deed
+    minspa_plat_restrictions, minspa_property_owner_convenants, minspa_association_covenants, minspa_master_deed
   ) VALUES (
-    @new_form_id, @insert_surveyor_id, @insert_engineer_id, p_PVA_parcel_number, p_minspa_topographic_survey, p_minspa_proposed_plot_layout,
+    @new_form_id, p_surveyor_id, p_engineer_id, p_PVA_parcel_number, p_minspa_topographic_survey, p_minspa_proposed_plot_layout,
     p_minspa_plat_restrictions, p_minspa_property_owner_convenants, p_minspa_association_covenants, p_minspa_master_deed
   );
 
@@ -679,7 +516,7 @@ DELIMITER ;
    Tables: forms (schema contains no specific table for telecom tower)
    --------------------------- */
 
-DELIMITER $
+DELIMITER $$
 CREATE PROCEDURE sp_insert_telecommunication_tower_uniform_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
@@ -700,7 +537,7 @@ DELIMITER ;
    Tables: forms, variance_applications
    --------------------------- */
 
-DELIMITER $
+DELIMITER $$
 CREATE PROCEDURE sp_insert_variance_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
@@ -729,7 +566,7 @@ DELIMITER ;
    Tables: forms, zoning_map_amendment_applications
    --------------------------- */
 
-DELIMITER $
+DELIMITER $$
 CREATE PROCEDURE sp_insert_zoning_map_amendment_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
@@ -756,44 +593,15 @@ DELIMITER ;
    Tables: forms, zoning_permit_applications
    --------------------------- */
 
-DELIMITER $
+DELIMITER $$
 CREATE PROCEDURE sp_insert_zoning_permit_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
   IN p_correction_form_id INT,
-  -- surveyor parameters
   IN p_surveyor_id INT,
-  IN p_surveyor_first_name VARCHAR(255),
-  IN p_surveyor_last_name VARCHAR(255),
-  IN p_surveyor_firm VARCHAR(255),
-  IN p_surveyor_email VARCHAR(255),
-  IN p_surveyor_phone VARCHAR(50),
-  IN p_surveyor_cell VARCHAR(255),
-  -- architect parameters
   IN p_architect_id INT,
-  IN p_architect_first_name VARCHAR(255),
-  IN p_architect_last_name VARCHAR(255),
-  IN p_architect_law_firm VARCHAR(255),
-  IN p_architect_email VARCHAR(255),
-  IN p_architect_phone VARCHAR(50),
-  IN p_architect_cell VARCHAR(255),
-  -- land architect parameters
   IN p_land_architect_id INT,
-  IN p_land_architect_first_name VARCHAR(255),
-  IN p_land_architect_last_name VARCHAR(255),
-  IN p_land_architect_law_firm VARCHAR(255),
-  IN p_land_architect_email VARCHAR(255),
-  IN p_land_architect_phone VARCHAR(50),
-  IN p_land_architect_cell VARCHAR(255),
-  -- contractor parameters
   IN p_contractor_id INT,
-  IN p_contractor_first_name VARCHAR(255),
-  IN p_contractor_last_name VARCHAR(255),
-  IN p_contractor_law_firm VARCHAR(255),
-  IN p_contractor_email VARCHAR(255),
-  IN p_contractor_phone VARCHAR(50),
-  IN p_contractor_cell VARCHAR(255),
-  -- application data
   IN p_PVA_parcel_number INT,
   IN p_project_type VARCHAR(255),
   IN p_zpa_project_plans VARCHAR(255),
@@ -805,63 +613,11 @@ BEGIN
     VALUES('Zoning Permit Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
   SET @new_form_id = LAST_INSERT_ID();
 
-  -- Handle surveyor
-  IF p_surveyor_id IS NULL THEN
-    IF p_surveyor_first_name IS NOT NULL OR p_surveyor_last_name IS NOT NULL THEN
-      INSERT INTO surveyors(surveyor_first_name, surveyor_last_name, surveyor_firm, surveyor_email, surveyor_phone, surveyor_cell)
-        VALUES(p_surveyor_first_name, p_surveyor_last_name, p_surveyor_firm, p_surveyor_email, p_surveyor_phone, p_surveyor_cell);
-      SET @insert_surveyor_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_surveyor_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_surveyor_id = p_surveyor_id;
-  END IF;
-
-  -- Handle architect
-  IF p_architect_id IS NULL THEN
-    IF p_architect_first_name IS NOT NULL OR p_architect_last_name IS NOT NULL THEN
-      INSERT INTO architects(architect_first_name, architect_last_name, architect_law_firm, architect_email, architect_phone, architect_cell)
-        VALUES(p_architect_first_name, p_architect_last_name, p_architect_law_firm, p_architect_email, p_architect_phone, p_architect_cell);
-      SET @insert_architect_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_architect_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_architect_id = p_architect_id;
-  END IF;
-
-  -- Handle land architect
-  IF p_land_architect_id IS NULL THEN
-    IF p_land_architect_first_name IS NOT NULL OR p_land_architect_last_name IS NOT NULL THEN
-      INSERT INTO land_architects(land_architect_first_name, land_architect_last_name, land_architect_law_firm, land_architect_email, land_architect_phone, land_architect_cell)
-        VALUES(p_land_architect_first_name, p_land_architect_last_name, p_land_architect_law_firm, p_land_architect_email, p_land_architect_phone, p_land_architect_cell);
-      SET @insert_land_architect_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_land_architect_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_land_architect_id = p_land_architect_id;
-  END IF;
-
-  -- Handle contractor
-  IF p_contractor_id IS NULL THEN
-    IF p_contractor_first_name IS NOT NULL OR p_contractor_last_name IS NOT NULL THEN
-      INSERT INTO contractors(contractor_first_name, contractor_last_name, contractor_law_firm, contractor_email, contractor_phone, contractor_cell)
-        VALUES(p_contractor_first_name, p_contractor_last_name, p_contractor_law_firm, p_contractor_email, p_contractor_phone, p_contractor_cell);
-      SET @insert_contractor_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_contractor_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_contractor_id = p_contractor_id;
-  END IF;
-
   INSERT INTO zoning_permit_applications(
     form_id, surveyor_id, architect_id, land_architect_id, contractor_id, PVA_parcel_number,
     project_type, zpa_project_plans, zpa_preliminary_site_evaluation
   ) VALUES (
-    @new_form_id, @insert_surveyor_id, @insert_architect_id, @insert_land_architect_id, @insert_contractor_id, p_PVA_parcel_number,
+    @new_form_id, p_surveyor_id, p_architect_id, p_land_architect_id, p_contractor_id, p_PVA_parcel_number,
     p_project_type, p_zpa_project_plans, p_zpa_preliminary_site_evaluation
   );
 
@@ -876,7 +632,7 @@ DELIMITER ;
    Tables: forms, zoning_verification_letter, zva_applicants, zva_property_owners
    --------------------------- */
 
-DELIMITER $
+DELIMITER $$
 CREATE PROCEDURE sp_insert_zoning_verification_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
@@ -930,6 +686,8 @@ BEGIN
       p_zva_applicant_city, p_zva_applicant_state_code, p_zva_applicant_zip_code, p_zva_applicant_phone_number, p_zva_applicant_fax_number
     );
     SET @new_zva_applicant_id = LAST_INSERT_ID();
+    INSERT INTO zva_applicants (zva_applicant_id) -- No direct linking table exists; schema expects separate table; skip linking
+      VALUES (NULL);
   END IF;
 
   IF p_zva_owner_first_name IS NOT NULL OR p_zva_owner_last_name IS NOT NULL THEN
@@ -939,8 +697,10 @@ BEGIN
       p_zva_owner_first_name, p_zva_owner_last_name, p_zva_owner_street, p_zva_owner_city, p_zva_owner_state_code, p_zva_owner_zip_code
     );
     SET @new_zva_owner_id = LAST_INSERT_ID();
+    -- no explicit linking table in schema for zva owners to forms; if needed, a linking table should be created. 
   END IF;
 
   COMMIT;
 END$$
 DELIMITER ;
+

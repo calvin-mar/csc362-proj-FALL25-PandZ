@@ -596,23 +596,45 @@ class TestDatabaseSchema(unittest.TestCase):
     def test_sp_insert_zoning_permit_application(self):
         """Test stored procedure for Zoning Permit Application"""
         # Insert prerequisites
-        self.cursor.execute("INSERT INTO surveyors (surveyor_first_name) VALUES ('Test');")
-        self.cursor.execute("INSERT INTO architects (architect_first_name) VALUES ('Test');")
-        self.cursor.execute("INSERT INTO land_architects (land_architect_first_name) VALUES ('Test');")
-        self.cursor.execute("INSERT INTO contractors (contractor_first_name) VALUES ('Test');")
         self.cursor.execute("INSERT INTO properties (PVA_parcel_number) VALUES (999999);")
         self.cursor.execute("INSERT INTO project_types (project_type) VALUES ('Special Project');")
 
         self.cursor.execute("""
             CALL sp_insert_zoning_permit_application(
                 NULL, TRUE, NULL,
-                1, 1, 1, 1, 999999,
+                -- surveyor parameters (NULL id, provide details to create new surveyor)
+                NULL, 'Bob', 'Survey', 'Survey Co', 'bob@survey.com', '555-1111', '555-2222',
+                -- architect parameters (NULL id, provide details to create new architect)
+                NULL, 'Alice', 'Architect', 'Architect LLC', 'alice@arch.com', '555-3333', '555-4444',
+                -- land architect parameters (NULL id, provide details to create new land architect)
+                NULL, 'Carl', 'Landscape', 'Land Design', 'carl@land.com', '555-5555', '555-6666',
+                -- contractor parameters (NULL id, provide details to create new contractor)
+                NULL, 'Dave', 'Builder', 'Build Corp', 'dave@build.com', '555-7777', '555-8888',
+                -- application data
+                999999,
                 'Special Project', 'plans.pdf', 'evaluation.pdf'
             );
         """)
         self.cursor.execute("SELECT COUNT(*) FROM zoning_permit_applications;")
         count = self.cursor.fetchone()[0]
         self.assertGreaterEqual(count, 1)
+        
+        # Verify that surveyor, architects, and contractor were created
+        self.cursor.execute("SELECT COUNT(*) FROM surveyors WHERE surveyor_first_name = 'Bob';")
+        surveyor_count = self.cursor.fetchone()[0]
+        self.assertEqual(surveyor_count, 1)
+        
+        self.cursor.execute("SELECT COUNT(*) FROM architects WHERE architect_first_name = 'Alice';")
+        architect_count = self.cursor.fetchone()[0]
+        self.assertEqual(architect_count, 1)
+        
+        self.cursor.execute("SELECT COUNT(*) FROM land_architects WHERE land_architect_first_name = 'Carl';")
+        land_architect_count = self.cursor.fetchone()[0]
+        self.assertEqual(land_architect_count, 1)
+        
+        self.cursor.execute("SELECT COUNT(*) FROM contractors WHERE contractor_first_name = 'Dave';")
+        contractor_count = self.cursor.fetchone()[0]
+        self.assertEqual(contractor_count, 1)
 
     def test_sp_insert_zoning_verification_application(self):
         """Test stored procedure for Zoning Verification Application"""
@@ -631,13 +653,16 @@ class TestDatabaseSchema(unittest.TestCase):
 
     def test_sp_insert_major_subdivision_plat_application(self):
         """Test stored procedure for Major Subdivision Plat Application"""
-        self.cursor.execute("INSERT INTO surveyors (surveyor_first_name) VALUES ('Survey A');")
-        self.cursor.execute("INSERT INTO engineers (engineer_first_name) VALUES ('Engineer A');")
         self.cursor.execute("INSERT INTO properties (PVA_parcel_number) VALUES (111112);")
         self.cursor.execute("""
             CALL sp_insert_major_subdivision_plat_application(
                 NULL, TRUE, NULL,
-                1, 1, 111112,
+                -- surveyor parameters (NULL id, provide details to create new surveyor)
+                NULL, 'John', 'Smith', 'Smith Survey Firm', 'john@survey.com', '555-1234', '555-5678',
+                -- engineer parameters (NULL id, provide details to create new engineer)
+                NULL, 'Jane', 'Doe', 'Doe Engineering', 'jane@engineer.com', '555-9999', '555-8888',
+                -- application data
+                111112,
                 'topo.pdf', 'layout.pdf', 'restrictions.pdf', 'owner.pdf', 'assoc.pdf',
                 'deed.pdf', 'plans.pdf', 'traffic.pdf', 'geo.pdf', 'drainage.pdf',
                 'pave.pdf', 'swppp.pdf', 'bond.pdf'
@@ -646,6 +671,15 @@ class TestDatabaseSchema(unittest.TestCase):
         self.cursor.execute("SELECT COUNT(*) FROM major_subdivision_plat_applications;")
         count = self.cursor.fetchone()[0]
         self.assertGreaterEqual(count, 1)
+        
+        # Verify that surveyor and engineer were created
+        self.cursor.execute("SELECT COUNT(*) FROM surveyors WHERE surveyor_first_name = 'John';")
+        surveyor_count = self.cursor.fetchone()[0]
+        self.assertEqual(surveyor_count, 1)
+        
+        self.cursor.execute("SELECT COUNT(*) FROM engineers WHERE engineer_first_name = 'Jane';")
+        engineer_count = self.cursor.fetchone()[0]
+        self.assertEqual(engineer_count, 1)
 
     def test_sp_insert_open_records_request(self):
         """Test stored procedure for Open Records Request"""

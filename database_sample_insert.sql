@@ -371,7 +371,7 @@ INSERT INTO permits_link_signs (form_id, sign_id) VALUES
     (17, 3);
 
 -- Open Record Requests
-INSERT INTO open_record_requests (form_id, orr_commercial_purpose, orr_request_for_copies, orr_received_on_datetime, orr_receievable_datetime, orr_denied_reasons, orr_applicant_id) VALUES 
+INSERT INTO open_record_requests (form_id, orr_commercial_purpose, orr_request_for_copies, orr_received_on_datetime, orr_receivable_datetime, orr_denied_reasons, orr_applicant_id) VALUES 
     (13, 'No', 'Yes', '2025-10-18', '2025-10-21', NULL, 1),
     (20, 'Yes', 'No', '2025-10-25', '2025-10-28', NULL, 2);
 
