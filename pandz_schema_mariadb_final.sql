@@ -175,6 +175,8 @@ CREATE TABLE properties (
 
 CREATE TABLE zoning_verification_letter (
     form_id INT NOT NULL,
+    zva_owner_id INT NOT NULL,
+    zva_applicant_id INT NOT NULL,
     zva_letter_content VARCHAR(255),
     zva_zoning_letter_street VARCHAR(255),
     zva_state_code CHAR(2),
@@ -187,18 +189,20 @@ CREATE TABLE zoning_verification_letter (
     PRIMARY KEY (form_id),
     FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT,
     FOREIGN KEY (zva_state_code) REFERENCES states(state_code) ON DELETE RESTRICT,
-    FOREIGN KEY (zva_property_state_code) REFERENCES states(state_code) ON DELETE RESTRICT
+    FOREIGN KEY (zva_property_state_code) REFERENCES states(state_code) ON DELETE RESTRICT,
+    FOREIGN KEY (zva_owner_id) REFERENCES zva_property_owners(zva_owner_id) ON DELETE RESTRICT,
+    FOREIGN KEY (zva_applicant_id) REFERENCES zva_applicants(zva_applicant_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE apof_neighbors (
     neighbor_id INT NOT NULL AUTO_INCREMENT,
     PVA_map_code VARCHAR(255),
     apof_neighbor_property_location VARCHAR(255),
-    apof_neighbor_property_street DECIMAL(12,2),
+    apof_neighbor_property_street VARCHAR(255),
     apof_neighbor_property_city VARCHAR(255),
     state_code CHAR(2),
     apof_neighbor_property_zip VARCHAR(50),
-    apof_neighbor_property_deed_book DECIMAL(12,2),
+    apof_neighbor_property_deed_book VARCHAR(255),
     apof_property_street_pg_number VARCHAR(255),
     PRIMARY KEY (neighbor_id),
     FOREIGN KEY (state_code) REFERENCES states(state_code) ON DELETE RESTRICT
@@ -342,7 +346,7 @@ CREATE TABLE zoning_permit_applications (
     FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT,
     FOREIGN KEY (surveyor_id) REFERENCES surveyors(surveyor_id) ON DELETE RESTRICT,
     FOREIGN KEY (architect_id) REFERENCES architects(architect_id) ON DELETE RESTRICT,
-    FOREIGN KEY (land_architect_id) REFERENCES architects(land_architect_id) ON DELETE RESTRICT,
+    FOREIGN KEY (land_architect_id) REFERENCES land_architects(land_architect_id) ON DELETE RESTRICT,
     FOREIGN KEY (contractor_id) REFERENCES contractors(contractor_id) ON DELETE RESTRICT,
     FOREIGN KEY (PVA_parcel_number) REFERENCES properties(PVA_parcel_number) ON DELETE RESTRICT,
     FOREIGN KEY (project_type) REFERENCES project_types(project_type) ON DELETE RESTRICT
@@ -527,7 +531,7 @@ CREATE TABLE administrative_appeal_requests (
 CREATE TABLE sign_permit_applications (
     form_id INT NOT NULL,
     sp_owner_id INT,
-    contractor_id INT,
+    sp_contractor_id INT,
     sp_business_id INT,
     sp_date DATE,
     sp_permit_number VARCHAR(
@@ -542,7 +546,10 @@ CREATE TABLE sign_permit_applications (
     PRIMARY KEY (
     form_id
   ),
-  FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
+  FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT,
+  FOREIGN KEY (sp_owner_id) REFERENCES sp_property_owners(sp_owner_id) ON DELETE RESTRICT,
+  FOREIGN KEY (sp_contractor_id) REFERENCES sp_contractors(sp_contractor_id) ON DELETE RESTRICT,
+  FOREIGN KEY (sp_business_id) REFERENCES sp_businesses(sp_business_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE departments (
@@ -561,7 +568,7 @@ CREATE TABLE department_form_interactions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE incomplete_client_forms (
-    form_id INT NOT NULL AUTO_INCREMENT,
+    form_id INT NOT NULL,
     client_id INT NOT NULL,
     PRIMARY KEY (
     form_id, client_id
@@ -591,7 +598,8 @@ CREATE TABLE site_development_plan_applications (
   FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT,
   FOREIGN KEY (land_architect_id) REFERENCES land_architects(land_architect_id) ON DELETE RESTRICT,
   FOREIGN KEY (engineer_id) REFERENCES engineers(engineer_id) ON DELETE RESTRICT,
-  FOREIGN KEY (architect_id) REFERENCES architects(architect_id) ON DELETE RESTRICT
+  FOREIGN KEY (architect_id) REFERENCES architects(architect_id) ON DELETE RESTRICT,
+  FOREIGN KEY (surveyor_id) REFERENCES surveyors(surveyor_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE type_one_execs (
@@ -612,10 +620,18 @@ CREATE TABLE type_one_applicant_execs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE type_one_owners (
-    t1_applicant_id INT NOT NULL AUTO_INCREMENT,
+    t1_owner_id INT NOT NULL AUTO_INCREMENT,
     t1o_owner_first_name VARCHAR(255),
     t1o_owner_last_name VARCHAR(255),
-    PRIMARY KEY (t1_applicant_id)
+    PRIMARY KEY (t1_owner_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE owners_link_forms (
+    t1_owner_id INT NOT NULL,
+    form_id INT NOT NULL,
+    PRIMARY KEY (t1_owner_id, form_id),
+    FOREIGN KEY (t1_owner_id) REFERENCES type_one_owners(t1_owner_id) ON DELETE RESTRICT,
+    FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE adjacent_property_owners (
@@ -644,7 +660,8 @@ CREATE TABLE signs (
     sign_type VARCHAR(255),
     sign_square_footage DECIMAL(12,2),
     lettering_height VARCHAR(255),
-    PRIMARY KEY (sign_id)
+    PRIMARY KEY (sign_id),
+    FOREIGN KEY (sp_owner_id) REFERENCES sp_property_owners(sp_owner_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE zva_property_owners (
