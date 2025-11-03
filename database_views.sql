@@ -1,5 +1,5 @@
 -- ===================================================================
--- P&Z DATABASE VIEWS (Schema-Compatible Version)
+-- P&Z DATABASE VIEWS (Schema-Compatible and Verified Version)
 -- Description: All useful pre-built views for analysis, reporting,
 --              and staff operations within the Planning & Zoning DB.
 -- ===================================================================
@@ -8,7 +8,6 @@
 -- 🔹 GENERAL OVERVIEW & CLIENT RELATIONSHIP VIEWS
 -- ============================================================
 
--- 1. Master Form Overview
 CREATE OR REPLACE VIEW v_all_forms AS
 SELECT 
     f.form_id,
@@ -19,14 +18,12 @@ SELECT
 FROM forms f
 LEFT JOIN form_types ft ON f.form_type = ft.form_type;
 
--- 2. Client Information Overview
 CREATE OR REPLACE VIEW v_clients_summary AS
 SELECT 
     c.client_id,
     c.client_username
 FROM clients c;
 
--- 3. Form-to-Client Relationship
 CREATE OR REPLACE VIEW v_form_clients AS
 SELECT 
     f.form_id,
@@ -42,7 +39,6 @@ LEFT JOIN form_types ft ON f.form_type = ft.form_type;
 -- 🔹 ZONING & DEVELOPMENT APPLICATION VIEWS
 -- ============================================================
 
--- 4. Zoning Permit Applications
 CREATE OR REPLACE VIEW v_zoning_permit_applications AS
 SELECT 
     f.form_id,
@@ -55,7 +51,6 @@ JOIN forms f ON f.form_id = zpa.form_id
 LEFT JOIN client_forms cf ON f.form_id = cf.form_id
 LEFT JOIN clients c ON cf.client_id = c.client_id;
 
--- 5. Major + Minor Subdivision Applications
 CREATE OR REPLACE VIEW v_all_subdivision_applications AS
 SELECT 
     f.form_id,
@@ -79,7 +74,6 @@ JOIN forms f ON f.form_id = mispa.form_id
 LEFT JOIN client_forms cf ON f.form_id = cf.form_id
 LEFT JOIN clients c ON cf.client_id = c.client_id;
 
--- 6. Site + General Development Plan Applications
 CREATE OR REPLACE VIEW v_development_applications AS
 SELECT 
     f.form_id,
@@ -101,7 +95,6 @@ JOIN forms f ON f.form_id = gdpa.form_id
 LEFT JOIN client_forms cf ON f.form_id = cf.form_id
 LEFT JOIN clients c ON cf.client_id = c.client_id;
 
--- 7. Sign Permit Applications
 CREATE OR REPLACE VIEW v_sign_permits AS
 SELECT 
     spa.form_id,
@@ -116,7 +109,6 @@ LEFT JOIN clients c ON cf.client_id = c.client_id;
 -- 🔹 DEPARTMENTAL, RECORDS, & SUMMARY REPORTS
 -- ============================================================
 
--- 8. Department Applications (no department_id in forms, skip)
 CREATE OR REPLACE VIEW v_department_applications AS
 SELECT 
     f.form_id,
@@ -129,7 +121,6 @@ LEFT JOIN form_types ft ON f.form_type = ft.form_type
 LEFT JOIN client_forms cf ON f.form_id = cf.form_id
 LEFT JOIN clients c ON cf.client_id = c.client_id;
 
--- 9. Open Record Requests
 CREATE OR REPLACE VIEW v_open_record_requests AS
 SELECT 
     f.form_id,
@@ -139,7 +130,6 @@ SELECT
 FROM forms f
 JOIN open_record_requests o ON f.form_id = o.form_id;
 
--- 10. Comprehensive Form Summary
 CREATE OR REPLACE VIEW v_application_summary AS
 SELECT 
     f.form_id,
@@ -156,7 +146,6 @@ LEFT JOIN clients c ON cf.client_id = c.client_id;
 -- 🔹 ANALYTICAL / REPORTING VIEWS
 -- ============================================================
 
--- 11. Incomplete Forms Tracker
 CREATE OR REPLACE VIEW v_incomplete_forms AS
 SELECT 
     icf.form_id,
@@ -167,7 +156,6 @@ JOIN forms f ON icf.form_id = f.form_id
 LEFT JOIN form_types ft ON f.form_type = ft.form_type
 LEFT JOIN clients c ON icf.client_id = c.client_id;
 
--- 12. Department Workload (simplified)
 CREATE OR REPLACE VIEW v_department_workload AS
 SELECT 
     COUNT(f.form_id) AS total_forms,
@@ -175,7 +163,6 @@ SELECT
 FROM forms f
 LEFT JOIN incomplete_client_forms icf ON f.form_id = icf.form_id;
 
--- 13. Recent Forms (Last 30 Days)
 CREATE OR REPLACE VIEW v_recent_forms AS
 SELECT 
     f.form_id,
@@ -192,7 +179,7 @@ WHERE f.form_datetime_submitted >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 ORDER BY f.form_datetime_submitted DESC;
 
 -- ============================================================
--- 🔹 FORM-SPECIFIC VIEWS (ALL MATCHED TO SCHEMA)
+-- 🔹 FORM-SPECIFIC VIEWS (SCHEMA-VERIFIED)
 -- ============================================================
 
 CREATE OR REPLACE VIEW vw_zoning_verification_letter AS
@@ -302,5 +289,5 @@ FROM forms f
 JOIN open_record_requests o ON f.form_id = o.form_id;
 
 -- ============================================================
--- ✅ END OF CORRECTED VIEWS FILE
+-- ✅ END OF VERIFIED P&Z DATABASE VIEWS FILE
 -- ============================================================

@@ -1,3 +1,5 @@
+SET FOREIGN_KEY_CHECKS = 0;
+
 /*
 Please use my link to view the table viewing webpage http://34.29.71.136/html/testing.php
 */
@@ -19,7 +21,7 @@ CREATE TABLE correction_boxes(
   correction_form_id INT NOT NULL,
   PRIMARY KEY(correction_box_id),
   FOREIGN KEY (correction_form_id) REFERENCES correction_forms(correction_form_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE forms (
     form_id INT NOT NULL AUTO_INCREMENT,
@@ -177,7 +179,7 @@ CREATE TABLE zoning_verification_letter (
     form_id INT NOT NULL,
     zva_owner_id INT NOT NULL,
     zva_applicant_id INT NOT NULL,
-    zva_letter_content VARCHAR(255),
+    zva_letter_content TEXT,
     zva_zoning_letter_street VARCHAR(255),
     zva_state_code CHAR(2),
     zva_zoning_letter_city VARCHAR(255),
@@ -314,7 +316,7 @@ CREATE TABLE structures (
     structure_type VARCHAR(255),
     structure_square_feet DECIMAL(12,2),
     structure_project_value VARCHAR(255),
-    structrure_notes TEXT,
+    structure_notes TEXT,
     PRIMARY KEY (structure_id),
   FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -605,7 +607,7 @@ CREATE TABLE site_development_plan_applications (
 CREATE TABLE type_one_execs (
     t1e_exec_id INT NOT NULL AUTO_INCREMENT,
     t1e_exec_first_name VARCHAR(255),
-    t1e_last_name VARCHAR(255),
+    t1e_exec_last_name VARCHAR(255),
     PRIMARY KEY (t1e_exec_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -704,8 +706,7 @@ CREATE TABLE sp_property_owners (
 
 CREATE TABLE sp_businesses (
     sp_business_id INT NOT NULL AUTO_INCREMENT,
-    sp_business_name VARCHAR(
-    255),
+    sp_business_name VARCHAR(255),
     sp_business_street VARCHAR(255),
     sp_business_city VARCHAR(255),
     state_code CHAR(2),
@@ -758,11 +759,11 @@ INSERT INTO form_types (form_type) VALUES
     ("Development Plan Application (Site)"),
     ("Future Land Use Map (FLUM) Application"),
     ("Open Records Request"),
-    ("Sign Permit Appplication"),
+    ("Sign Permit Application"),
     ("Major Subdivision Plat Application"),
     ("Minor Subdivision Plat Application"),
     ("Telecommunication Tower Uniform Application"),
-    ("Variance Applicatioin"),
+    ("Variance Application"),
     ("Zoning Map Amendment Application"),
     ("Zoning Permit Application"),
     ("Zoning Verification Application");
@@ -819,3 +820,5 @@ INSERT INTO states (state_code) VALUES
 ('WI'),
 ('WY'),
 ('DC');
+
+SET FOREIGN_KEY_CHECKS = 1;
