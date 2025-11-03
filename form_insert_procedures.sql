@@ -16,7 +16,6 @@ DELIMITER $$
 CREATE PROCEDURE sp_insert_administrative_appeal_request(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   -- administrative_appeal_requests fields
   IN p_aar_hearing_date DATE,
   IN p_aar_submit_date DATE,
@@ -39,7 +38,7 @@ CREATE PROCEDURE sp_insert_administrative_appeal_request(
 BEGIN
   START TRANSACTION;
   INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Administrative Appeal Request', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
+    VALUES('Administrative Appeal Request', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
   SET @new_form_id = LAST_INSERT_ID();
 
   INSERT INTO administrative_appeal_requests(
@@ -82,7 +81,6 @@ DELIMITER $$
 CREATE PROCEDURE sp_insert_adjacent_property_owners_form(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   -- adjacent_property_owner_forms has only form_id (auto from forms)
   -- apof_neighbors fields (optional)
   IN p_PVA_map_code VARCHAR(255),
@@ -97,7 +95,7 @@ CREATE PROCEDURE sp_insert_adjacent_property_owners_form(
 BEGIN
   START TRANSACTION;
   INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Adjacent Property Owners Form', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
+    VALUES('Adjacent Property Owners Form', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
   SET @new_form_id = LAST_INSERT_ID();
 
   INSERT INTO adjacent_property_owner_forms(form_id) VALUES(@new_form_id);
@@ -131,14 +129,13 @@ DELIMITER $$
 CREATE PROCEDURE sp_insert_conditional_use_permit_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   IN p_cupa_permit_request VARCHAR(255),
   IN p_cupa_proposed_conditions VARCHAR(255)
 )
 BEGIN
   START TRANSACTION;
   INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Conditional Use Permit Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
+    VALUES('Conditional Use Permit Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
   SET @new_form_id = LAST_INSERT_ID();
 
   INSERT INTO conditional_use_permit_applications(form_id, cupa_permit_request, cupa_proposed_conditions)
@@ -159,7 +156,6 @@ DELIMITER $$
 CREATE PROCEDURE sp_insert_general_development_plan_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   IN p_state_code CHAR(2),
   IN p_gdpa_applicant_zip VARCHAR(50),
   IN p_gdpa_applicant_phone VARCHAR(50),
@@ -173,7 +169,7 @@ CREATE PROCEDURE sp_insert_general_development_plan_application(
 BEGIN
   START TRANSACTION;
   INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Development Plan Application (General)', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
+    VALUES('Development Plan Application (General)', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
   SET @new_form_id = LAST_INSERT_ID();
 
   INSERT INTO general_development_plan_applications(
@@ -201,7 +197,6 @@ DELIMITER $$
 CREATE PROCEDURE sp_insert_site_development_plan_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   -- surveyor parameters
   IN p_surveyor_id INT,
   IN p_surveyor_first_name VARCHAR(255),
@@ -240,7 +235,7 @@ CREATE PROCEDURE sp_insert_site_development_plan_application(
 BEGIN
   START TRANSACTION;
   INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Development Plan Application (Site)', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
+    VALUES('Development Plan Application (Site)', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
   SET @new_form_id = LAST_INSERT_ID();
 
   -- Handle surveyor
@@ -313,14 +308,13 @@ DELIMITER $$
 CREATE PROCEDURE sp_insert_future_land_use_map_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   IN p_future_land_use_map_amendment_prop VARCHAR(255),
   IN p_PVA_parcel_number INT
 )
 BEGIN
   START TRANSACTION;
   INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Future Land Use Map (FLUM) Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
+    VALUES('Future Land Use Map (FLUM) Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
   SET @new_form_id = LAST_INSERT_ID();
 
   INSERT INTO future_land_use_map_applications(form_id, future_land_use_map_amendment_prop, PVA_parcel_number)
@@ -342,7 +336,6 @@ DELIMITER $$
 CREATE PROCEDURE sp_insert_open_records_request(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   IN p_orr_commercial_purpose VARCHAR(255),
   IN p_orr_request_for_copies VARCHAR(255),
   IN p_orr_received_on_datetime DATE,
@@ -362,7 +355,7 @@ CREATE PROCEDURE sp_insert_open_records_request(
 BEGIN
   START TRANSACTION;
   INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Open Records Request', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
+    VALUES('Open Records Request', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
   SET @new_form_id = LAST_INSERT_ID();
 
   IF p_orr_applicant_first_name IS NOT NULL OR p_orr_applicant_last_name IS NOT NULL THEN
@@ -408,7 +401,6 @@ DELIMITER $$
 CREATE PROCEDURE sp_insert_sign_permit_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   -- sign_permit_applications fields
   IN p_sp_owner_id INT, -- optional: if provided will use existing owner id
   IN p_contractor_id INT, -- optional existing contractor
@@ -442,7 +434,7 @@ CREATE PROCEDURE sp_insert_sign_permit_application(
 BEGIN
   START TRANSACTION;
   INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Sign Permit Appplication', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
+    VALUES('Sign Permit Appplication', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
   SET @new_form_id = LAST_INSERT_ID();
 
   -- owner
@@ -510,7 +502,6 @@ DELIMITER $$
 CREATE PROCEDURE sp_insert_major_subdivision_plat_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   -- surveyor parameters
   IN p_surveyor_id INT,
   IN p_surveyor_first_name VARCHAR(255),
@@ -546,7 +537,7 @@ CREATE PROCEDURE sp_insert_major_subdivision_plat_application(
 BEGIN
   START TRANSACTION;
   INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Major Subdivision Plat Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
+    VALUES('Major Subdivision Plat Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
   SET @new_form_id = LAST_INSERT_ID();
 
   -- Handle surveyor
@@ -602,7 +593,6 @@ DELIMITER $
 CREATE PROCEDURE sp_insert_minor_subdivision_plat_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   -- surveyor parameters
   IN p_surveyor_id INT,
   IN p_surveyor_first_name VARCHAR(255),
@@ -631,7 +621,7 @@ CREATE PROCEDURE sp_insert_minor_subdivision_plat_application(
 BEGIN
   START TRANSACTION;
   INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Minor Subdivision Plat Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
+    VALUES('Minor Subdivision Plat Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
   SET @new_form_id = LAST_INSERT_ID();
 
   -- Handle surveyor
@@ -683,12 +673,11 @@ DELIMITER $
 CREATE PROCEDURE sp_insert_telecommunication_tower_uniform_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT
 )
 BEGIN
   START TRANSACTION;
   INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Telecommunication Tower Uniform Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
+    VALUES('Telecommunication Tower Uniform Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
   COMMIT;
 END$$
 DELIMITER ;
@@ -704,7 +693,6 @@ DELIMITER $
 CREATE PROCEDURE sp_insert_variance_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   IN p_va_variance_request VARCHAR(255),
   IN p_va_proposed_conditions VARCHAR(255),
   IN p_PVA_parcel_number INT
@@ -712,7 +700,7 @@ CREATE PROCEDURE sp_insert_variance_application(
 BEGIN
   START TRANSACTION;
   INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Variance Applicatioin', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
+    VALUES('Variance Applicatioin', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
   SET @new_form_id = LAST_INSERT_ID();
 
   INSERT INTO variance_applications(form_id, va_variance_request, va_proposed_conditions, PVA_parcel_number)
@@ -733,13 +721,12 @@ DELIMITER $
 CREATE PROCEDURE sp_insert_zoning_map_amendment_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   IN p_zoning_map_amendment_request VARCHAR(255)
 )
 BEGIN
   START TRANSACTION;
   INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Zoning Map Amendment Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
+    VALUES('Zoning Map Amendment Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
   SET @new_form_id = LAST_INSERT_ID();
 
   INSERT INTO zoning_map_amendment_applications(form_id, zoning_map_amendment_request)
@@ -760,7 +747,6 @@ DELIMITER $
 CREATE PROCEDURE sp_insert_zoning_permit_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   -- surveyor parameters
   IN p_surveyor_id INT,
   IN p_surveyor_first_name VARCHAR(255),
@@ -802,7 +788,7 @@ CREATE PROCEDURE sp_insert_zoning_permit_application(
 BEGIN
   START TRANSACTION;
   INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Zoning Permit Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
+    VALUES('Zoning Permit Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
   SET @new_form_id = LAST_INSERT_ID();
 
   -- Handle surveyor
@@ -880,7 +866,6 @@ DELIMITER $
 CREATE PROCEDURE sp_insert_zoning_verification_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   IN p_zva_letter_content VARCHAR(255),
   IN p_zva_zoning_letter_street VARCHAR(255),
   IN p_zva_state_code CHAR(2),
@@ -910,7 +895,7 @@ CREATE PROCEDURE sp_insert_zoning_verification_application(
 BEGIN
   START TRANSACTION;
   INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Zoning Verification Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
+    VALUES('Zoning Verification Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
   SET @new_form_id = LAST_INSERT_ID();
 
   INSERT INTO zoning_verification_letter(

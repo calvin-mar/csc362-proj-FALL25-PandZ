@@ -546,15 +546,101 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
                 
                 <!-- Conditional Use Permit Application Fields -->
-                <div id="form_Conditional_Use_Permit_Application" class="form-section">
-                    <h3>Conditional Use Permit Application Details</h3>
+                <div id="form_Conditional_Use_Permit_application" class="form-section">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Docket Number</label>
+                            <input type="date" name="aar_hearing_date">
+                        </div>
+                        <div class="form-group">
+                            <label>Public Hearing Date</label>
+                            <input type="date" name="aar_submit_date">
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Date Application Filed</label>
+                            <input type="date" name="aar_hearing_date">
+                        </div>
+                        <div class="form-group">
+                            <label>Pre-Application Hearing Date</label>
+                            <input type="date" name="aar_submit_date">
+                        </div>
+                    </div>
+                    <h3>Applicant(s) Information</h3>
                     <div class="form-group">
-                        <label>Permit Request</label>
-                        <textarea name="cupa_permit_request" placeholder="Describe the conditional use you are requesting..."></textarea>
+                        <label>Street Address</label>
+                        <input type="text" name="aar_street_address">
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>City</label>
+                            <input type="text" name="aar_city_address">
+                        </div>
+                        <div class="form-group">
+                            <label>State</label>
+                            <select name="state_code">
+                                <option value="">Select State</option>
+                                <?php foreach ($states as $state): ?>
+                                    <option value="<?php echo htmlspecialchars($state); ?>">
+                                        <?php echo htmlspecialchars($state); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>Proposed Conditions</label>
-                        <textarea name="cupa_proposed_conditions" placeholder="Describe any proposed conditions..."></textarea>
+                        <label>ZIP Code</label>
+                        <input type="text" name="aar_zip_code">
+                    </div>
+                    <div class="form-group">
+                        <label>Property Location</label>
+                        <input type="text" name="aar_property_location">
+                    </div>
+                    <div class="form-group">
+                        <label>Official Decision</label>
+                        <textarea name="aar_official_decision"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Relevant Provisions</label>
+                        <textarea name="aar_relevant_provisions"></textarea>
+                    </div>
+                    <h4>Appellant Information</h4>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>First Name</label>
+                            <input type="text" name="appellant_first_name">
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name</label>
+                            <input type="text" name="appellant_last_name">
+                        </div>
+                    </div>
+                    <h4>Adjacent Property Owner (Optional)</h4>
+                    <div class="form-group">
+                        <label>Street</label>
+                        <input type="text" name="adjacent_owner_street">
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>City</label>
+                            <input type="text" name="adjacent_owner_city">
+                        </div>
+                        <div class="form-group">
+                            <label>State</label>
+                            <select name="adjacent_owner_state">
+                                <option value="">Select State</option>
+                                <?php foreach ($states as $state): ?>
+                                    <option value="<?php echo htmlspecialchars($state); ?>">
+                                        <?php echo htmlspecialchars($state); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>ZIP Code</label>
+                        <input type="text" name="adjacent_owner_zip">
                     </div>
                 </div>
                 

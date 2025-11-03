@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_interaction'])) {
 // Get forms with interactions
 $stmt = $conn->prepare("
     SELECT f.form_id, f.form_type, f.form_datetime_submitted,
-           dfi.department_form_interaction_description, dfi.department_form_interaction_id
+           dfi.department_form_interaction_description
     FROM forms f
     LEFT JOIN department_form_interactions dfi ON f.form_id = dfi.form_id AND dfi.department_id = ?
     ORDER BY f.form_datetime_submitted DESC

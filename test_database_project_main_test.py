@@ -561,7 +561,7 @@ class TestDatabaseSchema(unittest.TestCase):
         """Test stored procedure for Zoning Map Amendment Application"""
         self.cursor.execute("""
             CALL sp_insert_zoning_map_amendment_application(
-                NULL, TRUE, NULL, 'Test zoning change request'
+                NULL, TRUE, 'Test zoning change request'
             );
         """)
         self.cursor.execute("SELECT COUNT(*) FROM zoning_map_amendment_applications;")
@@ -572,7 +572,7 @@ class TestDatabaseSchema(unittest.TestCase):
         """Test stored procedure for Conditional Use Permit Application"""
         self.cursor.execute("""
             CALL sp_insert_conditional_use_permit_application(
-                NULL, TRUE, NULL,
+                NULL, TRUE,
                 'Outdoor dining variance', 'Add lighting and barriers'
             );
         """)
@@ -586,7 +586,7 @@ class TestDatabaseSchema(unittest.TestCase):
         self.cursor.execute("INSERT INTO properties (PVA_parcel_number) VALUES (888888);")
         self.cursor.execute("""
             CALL sp_insert_future_land_use_map_application(
-                NULL, TRUE, NULL, 'Amend map for commercial development', 888888
+                NULL, TRUE, 'Amend map for commercial development', 888888
             );
         """)
         self.cursor.execute("SELECT COUNT(*) FROM future_land_use_map_applications;")
@@ -601,7 +601,7 @@ class TestDatabaseSchema(unittest.TestCase):
 
         self.cursor.execute("""
             CALL sp_insert_zoning_permit_application(
-                NULL, TRUE, NULL,
+                NULL, TRUE,
                 -- surveyor parameters (NULL id, provide details to create new surveyor)
                 NULL, 'Bob', 'Survey', 'Survey Co', 'bob@survey.com', '555-1111', '555-2222',
                 -- architect parameters (NULL id, provide details to create new architect)
@@ -640,7 +640,7 @@ class TestDatabaseSchema(unittest.TestCase):
         """Test stored procedure for Zoning Verification Application"""
         self.cursor.execute("""
             CALL sp_insert_zoning_verification_application(
-                NULL, TRUE, NULL,
+                NULL, TRUE,
                 'Verification Letter Test', '123 Test St', 'KY', 'Louisville', '40202',
                 '200 Market St', 'KY', '40205', 'Louisville',
                 'Jane', 'Smith', '77 Oak St', 'Louisville', 'KY', '40203', '5025553333', '5025554444',
@@ -656,7 +656,7 @@ class TestDatabaseSchema(unittest.TestCase):
         self.cursor.execute("INSERT INTO properties (PVA_parcel_number) VALUES (111112);")
         self.cursor.execute("""
             CALL sp_insert_major_subdivision_plat_application(
-                NULL, TRUE, NULL,
+                NULL, TRUE, 
                 -- surveyor parameters (NULL id, provide details to create new surveyor)
                 NULL, 'John', 'Smith', 'Smith Survey Firm', 'john@survey.com', '555-1234', '555-5678',
                 -- engineer parameters (NULL id, provide details to create new engineer)
@@ -685,7 +685,7 @@ class TestDatabaseSchema(unittest.TestCase):
         """Test stored procedure for Open Records Request"""
         self.cursor.execute("""
             CALL sp_insert_open_records_request(
-                NULL, FALSE, NULL,
+                NULL, FALSE, 
                 'Research', 'Copies only', '2025-11-01', '2025-11-02', 'None',
                 'Anna', 'Bell', '5024441234', '1 Main St', 'Louisville', 'KY', '40206',
                 'Zoning files for area B'
@@ -699,7 +699,7 @@ class TestDatabaseSchema(unittest.TestCase):
         """Test stored procedure for Sign Permit Application"""
         self.cursor.execute("""
             CALL sp_insert_sign_permit_application(
-                NULL, TRUE, NULL,
+                NULL, TRUE,
                 NULL, NULL, NULL,
                 '2025-11-02', 'SP-2001', '10%', '150.00',
                 'John', 'Banner', '22 5th St', 'Louisville', 'KY', '40208',
