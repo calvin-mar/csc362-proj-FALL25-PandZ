@@ -174,6 +174,33 @@ CREATE TABLE properties (
     FOREIGN KEY (state_code) REFERENCES states(state_code) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- MISSING TABLES FOR FOREIGN KEY REFERENCES HAVE BEEN ADDED/MOVED HERE
+
+CREATE TABLE zva_property_owners (
+    zva_owner_id INT NOT NULL AUTO_INCREMENT,
+    zva_owner_first_name VARCHAR(255),
+    zva_owner_last_name VARCHAR(255),
+    zva_owner_street VARCHAR(255),
+    zva_owner_city VARCHAR(255),
+    state_code CHAR(2),
+    zva_owner_zip_code VARCHAR(50),
+    PRIMARY KEY (zva_owner_id),
+    FOREIGN KEY (state_code) REFERENCES states(state_code) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE zva_applicants (
+    zva_applicant_id INT NOT NULL AUTO_INCREMENT,
+    zva_applicant_first_name VARCHAR(255),
+    zva_applicant_last_name VARCHAR(255),
+    zva_applicant_street VARCHAR(255),
+    zva_applicant_city VARCHAR(255),
+    state_code CHAR(2),
+    zva_applicant_zip_code VARCHAR(50),
+    zva_applicant_phone_number VARCHAR(50),
+    zva_applicant_fax_number VARCHAR(255),
+    PRIMARY KEY (zva_applicant_id),
+    FOREIGN KEY (state_code) REFERENCES states(state_code) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE zoning_verification_letter (
     form_id INT NOT NULL,
@@ -334,6 +361,40 @@ CREATE TABLE project_types (
     PRIMARY KEY (project_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- MISSING TABLES FOR FOREIGN KEY REFERENCES HAVE BEEN ADDED/MOVED HERE
+
+CREATE TABLE sp_property_owners (
+    sp_owner_id INT NOT NULL AUTO_INCREMENT,
+    sp_owner_first_name VARCHAR(255),
+    sp_owner_last_name VARCHAR(255),
+    sp_owner_street VARCHAR(255),
+    sp_owner_city VARCHAR(255),
+    state_code CHAR(2),
+    sp_owner_zip_code VARCHAR(50),
+    PRIMARY KEY (sp_owner_id),
+    FOREIGN KEY (state_code) REFERENCES states(state_code) ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE sp_contractors (
+    sp_contractor_id INT NOT NULL AUTO_INCREMENT,
+    sp_contractor_first_name VARCHAR(255),
+    sp_contractor_last_name VARCHAR(255),
+    sp_contractor_phone_number VARCHAR(50),
+    PRIMARY KEY (sp_contractor_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE sp_businesses (
+    sp_business_id INT NOT NULL AUTO_INCREMENT,
+    sp_business_name VARCHAR(255),
+    sp_business_street VARCHAR(255),
+    sp_business_city VARCHAR(255),
+    state_code CHAR(2),
+    sp_business_zip_code VARCHAR(50),
+    PRIMARY KEY ( sp_business_id),
+    FOREIGN KEY (state_code) REFERENCES states(state_code) ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
 CREATE TABLE zoning_permit_applications (
     form_id INT NOT NULL,
     surveyor_id INT,
@@ -357,6 +418,7 @@ CREATE TABLE zoning_permit_applications (
 CREATE TABLE zoning_map_amendment_applications (
     form_id INT NOT NULL,
     zoning_map_amendment_request VARCHAR(255),
+    zmaa_proposed_conditions VARCHAR(255),
     PVA_parcel_number INT NOT NULL,
     PRIMARY KEY (form_id),
     FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT,
@@ -416,7 +478,9 @@ CREATE TABLE conditional_use_permit_applications (
     PRIMARY KEY (
     form_id
   ),
-  FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
+  PVA_parcel_number INT NOT NULL,
+  FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT,    
+  FOREIGN KEY (PVA_parcel_number) REFERENCES properties(PVA_parcel_number) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE hearing_forms (
@@ -487,6 +551,7 @@ CREATE TABLE open_record_requests (
   FOREIGN KEY (orr_applicant_id) REFERENCES orr_applicants(orr_applicant_id) ON DELETE RESTRICT 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- MOVED BEFORE ADMINISTRATIVE_PROPERTY_OWNERS
 CREATE TABLE aar_property_owners (
     aar_property_owner_id INT NOT NULL AUTO_INCREMENT,
     aar_property_owner_name VARCHAR(255),
@@ -501,6 +566,7 @@ CREATE TABLE administrative_property_owners (
   FOREIGN KEY (aar_property_owner_id) REFERENCES aar_property_owners(aar_property_owner_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- MOVED BEFORE ADMINISTRATIVE_APPELLANTS
 CREATE TABLE aar_appellants (
     aar_appellant_id INT NOT NULL AUTO_INCREMENT,
     aar_first_name VARCHAR(255),
@@ -668,55 +734,6 @@ CREATE TABLE signs (
     FOREIGN KEY (sp_owner_id) REFERENCES sp_property_owners(sp_owner_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE zva_property_owners (
-    zva_owner_id INT NOT NULL AUTO_INCREMENT,
-    zva_owner_first_name VARCHAR(255),
-    zva_owner_last_name VARCHAR(255),
-    zva_owner_street VARCHAR(255),
-    zva_owner_city VARCHAR(255),
-    state_code CHAR(2),
-    zva_owner_zip_code VARCHAR(50),
-    PRIMARY KEY (zva_owner_id),
-    FOREIGN KEY (state_code) REFERENCES states(state_code) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE zva_applicants (
-    zva_applicant_id INT NOT NULL AUTO_INCREMENT,
-    zva_applicant_first_name VARCHAR(255),
-    zva_applicant_last_name VARCHAR(255),
-    zva_applicant_street VARCHAR(255),
-    zva_applicant_city VARCHAR(255),
-    state_code CHAR(2),
-    zva_applicant_zip_code VARCHAR(50),
-    zva_applicant_phone_number VARCHAR(50),
-    zva_applicant_fax_number VARCHAR(255),
-    PRIMARY KEY (zva_applicant_id),
-    FOREIGN KEY (state_code) REFERENCES states(state_code) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE sp_property_owners (
-    sp_owner_id INT NOT NULL AUTO_INCREMENT,
-    sp_owner_first_name VARCHAR(255),
-    sp_owner_last_name VARCHAR(255),
-    sp_owner_street VARCHAR(255),
-    sp_owner_city VARCHAR(255),
-    state_code CHAR(2),
-    sp_owner_zip_code VARCHAR(50),
-    PRIMARY KEY (sp_owner_id),
-    FOREIGN KEY (state_code) REFERENCES states(state_code) ON DELETE RESTRICT
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE sp_businesses (
-    sp_business_id INT NOT NULL AUTO_INCREMENT,
-    sp_business_name VARCHAR(255),
-    sp_business_street VARCHAR(255),
-    sp_business_city VARCHAR(255),
-    state_code CHAR(2),
-    sp_business_zip_code VARCHAR(50),
-    PRIMARY KEY ( sp_business_id),
-    FOREIGN KEY (state_code) REFERENCES states(state_code) ON DELETE RESTRICT
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 CREATE TABLE permits_link_signs (
     form_id INT NOT NULL,
     sign_id INT NOT NULL,
@@ -724,14 +741,6 @@ CREATE TABLE permits_link_signs (
     form_id, sign_id),
   FOREIGN KEY (sign_id) REFERENCES signs(sign_id) ON DELETE RESTRICT,
   FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE sp_contractors (
-    sp_contractor_id INT NOT NULL AUTO_INCREMENT,
-    sp_contractor_first_name VARCHAR(255),
-    sp_contractor_last_name VARCHAR(255),
-    sp_contractor_phone_number VARCHAR(50),
-    PRIMARY KEY (sp_contractor_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- INSERT INTO VALIDATION TABLES
