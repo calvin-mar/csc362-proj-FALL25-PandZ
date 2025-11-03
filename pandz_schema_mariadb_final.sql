@@ -357,8 +357,10 @@ CREATE TABLE zoning_permit_applications (
 CREATE TABLE zoning_map_amendment_applications (
     form_id INT NOT NULL,
     zoning_map_amendment_request VARCHAR(255),
+    PVA_parcel_number INT NOT NULL,
     PRIMARY KEY (form_id),
-    FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
+    FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT,
+    FOREIGN KEY (PVA_parcel_number) REFERENCES properties(PVA_parcel_number) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE gdpa_required_findings (
