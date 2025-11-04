@@ -127,7 +127,7 @@ INSERT INTO type_one_applicants (t1_applicant_first_name, t1_applicant_last_name
     ('Henry', 'Robinson', '8901 Willow Way', 'Danville', 'KY', '40422', '859-555-3700', '859-555-3701', 'hrobinson@email.com');
 
 -- Type One Executives
-INSERT INTO type_one_execs (t1e_exec_first_name, t1e_last_name) VALUES 
+INSERT INTO type_one_execs (t1e_exec_first_name, t1e_exec_last_name) VALUES 
     ('Victor', 'Campbell'),
     ('Alice', 'Mitchell'),
     ('Oscar', 'Carter'),
