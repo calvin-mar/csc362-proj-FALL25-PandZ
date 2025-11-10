@@ -31,7 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Insert into database
     $stmt = $conn->prepare("INSERT INTO clients (client_username, client_password, client_type) VALUES (?, ?, 'client')");
-    if ($stmt->execute([$username, $password_hashed])) {
+    $stmt->bind_param("ss", $username, $password_hashed);
+    if ($stmt->execute()) {
         $success = true;
     } else {
         $error = "Error creating account. That username may already exist.";

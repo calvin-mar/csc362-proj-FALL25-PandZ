@@ -1,4 +1,13 @@
 <?php
+    // Show all errors from the PHP interpreter.
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+
+    // Show all errors from the MySQLi Extension.
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);  
+?>
+<?php
 require_once 'config.php';
 requireLogin();
 
@@ -18,8 +27,10 @@ $stmt = $conn->prepare("
     WHERE cf.client_id = ?
     ORDER BY f.form_datetime_submitted DESC
 ");
-$stmt->execute([$client_id]);
-$forms = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt->bind_param("s", $client_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$forms = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -116,7 +127,7 @@ $forms = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         <div class="card">
             <h2>My Submitted Forms</h2>
-            <?php if (count($forms) > 0): ?>
+            <?php if ($forms !== null): ?>
                 <table>
                     <thead>
                         <tr>

@@ -26,7 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_interaction'])) {
     
     try {
         $stmt = $conn->prepare("INSERT INTO department_form_interactions (department_id, form_id, department_form_interaction_description) VALUES (?, ?, ?)");
-        $stmt->execute([$department_id, $form_id, $description]);
+        $stmt->bind_param("iis", $department_id, $form_id, $description);
+        $stmt->execute();
         $success = "Interaction added successfully!";
     } catch(PDOException $e) {
         $error = "Error adding interaction: " . $e->getMessage();
@@ -38,12 +39,13 @@ $stmt = $conn->prepare("
     SELECT f.form_id, f.form_type, f.form_datetime_submitted,
            dfi.department_form_interaction_description
     FROM forms f
-    LEFT JOIN department_form_interactions dfi ON f.form_id = dfi.form_id AND dfi.department_id = ?
+    LEFT JOIN department_form_interactions dfi ON f.form_id = dfi.form_id
     ORDER BY f.form_datetime_submitted DESC
-    LIMIT 50
 ");
-$stmt->execute([$department_id]);
-$forms = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt->execute();
+$result = $stmt->get_result();
+$forms = $result->fetch_all(MYSQLI_ASSOC);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -183,7 +185,6 @@ $forms = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php if (isset($error)): ?>
             <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
-        
         <div class="card">
             <h2>Submitted Forms</h2>
             <table>
@@ -193,21 +194,50 @@ $forms = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <th>Form Type</th>
                         <th>Submitted</th>
                         <th>Current Interaction</th>
-                        <th>Actions</th>
+                        <th>Actions </th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($forms as $form): ?>
+                        <?php 
+                        // --- Safeguard 1: Ensure $form is an array ---
+                        if (!is_array($form)) {
+                            // Log this issue, or just skip it if it's an intermittent data problem
+                            error_log("Warning: Encountered non-array element in \$forms. Skipping. Value: " . print_r($form, true));
+                            continue; // Skip to the next item in the loop
+                        }
+
+                        // --- Retrieve values safely, providing defaults if keys are missing or null ---
+                        $form_id = $form['form_id'] ?? null; // Use null if ID might be truly absent/null
+                        $form_type = $form['form_type'] ?? '';
+                        $form_datetime_submitted = $form['form_datetime_submitted'] ?? '';
+                        $description_raw = $form['department_form_interaction_description'] ?? ''; // Get raw description
+
+                        ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($form['form_id']); ?></td>
-                            <td><?php echo htmlspecialchars($form['form_type']); ?></td>
-                            <td><?php echo htmlspecialchars($form['form_datetime_submitted']); ?></td>
-                            <td><?php echo $form['department_form_interaction_description'] ? htmlspecialchars(substr($form['department_form_interaction_description'], 0, 50)) . '...' : 'No interaction'; ?></td>
+                            <td><?php echo htmlspecialchars($form_id ?? 'N/A'); ?></td>
+                            <td><?php echo htmlspecialchars($form_type); ?></td>
+                            <td><?php echo htmlspecialchars($form_datetime_submitted); ?></td>
                             <td>
-                                <button class="btn" onclick="openModal(<?php echo $form['form_id']; ?>)">Add Interaction</button>
+                                <?php
+                                if ($description_raw) {
+                                    // Shorten and then escape
+                                    $short_description = substr($description_raw, 0, 50);
+                                    echo htmlspecialchars($short_description);
+                                    if (strlen($description_raw) > 50) { // Check original length for ellipsis
+                                        echo '...';
+                                    }
+                                } else {
+                                    echo 'No interaction';
+                                }
+                                ?>
+                            </td>
+                            <td>
+                                <!-- json_encode safely handles null or integers for JavaScript -->
+                                <button class="btn" onclick="openModal(<?php echo json_encode($form_id); ?>)">Add Interaction</button>
                             </td>
                         </tr>
-                    <?php endforeach; ?>
+                    <?php endforeach;?>
                 </tbody>
             </table>
         </div>

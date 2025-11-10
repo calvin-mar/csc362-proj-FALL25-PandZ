@@ -622,7 +622,7 @@ DELIMITER ;
    Tables: forms, minor_subdivision_plat_applications
    --------------------------- */
 
-DELIMITER $
+DELIMITER $$
 CREATE PROCEDURE sp_insert_minor_subdivision_plat_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
@@ -702,10 +702,10 @@ DELIMITER ;
    Tables: forms (schema contains no specific table for telecom tower)
    --------------------------- */
 
-DELIMITER $
+DELIMITER $$
 CREATE PROCEDURE sp_insert_telecommunication_tower_uniform_application(
   IN p_form_datetime_resolved DATETIME,
-  IN p_form_paid_bool BOOLEAN,
+  IN p_form_paid_bool BOOLEAN
 )
 BEGIN
   START TRANSACTION;
@@ -722,7 +722,7 @@ DELIMITER ;
    Tables: forms, variance_applications
    --------------------------- */
 
-DELIMITER $
+DELIMITER $$
 CREATE PROCEDURE sp_insert_variance_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
@@ -750,7 +750,7 @@ DELIMITER ;
    Tables: forms, zoning_map_amendment_applications
    --------------------------- */
 
-DELIMITER $
+DELIMITER $$
 CREATE PROCEDURE sp_insert_zoning_map_amendment_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
@@ -776,7 +776,7 @@ DELIMITER ;
    Tables: forms, zoning_permit_applications
    --------------------------- */
 
-DELIMITER $
+DELIMITER $$
 CREATE PROCEDURE sp_insert_zoning_permit_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
@@ -895,7 +895,7 @@ DELIMITER ;
    Tables: forms, zoning_verification_letter, zva_applicants, zva_property_owners
    --------------------------- */
 
-DELIMITER $
+DELIMITER $$
 CREATE PROCEDURE sp_insert_zoning_verification_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,

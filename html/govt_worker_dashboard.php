@@ -1,4 +1,6 @@
 <?php
+session_start(); // ADD THIS LINE FIRST
+
 require_once 'config.php';
 requireLogin();
 
@@ -7,7 +9,7 @@ if (getUserType() != 'govt_worker') {
     exit();
 }
 
-$conn = getDBConnection();
+$conn = getDBConnection(); // This should return a mysqli connection object
 
 // Get filter parameters
 $form_type_filter = $_GET['form_type'] ?? '';
@@ -15,7 +17,7 @@ $date_from = $_GET['date_from'] ?? '';
 $date_to = $_GET['date_to'] ?? '';
 $paid_filter = $_GET['paid'] ?? '';
 
-// Build query with filters
+// --- Build main forms query with filters (mysqli prepared statement) ---
 $query = "SELECT f.form_id, f.form_type, f.form_datetime_submitted, f.form_datetime_resolved, f.form_paid_bool,
           GROUP_CONCAT(DISTINCT CONCAT(c.client_username) SEPARATOR ', ') as clients
           FROM forms f
@@ -23,46 +25,92 @@ $query = "SELECT f.form_id, f.form_type, f.form_datetime_submitted, f.form_datet
           LEFT JOIN clients c ON cf.client_id = c.client_id
           WHERE 1=1";
 
-$params = [];
+$param_types = '';
+$bind_values = [];
 
-if ($form_type_filter) {
+if (!empty($form_type_filter)) {
     $query .= " AND f.form_type = ?";
-    $params[] = $form_type_filter;
+    $param_types .= "s";
+    $bind_values[] = &$form_type_filter;
 }
 
-if ($date_from) {
+if (!empty($date_from)) {
     $query .= " AND DATE(f.form_datetime_submitted) >= ?";
-    $params[] = $date_from;
+    $param_types .= "s";
+    $bind_values[] = &$date_from;
 }
 
-if ($date_to) {
+if (!empty($date_to)) {
     $query .= " AND DATE(f.form_datetime_submitted) <= ?";
-    $params[] = $date_to;
+    $param_types .= "s";
+    $bind_values[] = &$date_to;
 }
 
-if ($paid_filter !== '') {
+if ($paid_filter !== '' && $paid_filter !== null) {
     $query .= " AND f.form_paid_bool = ?";
-    $params[] = $paid_filter;
+    $param_types .= "i";
+    $bind_values[] = &$paid_filter;
 }
 
 $query .= " GROUP BY f.form_id ORDER BY f.form_datetime_submitted DESC LIMIT 100";
 
 $stmt = $conn->prepare($query);
-$stmt->execute($params);
-$forms = $stmt->fetchAll(PDO::FETCH_ASSOC);
+if ($stmt === false) {
+    die('MySQLi prepare error for main forms query: ' . $conn->error);
+}
 
-// Get form types for filter dropdown
-$stmt = $conn->query("SELECT form_type FROM form_types ORDER BY form_type");
-$form_types = $stmt->fetchAll(PDO::FETCH_COLUMN);
+if (!empty($bind_values)) {
+    array_unshift($bind_values, $param_types);
+    $bind_result = call_user_func_array([$stmt, 'bind_param'], $bind_values);
+    if ($bind_result === false) {
+        die('MySQLi bind_param error for main forms query: ' . $stmt->error);
+    }
+}
 
-// Get statistics
-$stats_query = "SELECT 
+if (!$stmt->execute()) {
+    die('MySQLi execute error for main forms query: ' . $stmt->error);
+}
+
+$result = $stmt->get_result();
+$forms = $result->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
+
+
+// --- Get form types for filter dropdown (mysqli) ---
+$form_types = []; // Initialize as empty array
+$form_types_result = $conn->query("SELECT form_type FROM form_types ORDER BY form_type");
+if ($form_types_result) {
+    // Corrected to fetch all rows and then extract the 'form_type' column
+    while ($row = $form_types_result->fetch_assoc()) {
+        $form_types[] = $row['form_type'];
+    }
+    $form_types_result->free(); // Free the result set
+} else {
+    error_log("Error fetching form types: " . $conn->error);
+}
+
+
+// --- Get statistics (mysqli) ---
+$stats_query = "SELECT
     COUNT(*) as total_forms,
     SUM(CASE WHEN form_paid_bool = 1 THEN 1 ELSE 0 END) as paid_forms,
     SUM(CASE WHEN form_datetime_resolved IS NULL THEN 1 ELSE 0 END) as pending_forms
     FROM forms";
-$stats = $conn->query($stats_query)->fetch(PDO::FETCH_ASSOC);
+$stats_result = $conn->query($stats_query);
+$stats = ['total_forms' => 0, 'paid_forms' => 0, 'pending_forms' => 0]; // Default values
+if ($stats_result) {
+    $stats_rows = $stats_result->fetch_all(MYSQLI_ASSOC);
+    if (!empty($stats_rows)) {
+        $stats = $stats_rows[0]; // Get the first (and only) row
+    }
+    $stats_result->free(); // Free the result set
+} else {
+    error_log("Error fetching stats: " . $conn->error);
+}
+
+$conn->close(); // Close connection at the end of the script
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -70,6 +118,7 @@ $stats = $conn->query($stats_query)->fetch(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Government Worker Dashboard</title>
     <style>
+        /* ... (Your CSS here, unchanged) ... */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -218,7 +267,7 @@ $stats = $conn->query($stats_query)->fetch(PDO::FETCH_ASSOC);
                 <div class="number"><?php echo number_format($stats['pending_forms']); ?></div>
             </div>
         </div>
-        
+
         <div class="card">
             <h2>Filter Forms</h2>
             <form method="GET">
@@ -228,7 +277,7 @@ $stats = $conn->query($stats_query)->fetch(PDO::FETCH_ASSOC);
                         <select name="form_type">
                             <option value="">All Types</option>
                             <?php foreach ($form_types as $type): ?>
-                                <option value="<?php echo htmlspecialchars($type); ?>" 
+                                <option value="<?php echo htmlspecialchars($type); ?>"
                                     <?php echo $form_type_filter == $type ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($type); ?>
                                 </option>
@@ -256,7 +305,7 @@ $stats = $conn->query($stats_query)->fetch(PDO::FETCH_ASSOC);
                 <a href="govt_worker_dashboard.php" class="btn btn-secondary">Clear Filters</a>
             </form>
         </div>
-        
+
         <div class="card">
             <h2>All Forms (<?php echo count($forms); ?> results)</h2>
             <table>

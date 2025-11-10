@@ -19,8 +19,10 @@ $stmt = $conn->prepare("
     JOIN client_forms cf ON f.form_id = cf.form_id
     WHERE f.form_id = ? AND cf.client_id = ?
 ");
-$stmt->execute([$form_id, $client_id]);
-$form = $stmt->fetch(PDO::FETCH_ASSOC);
+$stmt->bind_param("ii", $form_id, $client_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$form = $result->fetch_assoc();
 
 if (!$form) {
     header('Location: client_dashboard.php');

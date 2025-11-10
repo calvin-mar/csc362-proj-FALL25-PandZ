@@ -1,17 +1,18 @@
 <?php
 session_start();
-
-define('DB_HOST', 'localhost');
-define('DB_USER', 'webuser');
-define('DB_PASS', 'rainbows');
-define('DB_NAME', 'planning_zoning');
-
 function getDBConnection() {
     try {
-        $conn = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
-        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        $twoLevelsUp = dirname(dirname(getcwd())); 
+        $config = parse_ini_file($twoLevelsUp ."/". "mysqli.ini");
+        $conn = new mysqli(
+            $config['mysqli.webuser_host'],
+            $config['mysqli.webuser_user'],
+            $config['mysqli.webuser_pw'],
+            "planning_zoning");
+
         return $conn;
-    } catch(PDOException $e) {
+    } catch(mysqli_sql_exception $e) {
         die("Connection failed: " . $e->getMessage());
     }
 }

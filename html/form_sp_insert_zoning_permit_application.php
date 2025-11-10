@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $bind_names[] = &$p_zpa_project_plans;
         $bind_names[] = &$p_zpa_preliminary_site_evaluation;
         array_unshift($bind_names, $types);
-        $bindResult = @call_user_func_array(array($stmt, 'bind_param'), $bind_names);
+        $bindResult = call_user_func_array(array($stmt, 'bind_param'), $bind_names);
         if ($bindResult === false) {
             $error = 'Bind failed: ' . $stmt->error;
         } else {

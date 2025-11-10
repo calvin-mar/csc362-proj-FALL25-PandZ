@@ -15,8 +15,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         try {
             // Check clients table first (all users are stored here with type information)
             $stmt = $conn->prepare("SELECT client_id, client_username, client_password, client_type FROM clients WHERE client_username = ?");
-            $stmt->execute([$username]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->bind_param("s", $username);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $user = $result->fetch_assoc();
             
             if ($user && password_verify($password, $user['client_password'])) {
                 // Store session data

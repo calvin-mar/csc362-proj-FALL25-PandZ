@@ -1,4 +1,13 @@
 <?php
+    // Show all errors from the PHP interpreter.
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+
+    // Show all errors from the MySQLi Extension.
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);  
+?>
+<?php
 require_once 'config.php';
 requireLogin();
 
@@ -172,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $bind_names[] = &$p_correction_form_id;
         $bind_names[] = &$p_zoning_map_amendment_request;
         array_unshift($bind_names, $types);
-        $bindResult = @call_user_func_array(array($stmt, 'bind_param'), $bind_names);
+        $bindResult = call_user_func_array(array($stmt, 'bind_param'), $bind_names);
         if ($bindResult === false) {
             $error = 'Bind failed: ' . $stmt->error;
         } else {

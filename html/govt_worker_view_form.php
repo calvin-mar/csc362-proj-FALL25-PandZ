@@ -13,8 +13,9 @@ $form_id = $_GET['id'] ?? 0;
 
 // Get form basic info
 $stmt = $conn->prepare("SELECT * FROM forms WHERE form_id = ?");
-$stmt->execute([$form_id]);
-$form = $stmt->fetch(PDO::FETCH_ASSOC);
+$stmt->bind_param("i", $form_id);
+$stmt->execute();
+$form = $stmt->fetch_all(MYSQLI_ASSOC);
 
 if (!$form) {
     header('Location: govt_worker_dashboard.php');
@@ -28,8 +29,9 @@ $stmt = $conn->prepare("
     JOIN client_forms cf ON c.client_id = cf.client_id
     WHERE cf.form_id = ?
 ");
-$stmt->execute([$form_id]);
-$clients = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt->bind_param("i", $form_id);
+$stmt->execute();
+$clients = $stmt->fetch_all(MYSQLI_ASSOC);
 
 // Get form-specific details
 $form_details = null;
@@ -37,8 +39,9 @@ try {
     switch ($form['form_type']) {
         case 'Administrative Appeal Request':
             $stmt = $conn->prepare("SELECT * FROM administrative_appeal_requests WHERE form_id = ?");
-            $stmt->execute([$form_id]);
-            $form_details = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->bind_param("i", $form_id);
+            $stmt->execute();
+            $form_details = $stmt->fetch_all(MYSQLI_ASSOC);
             
             // Get appellants
             $stmt = $conn->prepare("
@@ -46,25 +49,28 @@ try {
                 JOIN administrative_appellants aa ON a.aar_appellant_id = aa.aar_appellant_id
                 WHERE aa.form_id = ?
             ");
-            $stmt->execute([$form_id]);
-            $appellants = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt->bind_param("i", $form_id);
+            $stmt->execute();
+            $appellants = $stmt->fetch_all(MYSQLI_ASSOC);
             break;
             
         case 'Variance Applicatioin':
             $stmt = $conn->prepare("SELECT * FROM variance_applications WHERE form_id = ?");
-            $stmt->execute([$form_id]);
-            $form_details = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->bind_param("i", $form_id);
+            $stmt->execute();
+            $form_details = $stmt->fetch_all(MYSQLI_ASSOC);
             break;
             
         case 'Zoning Verification Application':
             $stmt = $conn->prepare("SELECT * FROM zoning_verification_letter WHERE form_id = ?");
-            $stmt->execute([$form_id]);
-            $form_details = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->bind_param("i", $form_id);
+            $stmt->execute();
+            $form_details = $stmt->fetch_all(MYSQLI_ASSOC);
             
             // Get applicant
             $stmt = $conn->prepare("SELECT * FROM zva_applicants LIMIT 1");
             $stmt->execute();
-            $zva_applicant = $stmt->fetch(PDO::FETCH_ASSOC);
+            $zva_applicant = $stmt->fetch_all(MYSQLI_ASSOC);
             break;
             
         case 'Major Subdivision Plat Application':
@@ -76,8 +82,9 @@ try {
                 LEFT JOIN engineers e ON m.engineer_id = e.engineer_id
                 WHERE m.form_id = ?
             ");
-            $stmt->execute([$form_id]);
-            $form_details = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->bind_param("i", $form_id);
+            $stmt->execute();
+            $form_details = $stmt->fetch_all(MYSQLI_ASSOC);
             break;
             
         case 'Zoning Permit Application':
@@ -93,11 +100,12 @@ try {
                 LEFT JOIN contractors c ON z.contractor_id = c.contractor_id
                 WHERE z.form_id = ?
             ");
-            $stmt->execute([$form_id]);
-            $form_details = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->bind_param("i", $form_id);
+            $stmt->execute();
+            $form_details = $stmt->fetch_all(MYSQLI_ASSOC);
             break;
     }
-} catch(PDOException $e) {
+} catch(mysqli_sql_exception $e) {
     $error = "Error loading form details: " . $e->getMessage();
 }
 
@@ -109,8 +117,9 @@ $stmt = $conn->prepare("
     WHERE dfi.form_id = ?
     ORDER BY dfi.department_form_interaction_id DESC
 ");
-$stmt->execute([$form_id]);
-$interactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt->bind_param("i", $form_id);
+$stmt->execute();
+$interactions = $stmt->fetch_all(MYSQLI_ASSOC);
 
 // Get correction forms
 $stmt = $conn->prepare("
@@ -119,8 +128,9 @@ $stmt = $conn->prepare("
     LEFT JOIN correction_boxes cb ON cf.correction_form_id = cb.correction_form_id
     WHERE cf.correction_form_id = (SELECT correction_form_id FROM forms WHERE form_id = ?)
 ");
-$stmt->execute([$form_id]);
-$corrections = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt->bind_param("i", $form_id);
+$stmt->execute();
+$corrections = $stmt->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
