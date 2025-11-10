@@ -38,9 +38,9 @@ CREATE TABLE forms (
 CREATE TABLE clients (
     client_id INT NOT NULL AUTO_INCREMENT,
     client_username VARCHAR(255),
-    PRIMARY KEY (
-    client_id
-  )
+    client_password VARCHAR(255),
+    client_type VARCHAR(255),
+    PRIMARY KEY (client_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE states (
@@ -623,19 +623,28 @@ CREATE TABLE sign_permit_applications (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE departments (
-    department_id INT NOT NULL AUTO_INCREMENT,
+    client_id INT,
     department_name VARCHAR(255),
-    PRIMARY KEY (department_id)
+    FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE department_form_interactions (
-    department_id INT NOT NULL,
+    client_id INT NOT NULL,
     form_id INT NOT NULL,
     department_form_interaction_description TEXT,
-    PRIMARY KEY (department_id, form_id),
-  FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE RESTRICT,
+    PRIMARY KEY (client_id, form_id),
+  FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE RESTRICT,
   FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS govt_workers (
+    client_id INT,
+    govt_worker_role VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (client_id),
+    FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 CREATE TABLE incomplete_client_forms (
     form_id INT NOT NULL,
