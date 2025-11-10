@@ -6,52 +6,43 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
-    $user_type = $_POST['user_type'] ?? '';
     
-    $conn = getDBConnection();
-    
-    try {
-        if ($user_type == 'client') {
-            $stmt = $conn->prepare("SELECT client_id, client_username, client_password FROM clients WHERE client_username = ?");
+    if (empty($username) || empty($password)) {
+        $error = 'Please enter both username and password';
+    } else {
+        $conn = getDBConnection();
+        
+        try {
+            // Check clients table first (all users are stored here with type information)
+            $stmt = $conn->prepare("SELECT client_id, client_username, client_password, client_type FROM clients WHERE client_username = ?");
             $stmt->execute([$username]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($user && password_verify($password, $user['client_password'])) {
+                // Store session data
                 $_SESSION['user_id'] = $user['client_id'];
-                $_SESSION['user_type'] = 'client';
                 $_SESSION['username'] = $user['client_username'];
-                header('Location: client_dashboard.php');
-                exit();
+                $_SESSION['user_type'] = $user['client_type'];
+                
+                // Redirect based on client_type
+                switch ($user['client_type']) {
+                    case 'department':
+                        header('Location: department_dashboard.php');
+                        exit();
+                    case 'govt_worker':
+                        header('Location: govt_worker_dashboard.php');
+                        exit();
+                    default:
+                        // For 'individual', 'business', 'government' client types
+                        header('Location: client_dashboard.php');
+                        exit();
+                }
+            } else {
+                $error = 'Invalid username or password';
             }
-        } elseif ($user_type == 'department') {
-            $stmt = $conn->prepare("SELECT department_id, department_name, department_password FROM departments WHERE department_name = ?");
-            $stmt->execute([$username]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($user && password_verify($password, $user['department_password'])) {
-                $_SESSION['user_id'] = $user['department_id'];
-                $_SESSION['user_type'] = 'department';
-                $_SESSION['username'] = $user['department_name'];
-                header('Location: department_dashboard.php');
-                exit();
-            }
-        } elseif ($user_type == 'govt_worker') {
-            $stmt = $conn->prepare("SELECT worker_id, worker_username, worker_password, worker_name FROM govt_workers WHERE worker_username = ?");
-            $stmt->execute([$username]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($user && password_verify($password, $user['worker_password'])) {
-                $_SESSION['user_id'] = $user['worker_id'];
-                $_SESSION['user_type'] = 'govt_worker';
-                $_SESSION['username'] = $user['worker_name'];
-                header('Location: govt_worker_dashboard.php');
-                exit();
-            }
+        } catch (PDOException $e) {
+            $error = 'Database error: ' . $e->getMessage();
         }
-        
-        $error = 'Invalid username or password';
-    } catch(PDOException $e) {
-        $error = 'Login error: ' . $e->getMessage();
     }
 }
 ?>
@@ -62,99 +53,161 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>P&Z Database - Login</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
+        
         .login-container {
             background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             width: 100%;
             max-width: 400px;
+            padding: 40px;
         }
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
+        
+        .login-header {
             text-align: center;
+            margin-bottom: 30px;
         }
+        
+        .login-header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        
+        .login-header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
         .form-group {
             margin-bottom: 20px;
         }
-        label {
+        
+        .form-group label {
             display: block;
-            margin-bottom: 5px;
-            color: #555;
-            font-weight: 500;
-        }
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            color: #333;
             font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
         }
-        input:focus, select:focus {
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e4e8;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        
+        .form-group input:focus {
             outline: none;
             border-color: #667eea;
         }
-        .btn {
+        
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .submit-btn {
             width: 100%;
             padding: 12px;
-            background: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        .btn:hover {
-            background: #5568d3;
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
         }
-        .error {
-            background: #fee;
-            color: #c33;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            border: 1px solid #fcc;
+        
+        .submit-btn:active {
+            transform: translateY(0);
         }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <h1>P&Z Database Login</h1>
+        <div class="login-header">
+            <h1>P&Z Database</h1>
+            <p>Sign in to access your dashboard</p>
+        </div>
+        
         <?php if ($error): ?>
-            <div class="error"><?php echo htmlspecialchars($error); ?></div>
+            <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
-        <form method="POST">
+        
+        <form method="POST" action="">
             <div class="form-group">
-                <label>User Type</label>
-                <select name="user_type" required>
-                    <option value="">Select User Type</option>
-                    <option value="client">Client</option>
-                    <option value="department">Department</option>
-                    <option value="govt_worker">Government Worker</option>
-                </select>
+                <label for="username">Username</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    placeholder="Enter your username"
+                    value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>"
+                    required
+                >
             </div>
+            
             <div class="form-group">
-                <label>Username</label>
-                <input type="text" name="username" required>
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    placeholder="Enter your password"
+                    required
+                >
             </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" required>
-            </div>
-            <button type="submit" class="btn">Login</button>
+            
+            <button type="submit" class="submit-btn">Sign In</button>
         </form>
+        <div style="text-align: center; margin-top: 20px;">
+            <form action="create_account.php" method="get" style="display: inline-block;">
+                <button 
+                    type="submit" 
+                    style="
+                        background-color:#803CE6; 
+                        color:white; 
+                        padding:10px 20px; 
+                        border:none; 
+                        border-radius:6px; 
+                        cursor:pointer;
+                        font-weight:600;
+                    ">
+                    Create Account
+                </button>
+            </form>
+        </div>
+
     </div>
 </body>
 </html>

@@ -4,7 +4,32 @@
 -- =========================================================================
 
 -- -------------------------------------------------------------------------
--- SECTION 1: REFERENCE DATA (Lookup Tables)
+-- SECTION 1: CLIENTS
+-- -------------------------------------------------------------------------
+
+INSERT INTO clients (client_username) VALUES 
+    ('developer_smith'),
+    ('contractor_jones'),
+    ('property_owner_davis'),
+    ('architect_wilson'),
+    ('business_owner_brown'),
+    ('resident_taylor'),
+    ('attorney_martin'),
+    ('1'),
+    ('2'),
+    ('3'),
+    ('4'),
+    ('5'),
+    ('6'),
+    ('7'),
+    ('8'),
+    ('9'),
+    ('10'),
+    ('11'),
+    ('12'),
+    ('13');
+-- -------------------------------------------------------------------------
+-- SECTION 2: REFERENCE DATA (Lookup Tables)
 -- -------------------------------------------------------------------------
 -- Public Records
 INSERT INTO public_records (public_record_id, public_record_description) VALUES 
@@ -20,7 +45,7 @@ INSERT INTO public_records (public_record_id, public_record_description) VALUES
     (10, 'Sign permit applications and approved plans');
 
 -- Departments
-INSERT INTO departments (department_id, department_name) VALUES 
+INSERT INTO departments (client_id, department_name) VALUES 
     (1, 'Planning and Zoning'),
     (2, 'Engineering and Public Works'),
     (3, 'Building Inspection'),
@@ -31,7 +56,7 @@ INSERT INTO departments (department_id, department_name) VALUES
     (8, 'Utilities Department');
 
 -- -------------------------------------------------------------------------
--- SECTION 2: PROPERTIES
+-- SECTION 3: PROPERTIES
 -- -------------------------------------------------------------------------
 
 INSERT INTO properties (PVA_parcel_number, property_street_address, property_city, state_code, property_zip_code, property_acreage, property_current_zoning) VALUES 
@@ -49,7 +74,7 @@ INSERT INTO properties (PVA_parcel_number, property_street_address, property_cit
     (200012, '1350 Lexington Avenue', 'Danville', 'KY', '40422', '8.9', 'PUD');
 
 -- -------------------------------------------------------------------------
--- SECTION 3: PROFESSIONAL CONTACTS
+-- SECTION 4: PROFESSIONAL CONTACTS
 -- -------------------------------------------------------------------------
 
 -- Surveyors
@@ -98,18 +123,6 @@ INSERT INTO attorneys (attorney_first_name, attorney_last_name, attorney_law_fir
     ('Kenneth', 'Bailey', 'Bailey & Associates Law Firm', 'kbailey@baileyassociates.com', '859-236-9700', '859-555-2701'),
     ('Betty', 'Rivera', 'Rivera Law Group', 'brivera@riveralawgroup.com', '859-236-9800', '859-555-2801');
 
--- -------------------------------------------------------------------------
--- SECTION 4: CLIENTS
--- -------------------------------------------------------------------------
-
-INSERT INTO clients (client_username) VALUES 
-    ('developer_smith'),
-    ('contractor_jones'),
-    ('property_owner_davis'),
-    ('architect_wilson'),
-    ('business_owner_brown'),
-    ('resident_taylor'),
-    ('attorney_martin');
 
 -- -------------------------------------------------------------------------
 -- SECTION 5: APPLICANTS (Various Types)
@@ -227,7 +240,7 @@ INSERT INTO apof_neighbors (PVA_map_code, apof_neighbor_property_location, apof_
 INSERT INTO forms (form_type, form_datetime_submitted) VALUES 
     ("Development Plan Application (General)", '2024-10-10'),
     ("Administrative Appeal Request", '2024-10-10'),
-    ("Variance Applicatioin", '2024-10-10'),
+    ("Variance Application", '2024-10-10'),
     ("Zoning Map Amendment Application", '2024-10-10'),
     ("Zoning Permit Application", '2024-10-10'),
     ("Development Plan Application (General)", '2024-10-10'),
@@ -240,11 +253,11 @@ INSERT INTO forms (form_type, form_datetime_submitted) VALUES
     ("Future Land Use Map (FLUM) Application", '2024-10-10'),
     ("Open Records Request", '2024-10-10'),
     ("Open Records Request", '2024-10-10'),
-    ("Sign Permit Appplication", '2024-10-10'),
+    ("Sign Permit Application", '2024-10-10'),
     ("Major Subdivision Plat Application", '2024-10-10'),
     ("Minor Subdivision Plat Application", '2024-10-10'),
     ("Telecommunication Tower Uniform Application", '2024-10-10'),
-    ("Variance Applicatioin", '2024-10-10'),
+    ("Variance Application", '2024-10-10'),
     ("Zoning Map Amendment Application", '2024-10-10'),
     ("Zoning Permit Application", '2024-10-10'),
     ("Development Plan Application (General)", '2024-10-10'),
@@ -294,10 +307,12 @@ INSERT INTO type_one_forms (form_id) VALUES
 -- SECTION 8: SPECIFIC APPLICATION FORMS
 -- -------------------------------------------------------------------------
 
+
+
 -- Zoning Verification Letters
-INSERT INTO zoning_verification_letter (form_id, zva_letter_content, zva_zoning_letter_street, zva_state_code, zva_zoning_letter_city, zva_zoning_letter_zip, zva_property_street, zva_property_state_code, zva_property_zip, property_city) VALUES 
-    (1, 'Verification that property is zoned R-1 Single Family Residential', '101 City Hall Plaza', 'KY', 'Danville', '40422', '1500 Maple Street', 'KY', '40422', 'Danville'),
-    (18, 'Verification that property is zoned B-2 General Business', '101 City Hall Plaza', 'KY', 'Danville', '40422', '5100 Commerce Parkway', 'KY', '40422', 'Danville');
+INSERT INTO zoning_verification_letter (form_id,zva_owner_id, zva_letter_content, zva_zoning_letter_street, zva_state_code, zva_zoning_letter_city, zva_zoning_letter_zip, zva_property_street, zva_property_state_code, zva_property_zip, property_city) VALUES 
+    (1,1, 'Verification that property is zoned R-1 Single Family Residential', '101 City Hall Plaza', 'KY', 'Danville', '40422', '1500 Maple Street', 'KY', '40422', 'Danville'),
+    (18,2, 'Verification that property is zoned B-2 General Business', '101 City Hall Plaza', 'KY', 'Danville', '40422', '5100 Commerce Parkway', 'KY', '40422', 'Danville');
 
 -- Major Subdivision Plat Applications
 INSERT INTO major_subdivision_plat_applications (form_id, surveyor_id, engineer_id, PVA_parcel_number, mspa_topographic_survey, mspa_proposed_plot_layout, mspa_plat_restrictions, mspa_property_owner_convenants, mspa_association_covenants, mspa_master_deed, mspa_construction_plans, mspa_traffic_impact_study, mspa_geologic_study, mspa_drainage_plan, mspa_pavement_design, mspa_SWPPP_EPSC_plan, mspa_construction_bond_est) VALUES 
@@ -314,8 +329,8 @@ INSERT INTO zoning_permit_applications (form_id, surveyor_id, architect_id, land
     (15, 4, 3, 2, 3, 200008, 'Temporary Use', 'retail_center_plans.pdf', 'bypass_site_evaluation.pdf');
 
 -- Zoning Map Amendment Applications
-INSERT INTO zoning_map_amendment_applications (form_id, zoning_map_amendment_request) VALUES 
-    (5, 'Request to rezone from R-2 to R-3 for townhome development at 1025 Stanford Road');
+INSERT INTO zoning_map_amendment_applications (form_id, PVA_parcel_number, zoning_map_amendment_request) VALUES 
+    (5,200004, 'Request to rezone from R-2 to R-3 for townhome development at 1025 Stanford Road');
 
 -- General Development Plan Applications
 INSERT INTO general_development_plan_applications (form_id, state_code, gdpa_applicant_zip, gdpa_applicant_phone, gdpa_plan_amendment_request, gdpa_proposed_conditions, required_findings_type, gdpa_concept_plan, gdpa_traffic_study, gdpa_geologic_analysis) VALUES 
@@ -328,12 +343,12 @@ INSERT INTO variance_applications (form_id, va_variance_request, va_proposed_con
 
 -- Future Land Use Map Applications
 INSERT INTO future_land_use_map_applications (form_id, future_land_use_map_amendment_prop, PVA_parcel_number) VALUES 
-    (8, 'Change future land use from Low Density Residential to Medium Density Residential to allow multi-family development', 200010);
+    (8,'Change future land use from Low Density Residential to Medium Density Residential to allow multi-family development', 200010);
 
 -- Conditional Use Permit Applications
-INSERT INTO conditional_use_permit_applications (form_id, cupa_permit_request, cupa_proposed_conditions) VALUES 
-    (9, 'Child daycare facility in R-2 residential zone', 'Operating hours 6:30 AM to 6:30 PM Monday-Friday only, maximum 60 children, secure outdoor play area, adequate off-street parking and drop-off/pick-up lanes'),
-    (19, 'Home occupation - professional office in residence', 'No external signage, no retail sales, maximum 2 non-resident employees, adequate off-street parking');
+INSERT INTO conditional_use_permit_applications (form_id,PVA_parcel_number, cupa_permit_request, cupa_proposed_conditions) VALUES 
+    (9,200003, 'Child daycare facility in R-2 residential zone', 'Operating hours 6:30 AM to 6:30 PM Monday-Friday only, maximum 60 children, secure outdoor play area, adequate off-street parking and drop-off/pick-up lanes'),
+    (19,200002, 'Home occupation - professional office in residence', 'No external signage, no retail sales, maximum 2 non-resident employees, adequate off-street parking');
 
 -- Site Development Plan Applications
 INSERT INTO site_development_plan_applications (form_id, surveyor_id, land_architect_id, engineer_id, architect_id, site_plan_request) VALUES 
@@ -353,7 +368,7 @@ INSERT INTO administrative_property_owners (form_id, aar_property_owner_id) VALU
     (11, 2);
 
 -- Sign Permit Applications
-INSERT INTO sign_permit_applications (form_id, sp_owner_id, contractor_id, sp_business_id, sp_date, sp_permit_number, sp_building_coverage_percent, sp_permit_fee) VALUES 
+INSERT INTO sign_permit_applications (form_id, sp_owner_id, sp_contractor_id, sp_business_id, sp_date, sp_permit_number, sp_building_coverage_percent, sp_permit_fee) VALUES 
     (12, 1, 1, 1, '2025-10-15', 'SP-2025-0015', '3.5%', '$175.00'),
     (17, 2, 2, 4, '2025-10-22', 'SP-2025-0023', '6.2%', '$325.00');
 
@@ -412,7 +427,7 @@ INSERT INTO LDS_plans (form_id, LDS_plan_file) VALUES
     (3, 'elm_drive_subdivision_lds_plan.pdf');
 
 -- Structures
-INSERT INTO structures (form_id, structure_type, structure_square_feet, structure_project_value, structrure_notes) VALUES 
+INSERT INTO structures (form_id, structure_type, structure_square_feet, structure_project_value, structure_notes) VALUES 
     (4, 'Two-Story Office Building', 12500.00, '$2800000', 'Professional office complex with ground floor retail space'),
     (4, 'Surface Parking Lot', 35000.00, '$450000', '125 parking spaces with landscaped islands'),
     (15, 'Retail Strip Center', 22000.00, '$3500000', 'Five tenant spaces ranging from 3,000-6,000 sq ft each'),
@@ -458,7 +473,7 @@ INSERT INTO adjacent_neighbor_owners (form_id, adjacent_property_owner_id) VALUE
 -- SECTION 12: DEPARTMENT INTERACTIONS
 -- -------------------------------------------------------------------------
 
-INSERT INTO department_form_interactions (department_id, form_id, department_form_interaction_description) VALUES 
+INSERT INTO department_form_interactions (client_id, form_id, department_form_interaction_description) VALUES 
     (1, 2, 'Initial zoning compliance review completed - subdivision meets R-2 zoning requirements'),
     (2, 2, 'Engineering review in progress - reviewing drainage calculations and road design'),
     (3, 2, 'Building code review pending - awaiting final construction drawings'),
@@ -640,7 +655,7 @@ SELECT
     f.form_type,
     COUNT(*) AS interaction_count
 FROM department_form_interactions dfi
-JOIN departments d ON dfi.department_id = d.department_id
+JOIN departments d ON dfi.client_id = d.client_id
 JOIN forms f ON dfi.form_id = f.form_id
 GROUP BY d.department_name, f.form_type
 ORDER BY d.department_name, interaction_count DESC;
