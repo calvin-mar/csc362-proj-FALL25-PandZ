@@ -698,26 +698,6 @@ DELIMITER ;
 
 
 /* ---------------------------
-   11) Telecommunication Tower Uniform Application
-   Tables: forms (schema contains no specific table for telecom tower)
-   --------------------------- */
-
-DELIMITER $$
-CREATE PROCEDURE sp_insert_telecommunication_tower_uniform_application(
-  IN p_form_datetime_resolved DATETIME,
-  IN p_form_paid_bool BOOLEAN
-)
-BEGIN
-  START TRANSACTION;
-  INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Telecommunication Tower Uniform Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
-  COMMIT;
-END$$
-DELIMITER ;
-
-
-
-/* ---------------------------
    12) Variance Application
    Tables: forms, variance_applications
    --------------------------- */

@@ -782,7 +782,6 @@ INSERT INTO form_types (form_type) VALUES
     ("Sign Permit Application"),
     ("Major Subdivision Plat Application"),
     ("Minor Subdivision Plat Application"),
-    ("Telecommunication Tower Uniform Application"),
     ("Variance Application"),
     ("Zoning Map Amendment Application"),
     ("Zoning Permit Application"),

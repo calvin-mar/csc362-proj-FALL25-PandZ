@@ -46,7 +46,6 @@ $error = '';
 <option value="form_sp_insert_sign_permit_application.php">Sign Permit Application</option>
 <option value="form_sp_insert_major_subdivision_plat_application.php">Major Subdivision Plat Application</option>
 <option value="form_sp_insert_minor_subdivision_plat_application.php">Minor Subdivision Plat Application</option>
-<option value="form_sp_insert_telecommunication_tower_uniform_application.php">Telecommunication Tower Uniform Application</option>
 <option value="form_sp_insert_variance_application.php">Variance Application</option>
 <option value="form_sp_insert_zoning_map_amendment_application.php">Zoning Map Amendment Application</option>
 <option value="form_sp_insert_zoning_permit_application.php">Zoning Permit Application</option>
