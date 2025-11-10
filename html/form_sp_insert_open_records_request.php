@@ -170,9 +170,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <p>Phone: 859.238.1235</p>
     <p>www.boyleplanning.org</p>
   </div>
-
+  <p><a href="client_new_form.php">&larr; Back to form selector</a></p>
   <h2 class="text-center mb-4"><strong>PUBLIC RECORDS INSPECTION REQUEST</strong></h2>
-
+  
   <form method="post">
     <!-- REQUEST SECTION -->
     <div class="section-title">1) REQUEST:</div>

@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <span class="navbar-brand mb-0 h1">Client Portal – Planning & Zoning</span>
   </div>
 </nav>
-
+<p><a href="client_new_form.php">&larr; Back to form selector</a></p>
 <div class="container py-4">
   <h1>Sign Permit Application</h1>
   <p><a href="client_new_form.php">&larr; Back to form selector</a></p>

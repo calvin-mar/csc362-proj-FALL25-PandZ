@@ -423,7 +423,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h1>Danville-Boyle County Planning & Zoning Commission</h1>
     <h2>Application for General Development Plan Amendment</h2>
   </div>
-
+  <p><a href="client_new_form.php">&larr; Back to form selector</a></p>
   <div class="header-info">
     <div>
       <strong>Docket Number:</strong> <input type="text" name="docket_number" class="form-control small-input d-inline" style="width: 150px;">

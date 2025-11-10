@@ -326,7 +326,7 @@ $conn->close();
     <span class="navbar-brand mb-0 h1">Client Portal – Administrative Appeal</span>
   </div>
 </nav>
-
+<p><a href="client_new_form.php">&larr; Back to form selector</a></p>
 <div class="form-container">
     <div class="header-section">
         <p style="text-align: left; font-size: 10px;"></p>
