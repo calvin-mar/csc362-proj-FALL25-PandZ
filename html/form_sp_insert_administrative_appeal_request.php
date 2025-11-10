@@ -40,10 +40,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$stmt) {
         $error = 'Prepare failed: ' . $conn->error;
     } else {
-        $types = 'isisssssssssssssss';
+        $types = 'siisssssssssssssssss';
         $bind_names = array();
         $bind_names[] = &$p_form_datetime_resolved;
         $bind_names[] = &$p_form_paid_bool;
+        $bind_names[] = &$p_correction_form_id;
         $bind_names[] = &$p_aar_hearing_date;
         $bind_names[] = &$p_aar_submit_date;
         $bind_names[] = &$p_aar_street_address;

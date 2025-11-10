@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$stmt) {
         $error = 'Prepare failed: ' . $conn->error;
     } else {
-        $types = 'iissssssssssss';
+        $types = 'siisssssssssss';
         $bind_names = array();
         $bind_names[] = &$p_form_datetime_resolved;
         $bind_names[] = &$p_form_paid_bool;
@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 <div class="form-group">
     <label for="p_apof_neighbor_property_street">Apof Neighbor Property Street</label>
-    <input class="form-control" type="number" id="p_apof_neighbor_property_street" name="p_apof_neighbor_property_street" step="any">
+    <input class="form-control" type="text" id="p_apof_neighbor_property_street" name="p_apof_neighbor_property_street" step="any">
 </div>
 <div class="form-group">
     <label for="p_apof_neighbor_property_city">Apof Neighbor Property City</label>
