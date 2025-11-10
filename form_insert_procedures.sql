@@ -33,7 +33,10 @@ CREATE PROCEDURE sp_insert_administrative_appeal_request(
   IN p_adjacent_property_owner_street VARCHAR(255),
   IN p_adjacent_property_owner_city VARCHAR(255),
   IN p_adjacent_property_owner_state_code CHAR(2),
-  IN p_adjacent_property_owner_zip VARCHAR(50)
+  IN p_adjacent_property_owner_zip VARCHAR(50),
+  -- single property owner (optional)
+  IN p_aar_property_owner_first_name VARCHAR(255),
+  IN p_aar_property_owner_last_name VARCHAR(255)
 )
 BEGIN
   START TRANSACTION;
@@ -65,6 +68,16 @@ BEGIN
       VALUES(@new_form_id, @new_adj_owner_id);
   END IF;
 
+   -- ✅ New insert for property owner
+  IF p_aar_property_owner_first_name IS NOT NULL OR p_aar_property_owner_last_name IS NOT NULL THEN
+    INSERT INTO aar_property_owners(aar_property_owner_first_name, aar_property_owner_last_name)
+      VALUES(p_aar_property_owner_first_name, p_aar_property_owner_last_name);
+    SET @new_property_owner_id = LAST_INSERT_ID();
+
+    INSERT INTO administrative_property_owners(form_id, aar_property_owner_id)
+      VALUES(@new_form_id, @new_property_owner_id);
+    END IF;
+
   COMMIT;
 END$$
 DELIMITER ;
@@ -85,12 +98,17 @@ CREATE PROCEDURE sp_insert_adjacent_property_owners_form(
   -- apof_neighbors fields (optional)
   IN p_PVA_map_code VARCHAR(255),
   IN p_apof_neighbor_property_location VARCHAR(255),
-  IN p_apof_neighbor_property_street DECIMAL(12,2),
+  IN p_apof_neighbor_property_street VARCHAR(255),
   IN p_apof_neighbor_property_city VARCHAR(255),
   IN p_apof_state_code CHAR(2),
   IN p_apof_neighbor_property_zip VARCHAR(50),
-  IN p_apof_neighbor_property_deed_book DECIMAL(12,2),
-  IN p_apof_property_street_pg_number VARCHAR(255)
+  IN p_apof_neighbor_property_deed_book VARCHAR(50),
+  IN p_apof_property_street_pg_number VARCHAR(255),
+  -- adjacent_property_owners fields 
+  IN p_adjacent_property_owner_street VARCHAR(255),
+  IN p_adjacent_property_owner_city VARCHAR(255),
+  IN p_adjacent_state_code CHAR(2),
+  IN p_adjacent_property_owner_zip VARCHAR(50)
 )
 BEGIN
   START TRANSACTION;
@@ -112,6 +130,21 @@ BEGIN
     );
     SET @new_neighbor_id = LAST_INSERT_ID();
     INSERT INTO adjacent_neighbors(form_id, neighbor_id) VALUES(@new_form_id, @new_neighbor_id);
+  END IF;
+
+  -- Insert into adjacent_property_owners if data provided
+  IF p_adjacent_property_owner_street IS NOT NULL OR p_adjacent_property_owner_city IS NOT NULL THEN
+    INSERT INTO adjacent_property_owners(
+      adjacent_property_owner_street, adjacent_property_owner_city, state_code, adjacent_property_owner_zip
+    )
+    VALUES (
+      p_adjacent_property_owner_street, p_adjacent_property_owner_city, p_adjacent_state_code, p_adjacent_property_owner_zip
+    );
+    SET @new_owner_id = LAST_INSERT_ID();
+
+    -- Link the property owner to the form
+    INSERT INTO adjacent_neighbor_owners(form_id, adjacent_property_owner_id)
+    VALUES(@new_form_id, @new_owner_id);
   END IF;
 
   COMMIT;

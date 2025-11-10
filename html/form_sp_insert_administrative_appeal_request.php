@@ -26,20 +26,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $p_aar_property_location = isset($_POST['p_aar_property_location']) && $_POST['p_aar_property_location'] !== '' ? $_POST['p_aar_property_location'] : null;
     $p_aar_official_decision = isset($_POST['p_aar_official_decision']) && $_POST['p_aar_official_decision'] !== '' ? $_POST['p_aar_official_decision'] : null;
     $p_aar_relevant_provisions = isset($_POST['p_aar_relevant_provisions']) && $_POST['p_aar_relevant_provisions'] !== '' ? $_POST['p_aar_relevant_provisions'] : null;
+    $p_aar_hearing_date = isset($_POST['p_aar_hearing_date']) && $_POST['p_aar_hearing_date'] !== '' ? $_POST['p_aar_hearing_date'] : null;
+    $p_aar_appellant_first_name = isset($_POST['p_aar_appellant_first_name']) && $_POST['p_aar_appellant_first_name'] !== '' ? $_POST['p_aar_appellant_first_name'] : null;
+    $p_adjacent_property_owner_street = isset($_POST['p_adjacent_property_owner_street']) && $_POST['p_adjacent_property_owner_street'] !== '' ? $_POST['p_adjacent_property_owner_street'] : null;
     $p_aar_appellant_last_name = isset($_POST['p_aar_appellant_last_name']) && $_POST['p_aar_appellant_last_name'] !== '' ? $_POST['p_aar_appellant_last_name'] : null;
     $p_adjacent_property_owner_city = isset($_POST['p_adjacent_property_owner_city']) && $_POST['p_adjacent_property_owner_city'] !== '' ? $_POST['p_adjacent_property_owner_city'] : null;
     $p_adjacent_property_owner_state_code = isset($_POST['p_adjacent_property_owner_state_code']) && $_POST['p_adjacent_property_owner_state_code'] !== '' ? $_POST['p_adjacent_property_owner_state_code'] : null;
     $p_adjacent_property_owner_zip = isset($_POST['p_adjacent_property_owner_zip']) && $_POST['p_adjacent_property_owner_zip'] !== '' ? $_POST['p_adjacent_property_owner_zip'] : null;
-    $sql = "CALL sp_insert_administrative_appeal_request(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $p_aar_property_owner_first_name = isset($_POST['p_aar_property_owner_first_name']) && $_POST['p_aar_property_owner_first_name'] !== '' ? $_POST['p_aar_property_owner_first_name'] : null;
+    $p_aar_property_owner_last_name = isset($_POST['p_aar_property_owner_last_name']) && $_POST['p_aar_property_owner_last_name'] !== '' ? $_POST['p_aar_property_owner_last_name'] : null;
+    $sql = "CALL sp_insert_administrative_appeal_request(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         $error = 'Prepare failed: ' . $conn->error;
     } else {
-        $types = 'siissssssssssss';
+        $types = 'isisssssssssssssss';
         $bind_names = array();
         $bind_names[] = &$p_form_datetime_resolved;
         $bind_names[] = &$p_form_paid_bool;
-        $bind_names[] = &$p_correction_form_id;
+        $bind_names[] = &$p_aar_hearing_date;
         $bind_names[] = &$p_aar_submit_date;
         $bind_names[] = &$p_aar_street_address;
         $bind_names[] = &$p_aar_city_address;
@@ -48,10 +53,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $bind_names[] = &$p_aar_property_location;
         $bind_names[] = &$p_aar_official_decision;
         $bind_names[] = &$p_aar_relevant_provisions;
+        $bind_names[] = &$p_aar_appellant_first_name;
         $bind_names[] = &$p_aar_appellant_last_name;
+        $bind_names[] = &$p_adjacent_property_owner_street;
         $bind_names[] = &$p_adjacent_property_owner_city;
         $bind_names[] = &$p_adjacent_property_owner_state_code;
         $bind_names[] = &$p_adjacent_property_owner_zip;
+        $bind_names[] = &$p_aar_property_owner_first_name;
+        $bind_names[] = &$p_aar_property_owner_last_name;
         array_unshift($bind_names, $types);
         $bindResult = @call_user_func_array(array($stmt, 'bind_param'), $bind_names);
         if ($bindResult === false) {
@@ -106,6 +115,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <input class="form-control" type="date" id="p_aar_submit_date" name="p_aar_submit_date">
 </div>
 <div class="form-group">
+    <label for="p_aar_hearing_date">Aar Hearing Date</label>
+    <input class="form-control" type="date" id="p_aar_hearing_date" name="p_aar_hearing_date">
+</div>
+<div class="form-group">
     <label for="p_aar_street_address">Aar Street Address</label>
     <input class="form-control" type="text" id="p_aar_street_address" name="p_aar_street_address">
 </div>
@@ -118,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <input class="form-control" type="text" id="p_state_code" name="p_state_code">
 </div>
 <div class="form-group">
-    <label for="p_aar_zip_code">Aar Zicode</label>
+    <label for="p_aar_zip_code">Aar Zipcode</label>
     <input class="form-control" type="text" id="p_aar_zip_code" name="p_aar_zip_code">
 </div>
 <div class="form-group">
@@ -134,8 +147,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <input class="form-control" type="text" id="p_aar_relevant_provisions" name="p_aar_relevant_provisions">
 </div>
 <div class="form-group">
+    <label for="p_aar_appellant_first_name">Aar Appellant First Name</label>
+    <input class="form-control" type="text" id="p_aar_appellant_first_name" name="p_aar_appellant_first_name">
+</div>
+<div class="form-group">
     <label for="p_aar_appellant_last_name">Aar Appellant Last Name</label>
     <input class="form-control" type="text" id="p_aar_appellant_last_name" name="p_aar_appellant_last_name">
+</div>
+<div class="form-group">
+    <label for="p_aar_property_owner_first_name">Property Owner First Name</label>
+    <input class="form-control" type="text" id="p_aar_property_owner_first_name" name="p_aar_property_owner_first_name">
+</div>
+<div class="form-group">
+    <label for="p_aar_property_owner_last_name">Property Owner Last Name</label>
+    <input class="form-control" type="text" id="p_aar_property_owner_last_name" name="p_aar_property_owner_last_name">
+</div>
+<div class="form-group">
+    <label for="p_adjacent_property_owner_street">Adjacent Property Owner Street</label>
+    <input class="form-control" type="text" id="p_adjacent_property_owner_street" name="p_adjacent_property_owner_street">
 </div>
 <div class="form-group">
     <label for="p_adjacent_property_owner_city">Adjacent Property Owner City</label>

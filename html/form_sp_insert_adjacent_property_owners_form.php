@@ -19,22 +19,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $p_form_paid_bool = 0;
     $p_correction_form_id = isset($_POST['p_correction_form_id']) && $_POST['p_correction_form_id'] !== '' ? $_POST['p_correction_form_id'] : null;
     $p_apof_neighbor_property_location = isset($_POST['p_apof_neighbor_property_location']) && $_POST['p_apof_neighbor_property_location'] !== '' ? $_POST['p_apof_neighbor_property_location'] : null;
+    $p_PVA_map_code = isset($_POST['p_PVA_map_code']) && $_POST['p_PVA_map_code'] !== '' ? $_POST['p_PVA_map_code'] : null;
     $p_apof_neighbor_property_street = isset($_POST['p_apof_neighbor_property_street']) && $_POST['p_apof_neighbor_property_street'] !== '' ? $_POST['p_apof_neighbor_property_street'] : null;
     $p_apof_neighbor_property_city = isset($_POST['p_apof_neighbor_property_city']) && $_POST['p_apof_neighbor_property_city'] !== '' ? $_POST['p_apof_neighbor_property_city'] : null;
     $p_apof_state_code = isset($_POST['p_apof_state_code']) && $_POST['p_apof_state_code'] !== '' ? $_POST['p_apof_state_code'] : null;
     $p_apof_neighbor_property_zip = isset($_POST['p_apof_neighbor_property_zip']) && $_POST['p_apof_neighbor_property_zip'] !== '' ? $_POST['p_apof_neighbor_property_zip'] : null;
     $p_apof_neighbor_property_deed_book = isset($_POST['p_apof_neighbor_property_deed_book']) && $_POST['p_apof_neighbor_property_deed_book'] !== '' ? $_POST['p_apof_neighbor_property_deed_book'] : null;
     $p_apof_property_street_pg_number = isset($_POST['p_apof_property_street_pg_number']) && $_POST['p_apof_property_street_pg_number'] !== '' ? $_POST['p_apof_property_street_pg_number'] : null;
-    $sql = "CALL sp_insert_adjacent_property_owners_form(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $p_adjacent_property_owner_street = isset($_POST['p_adjacent_property_owner_street']) && $_POST['p_adjacent_property_owner_street'] !== '' ? $_POST['p_adjacent_property_owner_street'] : null;
+    $p_adjacent_property_owner_city = isset($_POST['p_adjacent_property_owner_city']) && $_POST['p_adjacent_property_owner_city'] !== '' ? $_POST['p_adjacent_property_owner_city'] : null;
+    $p_adjacent_state_code = isset($_POST['p_adjacent_state_code']) && $_POST['p_adjacent_state_code'] !== '' ? $_POST['p_adjacent_state_code'] : null;
+    $p_adjacent_property_owner_zip = isset($_POST['p_adjacent_property_owner_zip']) && $_POST['p_adjacent_property_owner_zip'] !== '' ? $_POST['p_adjacent_property_owner_zip'] : null;
+    $sql = "CALL sp_insert_adjacent_property_owners_form(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         $error = 'Prepare failed: ' . $conn->error;
     } else {
-        $types = 'siisdsssds';
+        $types = 'iissssssssssss';
         $bind_names = array();
         $bind_names[] = &$p_form_datetime_resolved;
         $bind_names[] = &$p_form_paid_bool;
         $bind_names[] = &$p_correction_form_id;
+        $bind_names[] = &$p_PVA_map_code;
         $bind_names[] = &$p_apof_neighbor_property_location;
         $bind_names[] = &$p_apof_neighbor_property_street;
         $bind_names[] = &$p_apof_neighbor_property_city;
@@ -42,6 +48,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $bind_names[] = &$p_apof_neighbor_property_zip;
         $bind_names[] = &$p_apof_neighbor_property_deed_book;
         $bind_names[] = &$p_apof_property_street_pg_number;
+        $bind_names[] = &$p_adjacent_property_owner_street;
+        $bind_names[] = &$p_adjacent_property_owner_city;
+        $bind_names[] = &$p_adjacent_state_code;
+        $bind_names[] = &$p_adjacent_property_owner_zip;
         array_unshift($bind_names, $types);
         $bindResult = @call_user_func_array(array($stmt, 'bind_param'), $bind_names);
         if ($bindResult === false) {
@@ -92,6 +102,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <input class="form-control" type="number" id="p_correction_form_id" name="p_correction_form_id">
 </div>
 <div class="form-group">
+  <label for="p_PVA_map_code">PVA Map Code</label>
+  <input class="form-control" type="text" id="p_PVA_map_code" name="p_PVA_map_code">
+</div>
+<div class="form-group">
     <label for="p_apof_neighbor_property_location">Apof Neighbor Property Location</label>
     <input class="form-control" type="text" id="p_apof_neighbor_property_location" name="p_apof_neighbor_property_location">
 </div>
@@ -119,7 +133,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <label for="p_apof_property_street_pg_number">Apof Property Street Pg Number</label>
     <input class="form-control" type="text" id="p_apof_property_street_pg_number" name="p_apof_property_street_pg_number">
 </div>
-
+<div class="form-group">
+  <label for="p_adjacent_property_owner_street">Owner Street</label>
+  <input class="form-control" type="text" id="p_adjacent_property_owner_street" name="p_adjacent_property_owner_street">
+</div>
+<div class="form-group">
+  <label for="p_adjacent_property_owner_city">Owner City</label>
+  <input class="form-control" type="text" id="p_adjacent_property_owner_city" name="p_adjacent_property_owner_city">
+</div>
+<div class="form-group">
+  <label for="p_adjacent_state_code">Owner State Code</label>
+  <input class="form-control" type="text" id="p_adjacent_state_code" name="p_adjacent_state_code" maxlength="2">
+</div>
+<div class="form-group">
+  <label for="p_adjacent_property_owner_zip">Owner Zip</label>
+  <input class="form-control" type="text" id="p_adjacent_property_owner_zip" name="p_adjacent_property_owner_zip">
+</div>
     <div class="form-group mt-3">
       <button class="btn btn-primary" type="submit">Submit</button>
     </div>

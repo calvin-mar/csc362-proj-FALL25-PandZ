@@ -554,7 +554,8 @@ CREATE TABLE open_record_requests (
 -- MOVED BEFORE ADMINISTRATIVE_PROPERTY_OWNERS
 CREATE TABLE aar_property_owners (
     aar_property_owner_id INT NOT NULL AUTO_INCREMENT,
-    aar_property_owner_name VARCHAR(255),
+    aar_property_owner_first_name VARCHAR(255),
+    aar_property_owner_last_name VARCHAR(255),
     PRIMARY KEY (aar_property_owner_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -590,8 +591,7 @@ CREATE TABLE administrative_appeal_requests (
     aar_city_address VARCHAR(255),
     state_code CHAR(2),
     aar_zip_code VARCHAR(50),
-    aar_property_location VARCHAR(255),
-    aar_official_decision VARCHAR(255),
+    aar_official_decision VARCHAR (255),
     aar_relevant_provisions VARCHAR(255),
     PRIMARY KEY (form_id),
     FOREIGN KEY (state_code) REFERENCES states(state_code) ON DELETE RESTRICT,
