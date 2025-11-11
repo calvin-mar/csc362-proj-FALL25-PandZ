@@ -265,7 +265,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       border-radius: 4px;
     }
   </style>
-  <script>
+   <script>
     let applicantCount = 0;
     let ownerCount = 0;
     let officerCount = 0;
@@ -329,20 +329,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             + Add Another Name
           </button>
         </div>
-
-        <div class="form-group">
-          <label>Mailing Address:</label>
-          <input type="text" class="form-control" name="additional_applicant_mailing_addresses[]">
-        </div>
-
+        <label><b>Contact Information:</b></label>
         <div class="row">
           <div class="col-md-6">
+            <div class="form-group">
+              <label>Street:</label>
+              <input type="text" class="form-control" name="additional_applicant_streets[]">
+            </div>
+          </div>
+          <div class="col-md-3">
             <div class="form-group">
               <label>Phone Number:</label>
               <input type="text" class="form-control" name="additional_applicant_phones[]">
             </div>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-3">
             <div class="form-group">
               <label>Cell Number:</label>
               <input type="text" class="form-control" name="additional_applicant_cells[]">
@@ -350,6 +351,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </div>
         </div>
 
+        <div class="row">
+          <div class="col-md-3">
+            <div class="form-group">
+              <label>City:</label>
+              <input type="text" class="form-control" name="additional_applicant_cities[]">
+            </div>
+          </div>
+          <div class="col-md-1">
+            <div class="form-group">
+              <label>State:</label>
+              <input type="text" class="form-control" name="additional_applicant_states[]">
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label>Zip Code:</label>
+              <input type="text" class="form-control" name="additional_applicant_zip_codes[]">
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label>Other Information:</label>
+              <input type="text" class="form-control" name="additional_applicant_other_addresses[]">
+            </div>
+          </div>
+        </div>
         <div class="form-group">
           <label>E-Mail Address:</label>
           <input type="email" class="form-control" name="additional_applicant_emails[]">
@@ -367,25 +396,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       div.innerHTML = `
         <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeElement('owner-${ownerCount}')">Remove</button>
         <h6 class="mb-3"><strong>Additional Property Owner ${ownerCount}</strong></h6>
-
         <div class="form-group">
           <label>Property Owner Name(s):</label>
           <input type="text" class="form-control" name="additional_owner_names[]">
         </div>
-
-        <div class="form-group">
-          <label>Mailing Address:</label>
-          <input type="text" class="form-control" name="additional_owner_mailing_addresses[]">
-        </div>
-
+        <label><b>Contact Information:</b></label>
         <div class="row">
           <div class="col-md-6">
+            <div class="form-group">
+              <label>Street:</label>
+              <input type="text" class="form-control" name="additional_owner_streets[]">
+            </div>
+          </div>
+          <div class="col-md-3">
             <div class="form-group">
               <label>Phone Number:</label>
               <input type="text" class="form-control" name="additional_owner_phones[]">
             </div>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-3">
             <div class="form-group">
               <label>Cell Number:</label>
               <input type="text" class="form-control" name="additional_owner_cells[]">
@@ -393,6 +422,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </div>
         </div>
 
+        <div class="row">
+          <div class="col-md-3">
+            <div class="form-group">
+              <label>City:</label>
+              <input type="text" class="form-control" name="additional_owner_cities[]">
+            </div>
+          </div>
+          <div class="col-md-1">
+            <div class="form-group">
+              <label>State:</label>
+              <input type="text" class="form-control" name="additional_owner_states[]">
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label>Zip Code:</label>
+              <input type="text" class="form-control" name="additional_owner_zip_codes[]">
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label>Other Information:</label>
+              <input type="text" class="form-control" name="additional_owner_other_addresses[]">
+            </div>
+          </div>
+        </div>
         <div class="form-group">
           <label>E-Mail Address:</label>
           <input type="email" class="form-control" name="additional_owner_emails[]">
@@ -421,23 +478,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   <div class="form-header">
     <h1>Danville-Boyle County Planning & Zoning Commission</h1>
-    <h2>Application for General Development Plan Amendment</h2>
+    <h2>Application for Zoning Map Amendment</h2>
   </div>
   <p><a href="client_new_form.php">&larr; Back to form selector</a></p>
+
   <div class="header-info">
     <div>
-      <strong>Docket Number:</strong> <input type="text" name="docket_number" class="form-control small-input d-inline" style="width: 150px;">
+      <strong>Docket Number:</strong> <input type="text" name="p_docket_number" class="form-control small-input d-inline" style="width: 150px;">
     </div>
     <div>
-      <strong>Public Hearing Date:</strong> <input type="text" name="public_hearing_date" class="form-control small-input d-inline" style="width: 150px;">
+      <strong>Public Hearing Date:</strong> <input type="text" name="p_public_hearing_date" class="form-control small-input d-inline" style="width: 150px;">
     </div>
   </div>
   <div class="header-info">
     <div>
-      <strong>Date Application Filed:</strong> <input type="text" name="date_application_filed" class="form-control small-input d-inline" style="width: 150px;">
+      <strong>Date Application Filed:</strong> <input type="text" name="p_date_application_filed" class="form-control small-input d-inline" style="width: 150px;">
     </div>
     <div>
-      <strong>Pre-Application Meeting Date:</strong> <input type="text" name="pre_application_meeting_date" class="form-control small-input d-inline" style="width: 150px;">
+      <strong>Pre-Application Meeting Date:</strong> <input type="text" name="p_application_meeting_date" class="form-control small-input d-inline" style="width: 150px;">
     </div>
   </div>
 
@@ -446,7 +504,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="section-title">APPLICANT(S) INFORMATION</div>
 
     <div class="form-group">
-      <label>1) APPLICANT(S) NAME(S):</label>
+      <label>1) APPLICANT NAME:</label>
       <input type="text" class="form-control" name="applicant_name">
     </div>
 
@@ -459,22 +517,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </button>
     </div>
 
-    <div class="form-group">
-      <label>Mailing Address:</label>
-      <input type="text" class="form-control" name="applicant_mailing_address">
-    </div>
-
+    <label><b>Contact Information:</b></label>
     <div class="row">
       <div class="col-md-6">
+        <div class="form-group">
+          <label>Street:</label>
+          <input type="text" class="form-control" name="applicant_street">
+        </div>
+      </div>
+      <div class="col-md-3">
         <div class="form-group">
           <label>Phone Number:</label>
           <input type="text" class="form-control" name="applicant_phone">
         </div>
       </div>
-      <div class="col-md-6">
+      <div class="col-md-3">
         <div class="form-group">
           <label>Cell Number:</label>
           <input type="text" class="form-control" name="applicant_cell">
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-3">
+        <div class="form-group">
+          <label>City:</label>
+          <input type="text" class="form-control" name="applicant_city">
+        </div>
+      </div>
+      <div class="col-md-1">
+        <div class="form-group">
+          <label>State:</label>
+          <input type="text" class="form-control" name="applicant_state">
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div class="form-group">
+          <label>Zip Code:</label>
+          <input type="text" class="form-control" name="applicant_zip_code">
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Other Information:</label>
+          <input type="text" class="form-control" name="applicant_other_address">
         </div>
       </div>
     </div>
@@ -490,27 +579,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       + Add Another Applicant
     </button>
 
-    <div class="form-group">
-      <label>2) PROPERTY OWNER(S) NAME(S):</label>
-      <input type="text" class="form-control" name="owner_name">
-    </div>
-
-    <div class="form-group">
-      <label>Mailing Address:</label>
-      <input type="text" class="form-control" name="owner_mailing_address">
-    </div>
-
     <div class="row">
       <div class="col-md-6">
+        <div class="form-group">
+          <label>2) PROPERTY OWNER FIRST NAME:</label>
+          <input type="text" class="form-control" name="applicant_first_name">
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>PROPERTY OWNER LAST NAME:</label>
+          <input type="text" class="form-control" name="applicant_last_name">
+        </div>
+      </div>
+    </div>
+
+    <label><b>Contact Information:</b></label>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Street:</label>
+          <input type="text" class="form-control" name="owner_street">
+        </div>
+      </div>
+      <div class="col-md-3">
         <div class="form-group">
           <label>Phone Number:</label>
           <input type="text" class="form-control" name="owner_phone">
         </div>
       </div>
-      <div class="col-md-6">
+      <div class="col-md-3">
         <div class="form-group">
           <label>Cell Number:</label>
           <input type="text" class="form-control" name="owner_cell">
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-3">
+        <div class="form-group">
+          <label>City:</label>
+          <input type="text" class="form-control" name="owner_city">
+        </div>
+      </div>
+      <div class="col-md-1">
+        <div class="form-group">
+          <label>State:</label>
+          <input type="text" class="form-control" name="owner_state">
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div class="form-group">
+          <label>Zip Code:</label>
+          <input type="text" class="form-control" name="owner_zip_code">
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Other Information:</label>
+          <input type="text" class="form-control" name="owner_other_address">
         </div>
       </div>
     </div>
@@ -526,13 +656,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       + Add Another Property Owner
     </button>
 
-    <p class="info-text">*PLEASE USE ADDITIONAL PAGES IF NEEDED*</p>
+    <p class="info-text">*PLEASE ADD ADDITIONAL APPLICANTS AND PROPERTY OWNERS IF NEEDED*</p>
 
-    <div class="form-group">
-      <label>3) APPLICANT(S) ATTORNEY:</label>
-      <input type="text" class="form-control" name="attorney_name" placeholder="Name">
+    <label><b>3) APPLICANT(S) ATTORNEY:</b></label>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>ATTORNEY FIRST NAME:</label>
+          <input type="text" class="form-control" name="attorney_first_name">
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>ATTORNEY LAST NAME:</label>
+          <input type="text" class="form-control" name="attorney_last_name">
+        </div>
+      </div>
     </div>
-
     <div class="form-group">
       <label>Name of Law Firm:</label>
       <input type="text" class="form-control" name="law_firm">
@@ -562,8 +702,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="section-title">PROPERTY INFORMATION</div>
 
     <div class="form-group">
-      <label>Property Address:</label>
-      <input type="text" class="form-control" name="property_address">
+      <label>Street:</label>
+      <input type="text" class="form-control" name="property_street">
+    </div>
+
+    <div class="row">
+      <div class="col-md-3">
+        <div class="form-group">
+          <label>City:</label>
+          <input type="text" class="form-control" name="property_city">
+        </div>
+      </div>
+      <div class="col-md-1">
+        <div class="form-group">
+          <label>State:</label>
+          <input type="text" class="form-control" name="property_state">
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div class="form-group">
+          <label>Zip Code:</label>
+          <input type="text" class="form-control" name="property_zip_code">
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Other Information:</label>
+          <input type="text" class="form-control" name="property_other_address">
+        </div>
+      </div>
     </div>
 
     <div class="row">
@@ -786,39 +953,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- ADMIN SECTION -->
     <div class="section-title" style="background: #d0d0d0;">REQUIRED FILING FEES MUST BE PAID BEFORE ANY APPLICATION WILL BE ACCEPTED</div>
-
-    <div class="row">
-      <div class="col-md-4">
-        <div class="form-group">
-          <label>Application Fee:</label>
-          <input type="text" class="form-control" name="application_fee">
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="form-group">
-          <label>Land Use Certificate Fee:</label>
-          <input type="text" class="form-control" name="certificate_fee">
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="form-group">
-          <label>Date Fees Received:</label>
-          <input type="text" class="form-control" name="date_fees_received">
-        </div>
-      </div>
-    </div>
-
-    <div class="form-check mb-3">
-      <input class="form-check-input" type="checkbox" name="form_paid_bool" value="1" id="paid">
-      <label class="form-check-label" for="paid">
-        <strong>Form Paid</strong>
-      </label>
-    </div>
-
-    <div class="form-group">
-      <label>Correction Form ID (if applicable):</label>
-      <input type="number" class="form-control" name="correction_form_id">
-    </div>
 
     <div class="form-group mt-4">
       <button class="btn btn-primary btn-lg btn-block" type="submit">Submit Application</button>
