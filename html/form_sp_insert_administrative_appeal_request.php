@@ -224,6 +224,14 @@ $conn->close();
             font-size: 24px;
             margin-bottom: 5px;
         }
+        .appellant-entry {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+            background: #fff;
+            position: relative;
+            border-radius: 4px;
+    }
         .header-section p {
             font-size: 14px;
             margin: 0;
@@ -318,7 +326,52 @@ $conn->close();
             padding-top: 20px;
             border-top: 1px solid #eee;
         }
+        .horizontal-spacer {
+        width: 50px; 
+    }
     </style>
+    <script>
+    let appellantCount = 0;
+    let ownerCount = 0;
+    function addAppellant() {
+        appellantCount++;
+        const container = document.getElementById('appellants-container');
+        const div = document.createElement('div');
+        div.className = 'appellant-entry';
+        div.id = 'appellant-' + appellantCount;
+        div.innerHTML = `
+        <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeElement('appellant-${appellantCount}')">Remove</button>
+        <div class="form-group mb-2">
+        <label>Name:</label>
+        <input type="text" class="form-control" name="appellants_names[]" placeholder="Appellant Name">
+        </div>
+        `;
+        container.appendChild(div);
+    }
+    function addOwner() {
+      ownerCount++;
+      const container = document.getElementById('owners-container');
+      const div = document.createElement('div');
+      div.className = 'owner-entry';
+      div.id = 'owner-' + ownerCount;
+      div.innerHTML = `
+        <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeElement('owner-${ownerCount}')">Remove</button>
+        <div class="form-group mb-2">
+          <label>Name:</label>
+          <input type="text" class="form-control" id="owner_first_names[]" name="property_owner_first_name" placeholder="First Name (or Business Name)" value="<?php echo htmlspecialchars($property_owner_first_name); ?>" required>
+          <input type="text" class="form-control" id="owner_last_names[]" name="property_owner_last_name" placeholder="Last Name" value="<?php echo htmlspecialchars($property_owner_last_name); ?>" required style="margin-top: 5px; margin-left: 0;">
+        </div>
+      `;
+      container.appendChild(div);
+    }
+    function removeElement(id) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.remove();
+      }
+    }
+    </script>
+
 </head>
 <body>
 <nav class="navbar navbar-dark">
@@ -346,32 +399,38 @@ $conn->close();
     <?php endif; ?>
 
     <form method="post">
+       
         <div class="form-group-line">
-            <label for="board_adjustments">BOARD OF ADJUSTMENTS</label>
-            <!-- This field is usually a dropdown or selection in a real app, placeholder for now -->
-            <input type="text" id="board_adjustments" name="board_adjustments" value="" readonly>
-        </div>
-        <div class="form-group-line">
+            <h4> BOARD OF ADJUSTMENTS </h4>
+            <div class="horizontal-spacer"></div>
             <label for="p_aar_hearing_date">DATE OF HEARING:</label>
             <input type="date" id="p_aar_hearing_date" name="p_aar_hearing_date" value="<?php echo htmlspecialchars($p_aar_hearing_date ?? ''); ?>">
         </div>
         <p style="text-align: center; margin-top: 20px; margin-bottom: 20px; font-size: 12px;">**************************************************************************************************</p>
 
-        <div class="form-group-line">
-            <label for="p_aar_appellant_first_name">APPELLANT(S):</label>
-            <input type="text" id="p_aar_appellant_first_name" name="p_aar_appellant_first_name" placeholder="First Name" value="<?php echo htmlspecialchars($p_aar_appellant_first_name); ?>" required>
-            <input type="text" id="p_aar_appellant_last_name" name="p_aar_appellant_last_name" placeholder="Last Name" value="<?php echo htmlspecialchars($p_aar_appellant_last_name); ?>" required style="margin-left: 10px;">
+        <div class="form-group">
+        <label>APELLANT(S):</label>
+        <p class="info-text">Add each name individually below. Click "Add Another Name" to add more.</p>
+        <div id="appellants-container"></div>
+        <button type="button" class="btn btn-secondary btn-sm mt-2" onclick="addAppellant()">
+          + Add Another Name
+        </button>
         </div>
+
         <div class="form-group-line">
             <label for="p_aar_submit_date">DATE:</label>
             <input type="date" id="p_aar_submit_date" name="p_aar_submit_date" value="<?php echo htmlspecialchars($p_aar_submit_date); ?>" required>
         </div>
 
-        <div class="form-group-line multi-line">
-            <label for="p_aar_property_owner_first_name">PROPERTY OWNER(S) OR BUSINESS ENTITY:</label>
-            <input type="text" id="p_aar_property_owner_first_name" name="p_aar_property_owner_first_name" placeholder="First Name (or Business Name)" value="<?php echo htmlspecialchars($p_aar_property_owner_first_name); ?>" required>
-            <input type="text" id="p_aar_property_owner_last_name" name="p_aar_property_owner_last_name" placeholder="Last Name" value="<?php echo htmlspecialchars($p_aar_property_owner_last_name); ?>" required style="margin-top: 5px; margin-left: 0;">
+        <div class="form-group">
+        <label>PROPERTY OWNER(S) OR BUSINESS ENTITY:</label>
+        <p class="info-text">Add each name individually below. Click "Add Another Name" to add more.</p>
+        <div id="owners-container"></div>
+        <button type="button" class="btn btn-secondary btn-sm mt-2" onclick="addOwner()">
+          + Add Another Name
+        </button>
         </div>
+
         <p class="small-text">(Please List Names of All Owners, Directors and/or Shareholders)</p>
 
         <div class="form-group-line multi-line">
