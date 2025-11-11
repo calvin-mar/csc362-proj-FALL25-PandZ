@@ -1,15 +1,14 @@
 <?php
-// Show all errors from the PHP interpreter.
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+    // Show all errors from the PHP interpreter.
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
 
-// Show all errors from the MySQLi Extension.
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-
+    // Show all errors from the MySQLi Extension.
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);  
+?>
+<?php
 require_once 'config.php';
-require_once 'zoning_functions.php';
-
 requireLogin();
 
 if (getUserType() != 'client') {
@@ -23,12 +22,176 @@ $success = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $result = processZoningMapAmendment($_POST, $_FILES, $conn);
+    // Header fields
+    $p_docket_number = isset($_POST['p_docket_number']) && $_POST['p_docket_number'] !== '' ? $_POST['p_docket_number'] : null;
+    $p_public_hearing_date = isset($_POST['p_public_hearing_date']) && $_POST['p_public_hearing_date'] !== '' ? $_POST['p_public_hearing_date'] : null;
+    $p_date_application_filed = isset($_POST['p_date_application_filed']) && $_POST['p_date_application_filed'] !== '' ? $_POST['p_date_application_filed'] : null;
+    $p_application_meeting_date = isset($_POST['p_application_meeting_date']) && $_POST['p_application_meeting_date'] !== '' ? $_POST['p_application_meeting_date'] : null;
     
-    if ($result['success']) {
-        $success = $result['message'];
+    // Primary applicant fields
+    $applicant_name = isset($_POST['applicant_name']) && $_POST['applicant_name'] !== '' ? $_POST['applicant_name'] : null;
+    $officers_names = isset($_POST['officers_names']) && is_array($_POST['officers_names']) ? json_encode($_POST['officers_names']) : null;
+    $applicant_street = isset($_POST['applicant_street']) && $_POST['applicant_street'] !== '' ? $_POST['applicant_street'] : null;
+    $applicant_phone = isset($_POST['applicant_phone']) && $_POST['applicant_phone'] !== '' ? $_POST['applicant_phone'] : null;
+    $applicant_cell = isset($_POST['applicant_cell']) && $_POST['applicant_cell'] !== '' ? $_POST['applicant_cell'] : null;
+    $applicant_city = isset($_POST['applicant_city']) && $_POST['applicant_city'] !== '' ? $_POST['applicant_city'] : null;
+    $applicant_state = isset($_POST['applicant_state']) && $_POST['applicant_state'] !== '' ? $_POST['applicant_state'] : null;
+    $applicant_zip_code = isset($_POST['applicant_zip_code']) && $_POST['applicant_zip_code'] !== '' ? $_POST['applicant_zip_code'] : null;
+    $applicant_other_address = isset($_POST['applicant_other_address']) && $_POST['applicant_other_address'] !== '' ? $_POST['applicant_other_address'] : null;
+    $applicant_email = isset($_POST['applicant_email']) && $_POST['applicant_email'] !== '' ? $_POST['applicant_email'] : null;
+    
+    // Additional applicants
+    $additional_applicant_names = isset($_POST['additional_applicant_names']) && is_array($_POST['additional_applicant_names']) ? json_encode($_POST['additional_applicant_names']) : null;
+    
+    // Handle additional applicant officers dynamically
+    $additional_applicant_officers = [];
+    foreach ($_POST as $key => $value) {
+        if (preg_match('/^additional_applicant_officers_(\d+)$/', $key, $matches)) {
+            if (is_array($value)) {
+                $additional_applicant_officers[$matches[1]] = $value;
+            }
+        }
+    }
+    $additional_applicant_officers = !empty($additional_applicant_officers) ? json_encode($additional_applicant_officers) : null;
+    
+    $additional_applicant_streets = isset($_POST['additional_applicant_streets']) && is_array($_POST['additional_applicant_streets']) ? json_encode($_POST['additional_applicant_streets']) : null;
+    $additional_applicant_phones = isset($_POST['additional_applicant_phones']) && is_array($_POST['additional_applicant_phones']) ? json_encode($_POST['additional_applicant_phones']) : null;
+    $additional_applicant_cells = isset($_POST['additional_applicant_cells']) && is_array($_POST['additional_applicant_cells']) ? json_encode($_POST['additional_applicant_cells']) : null;
+    $additional_applicant_cities = isset($_POST['additional_applicant_cities']) && is_array($_POST['additional_applicant_cities']) ? json_encode($_POST['additional_applicant_cities']) : null;
+    $additional_applicant_states = isset($_POST['additional_applicant_states']) && is_array($_POST['additional_applicant_states']) ? json_encode($_POST['additional_applicant_states']) : null;
+    $additional_applicant_zip_codes = isset($_POST['additional_applicant_zip_codes']) && is_array($_POST['additional_applicant_zip_codes']) ? json_encode($_POST['additional_applicant_zip_codes']) : null;
+    $additional_applicant_other_addresses = isset($_POST['additional_applicant_other_addresses']) && is_array($_POST['additional_applicant_other_addresses']) ? json_encode($_POST['additional_applicant_other_addresses']) : null;
+    $additional_applicant_emails = isset($_POST['additional_applicant_emails']) && is_array($_POST['additional_applicant_emails']) ? json_encode($_POST['additional_applicant_emails']) : null;
+    
+    // Property owner fields
+    $applicant_first_name = isset($_POST['applicant_first_name']) && $_POST['applicant_first_name'] !== '' ? $_POST['applicant_first_name'] : null;
+    $applicant_last_name = isset($_POST['applicant_last_name']) && $_POST['applicant_last_name'] !== '' ? $_POST['applicant_last_name'] : null;
+    $owner_street = isset($_POST['owner_street']) && $_POST['owner_street'] !== '' ? $_POST['owner_street'] : null;
+    $owner_phone = isset($_POST['owner_phone']) && $_POST['owner_phone'] !== '' ? $_POST['owner_phone'] : null;
+    $owner_cell = isset($_POST['owner_cell']) && $_POST['owner_cell'] !== '' ? $_POST['owner_cell'] : null;
+    $owner_city = isset($_POST['owner_city']) && $_POST['owner_city'] !== '' ? $_POST['owner_city'] : null;
+    $owner_state = isset($_POST['owner_state']) && $_POST['owner_state'] !== '' ? $_POST['owner_state'] : null;
+    $owner_zip_code = isset($_POST['owner_zip_code']) && $_POST['owner_zip_code'] !== '' ? $_POST['owner_zip_code'] : null;
+    $owner_other_address = isset($_POST['owner_other_address']) && $_POST['owner_other_address'] !== '' ? $_POST['owner_other_address'] : null;
+    $owner_email = isset($_POST['owner_email']) && $_POST['owner_email'] !== '' ? $_POST['owner_email'] : null;
+    
+    // Additional property owners
+    $additional_owner_names = isset($_POST['additional_owner_names']) && is_array($_POST['additional_owner_names']) ? json_encode($_POST['additional_owner_names']) : null;
+    $additional_owner_streets = isset($_POST['additional_owner_streets']) && is_array($_POST['additional_owner_streets']) ? json_encode($_POST['additional_owner_streets']) : null;
+    $additional_owner_phones = isset($_POST['additional_owner_phones']) && is_array($_POST['additional_owner_phones']) ? json_encode($_POST['additional_owner_phones']) : null;
+    $additional_owner_cells = isset($_POST['additional_owner_cells']) && is_array($_POST['additional_owner_cells']) ? json_encode($_POST['additional_owner_cells']) : null;
+    $additional_owner_cities = isset($_POST['additional_owner_cities']) && is_array($_POST['additional_owner_cities']) ? json_encode($_POST['additional_owner_cities']) : null;
+    $additional_owner_states = isset($_POST['additional_owner_states']) && is_array($_POST['additional_owner_states']) ? json_encode($_POST['additional_owner_states']) : null;
+    $additional_owner_zip_codes = isset($_POST['additional_owner_zip_codes']) && is_array($_POST['additional_owner_zip_codes']) ? json_encode($_POST['additional_owner_zip_codes']) : null;
+    $additional_owner_other_addresses = isset($_POST['additional_owner_other_addresses']) && is_array($_POST['additional_owner_other_addresses']) ? json_encode($_POST['additional_owner_other_addresses']) : null;
+    $additional_owner_emails = isset($_POST['additional_owner_emails']) && is_array($_POST['additional_owner_emails']) ? json_encode($_POST['additional_owner_emails']) : null;
+    
+    // Attorney fields
+    $attorney_first_name = isset($_POST['attorney_first_name']) && $_POST['attorney_first_name'] !== '' ? $_POST['attorney_first_name'] : null;
+    $attorney_last_name = isset($_POST['attorney_last_name']) && $_POST['attorney_last_name'] !== '' ? $_POST['attorney_last_name'] : null;
+    $law_firm = isset($_POST['law_firm']) && $_POST['law_firm'] !== '' ? $_POST['law_firm'] : null;
+    $attorney_phone = isset($_POST['attorney_phone']) && $_POST['attorney_phone'] !== '' ? $_POST['attorney_phone'] : null;
+    $attorney_cell = isset($_POST['attorney_cell']) && $_POST['attorney_cell'] !== '' ? $_POST['attorney_cell'] : null;
+    $attorney_email = isset($_POST['attorney_email']) && $_POST['attorney_email'] !== '' ? $_POST['attorney_email'] : null;
+    
+    // Property information fields
+    $property_street = isset($_POST['property_street']) && $_POST['property_street'] !== '' ? $_POST['property_street'] : null;
+    $property_city = isset($_POST['property_city']) && $_POST['property_city'] !== '' ? $_POST['property_city'] : null;
+    $property_state = isset($_POST['property_state']) && $_POST['property_state'] !== '' ? $_POST['property_state'] : null;
+    $property_zip_code = isset($_POST['property_zip_code']) && $_POST['property_zip_code'] !== '' ? $_POST['property_zip_code'] : null;
+    $property_other_address = isset($_POST['property_other_address']) && $_POST['property_other_address'] !== '' ? $_POST['property_other_address'] : null;
+    $parcel_number = isset($_POST['parcel_number']) && $_POST['parcel_number'] !== '' ? $_POST['parcel_number'] : null;
+    $acreage = isset($_POST['acreage']) && $_POST['acreage'] !== '' ? $_POST['acreage'] : null;
+    $current_zoning = isset($_POST['current_zoning']) && $_POST['current_zoning'] !== '' ? $_POST['current_zoning'] : null;
+    
+    // Zoning amendment request
+    $p_zoning_map_amendment_request = isset($_POST['p_zoning_map_amendment_request']) && $_POST['p_zoning_map_amendment_request'] !== '' ? $_POST['p_zoning_map_amendment_request'] : null;
+    
+    // Zone change conditions
+    $zone_change_conditions = isset($_POST['zone_change_conditions']) && $_POST['zone_change_conditions'] !== '' ? $_POST['zone_change_conditions'] : null;
+    
+    // Findings
+    $finding_type = isset($_POST['finding_type']) && $_POST['finding_type'] !== '' ? $_POST['finding_type'] : null;
+    $findings_explanation = isset($_POST['findings_explanation']) && $_POST['findings_explanation'] !== '' ? $_POST['findings_explanation'] : null;
+    
+    // Checklist items
+    $checklist_application = isset($_POST['checklist_application']) ? 1 : 0;
+    $checklist_exhibit = isset($_POST['checklist_exhibit']) ? 1 : 0;
+    $checklist_adjacent = isset($_POST['checklist_adjacent']) ? 1 : 0;
+    $checklist_verification = isset($_POST['checklist_verification']) ? 1 : 0;
+    $checklist_fees = isset($_POST['checklist_fees']) ? 1 : 0;
+    $checklist_conditions = isset($_POST['checklist_conditions']) ? 1 : 0;
+    $checklist_concept = isset($_POST['checklist_concept']) ? 1 : 0;
+    $checklist_traffic = isset($_POST['checklist_traffic']) ? 1 : 0;
+    $checklist_geologic = isset($_POST['checklist_geologic']) ? 1 : 0;
+    
+    // Handle file uploads and convert to blobs
+    $file_exhibit = null;
+    $file_adjacent = null;
+    $file_verification = null;
+    $file_conditions = null;
+    $file_concept = null;
+    $file_traffic = null;
+    $file_geologic = null;
+    
+    if (isset($_FILES['file_exhibit']) && $_FILES['file_exhibit']['error'] === UPLOAD_ERR_OK) {
+        $file_exhibit = file_get_contents($_FILES['file_exhibit']['tmp_name']);
+    }
+    if (isset($_FILES['file_adjacent']) && $_FILES['file_adjacent']['error'] === UPLOAD_ERR_OK) {
+        $file_adjacent = file_get_contents($_FILES['file_adjacent']['tmp_name']);
+    }
+    if (isset($_FILES['file_verification']) && $_FILES['file_verification']['error'] === UPLOAD_ERR_OK) {
+        $file_verification = file_get_contents($_FILES['file_verification']['tmp_name']);
+    }
+    if (isset($_FILES['file_conditions']) && $_FILES['file_conditions']['error'] === UPLOAD_ERR_OK) {
+        $file_conditions = file_get_contents($_FILES['file_conditions']['tmp_name']);
+    }
+    if (isset($_FILES['file_concept']) && $_FILES['file_concept']['error'] === UPLOAD_ERR_OK) {
+        $file_concept = file_get_contents($_FILES['file_concept']['tmp_name']);
+    }
+    if (isset($_FILES['file_traffic']) && $_FILES['file_traffic']['error'] === UPLOAD_ERR_OK) {
+        $file_traffic = file_get_contents($_FILES['file_traffic']['tmp_name']);
+    }
+    if (isset($_FILES['file_geologic']) && $_FILES['file_geologic']['error'] === UPLOAD_ERR_OK) {
+        $file_geologic = file_get_contents($_FILES['file_geologic']['tmp_name']);
+    }
+    
+    // Signature fields
+    $signature_date_1 = isset($_POST['signature_date_1']) && $_POST['signature_date_1'] !== '' ? $_POST['signature_date_1'] : null;
+    $signature_name_1 = isset($_POST['signature_name_1']) && $_POST['signature_name_1'] !== '' ? $_POST['signature_name_1'] : null;
+    $signature_date_2 = isset($_POST['signature_date_2']) && $_POST['signature_date_2'] !== '' ? $_POST['signature_date_2'] : null;
+    $signature_name_2 = isset($_POST['signature_name_2']) && $_POST['signature_name_2'] !== '' ? $_POST['signature_name_2'] : null;
+    
+    // Admin fields
+    $application_fee = isset($_POST['application_fee']) && $_POST['application_fee'] !== '' ? $_POST['application_fee'] : null;
+    $certificate_fee = isset($_POST['certificate_fee']) && $_POST['certificate_fee'] !== '' ? $_POST['certificate_fee'] : null;
+    $p_form_datetime_resolved = isset($_POST['p_form_datetime_resolved']) && $_POST['p_form_datetime_resolved'] !== '' ? $_POST['p_form_datetime_resolved'] : null;
+    $p_form_paid_bool = isset($_POST['p_form_paid_bool']) ? 1 : 0;
+    $p_correction_form_id = isset($_POST['p_correction_form_id']) && $_POST['p_correction_form_id'] !== '' ? $_POST['p_correction_form_id'] : null;
+    
+    $sql = "CALL sp_insert_zoning_map_amendment_application(?, ?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        $error = 'Prepare failed: ' . $conn->error;
     } else {
-        $error = $result['message'];
+        $types = 'siis';
+        $bind_names = array();
+        $bind_names[] = &$p_form_datetime_resolved;
+        $bind_names[] = &$p_form_paid_bool;
+        $bind_names[] = &$p_correction_form_id;
+        $bind_names[] = &$p_zoning_map_amendment_request;
+        array_unshift($bind_names, $types);
+        $bindResult = call_user_func_array(array($stmt, 'bind_param'), $bind_names);
+        if ($bindResult === false) {
+            $error = 'Bind failed: ' . $stmt->error;
+        } else {
+            if (!$stmt->execute()) {
+                $error = 'Execute failed: ' . $stmt->error;
+            } else {
+                $success = 'Form submitted successfully!';
+            }
+        }
+        $stmt->close();
     }
 }
 ?>
@@ -138,6 +301,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     .checklist-item:last-child {
       border-bottom: none;
+    }
+    .signature-section {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid #333;
     }
     .signature-line {
       border-bottom: 1px solid #333;
@@ -381,7 +549,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h2>Application for Zoning Map Amendment</h2>
   </div>
   <p><a href="client_new_form.php">&larr; Back to form selector</a></p>
-
   <div class="header-info">
     <div>
       <strong>Docket Number:</strong> <input type="text" name="p_docket_number" class="form-control small-input d-inline" style="width: 150px;">
@@ -693,13 +860,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="form-check mb-3">
         <input class="form-check-input" type="radio" name="finding_type" id="finding3" value="major_changes">
         <label class="form-check-label" for="finding3">
-          What major economic, physical or social changes, if any, have occurred in the vicinity of the property in question that were not anticipated by the Comprehensive Plan and which have substantially altered the basic character of the area, which make the proposed amendment to the Official Zoning Map appropriate.
+          What major economic, physical or social changes, if any, have occurred in the vicinity of the property in question that were not anticipated by the Comprehensive Plan and which have substantially altered the basic character of the area, which make the proposed amendment to the Official Zoning Map appropriate. This explanation shall contain a list of such specific changes, a description as to how said changes were not anticipated by the comprehensive plan, a description as to how said changes have altered the basic character of the area and a description as to how said changes make the proposed amendment to the official zoning map appropriate.
         </label>
       </div>
     </div>
 
     <div class="form-group">
-      <label>Please check (✓) one of the above findings of fact and cite specific evidence to address such finding in the space provided below.</label>
+      <label>Please check (✓) one of the above findings of fact and cite specific evidence to address such finding in the space provided below. Please attach additional sheets if more space is needed.</label>
       <textarea class="form-control" name="findings_explanation" rows="8"></textarea>
     </div>
 
@@ -719,7 +886,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="form-check">
         <input class="form-check-input" type="checkbox" name="checklist_exhibit" id="check2">
         <label class="form-check-label" for="check2">
-          An exhibit prepared by a licensed surveyor (Please include: two (2) - 18" x 24" copies and two (2) - 11" x 17" copies)
+          An exhibit prepared by a licensed surveyor depicting the various portion(s) of the property to be included in the proposed zoning map amendment (Please include: two (2) - 18" x 24" copies and two (2) - 11" x 17" copies)
         </label>
       </div>
       <div class="file-upload-section">
@@ -771,7 +938,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </label>
       </div>
       <div class="file-upload-section">
-        <label for="file_conditions" class="font-weight-normal">Upload Signed Conditions:</label>
+        <label for="file_conditions" class="font-weight-normal">Upload Signed and Notarized Conditions:</label>
         <input type="file" class="form-control-file" name="file_conditions" id="file_conditions">
       </div>
     </div>
@@ -784,7 +951,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </label>
       </div>
       <div class="file-upload-section">
-        <label for="file_concept" class="font-weight-normal">Upload Concept Plan:</label>
+        <label for="file_concept" class="font-weight-normal">Upload Concept/Preliminary Site Plan:</label>
         <input type="file" class="form-control-file" name="file_concept" id="file_concept">
       </div>
     </div>
@@ -797,7 +964,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </label>
       </div>
       <div class="file-upload-section">
-        <label for="file_traffic" class="font-weight-normal">Upload Traffic Study:</label>
+        <label for="file_traffic" class="font-weight-normal">Upload Traffic Impact Study:</label>
         <input type="file" class="form-control-file" name="file_traffic" id="file_traffic">
       </div>
     </div>
@@ -818,7 +985,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- APPLICANT'S CERTIFICATION -->
     <div class="section-title">APPLICANT'S CERTIFICATION</div>
 
-    <p style="font-size: 13px;">I do hereby certify that, to the best of my knowledge and belief, all application materials have been submitted and that the information they contain is true and correct.</p>
+    <p style="font-size: 13px;">I do hereby certify that, to the best of my knowledge and belief, all application materials have been submitted and that the information they contain is true and correct. Please attach additional signature pages if needed.</p>
 
     <p><strong>Signature of Applicant(s) and Property Owner(s):</strong></p>
 
@@ -862,8 +1029,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <input type="text" class="form-control" name="signature_name_2">
     </div>
 
+    <p class="info-text">The foregoing signatures constitute all of the owners of the affected property necessary to convey fee title, their attorney, or their legally constituted attorney-in-fact. If the signature is of an attorney, then such signature is certification that the attorney represents each and every owner of the affected property. Please use additional signature pages, if needed.</p>
+
     <!-- ADMIN SECTION -->
-    <div class="section-title" style="background: #d0d0d0;">ADMIN SECTION</div>
+    <div class="section-title" style="background: #d0d0d0;">REQUIRED FILING FEES MUST BE PAID BEFORE ANY APPLICATION WILL BE ACCEPTED</div>
 
     <div class="row">
       <div class="col-md-4">
@@ -874,7 +1043,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
       <div class="col-md-4">
         <div class="form-group">
-          <label>Certificate Fee:</label>
+          <label>Land Use Certificate Fee:</label>
           <input type="text" class="form-control" name="certificate_fee">
         </div>
       </div>
@@ -901,6 +1070,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="form-group mt-4">
       <button class="btn btn-primary btn-lg btn-block" type="submit">Submit Application</button>
     </div>
+
   </form>
 
   <div class="footer-info">

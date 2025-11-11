@@ -7,7 +7,11 @@ spl_autoload_register(
         static $classes = null;
         if ($classes === null) {
             $classes = array(
-                'resulttohtmltabletest' => '/../tests/phpTest.php'
+                'fakemysqli' => '/../tests/phpTest.php',
+                'fakemysqliresult' => '/../tests/phpTest.php',
+                'fakestmt' => '/../tests/phpTest.php',
+                'phptest' => '/../tests/phpTest.php',
+                'zoningfunctionstest' => '/../tests/phpTest.php'
             );
         }
         $cn = strtolower($class);
