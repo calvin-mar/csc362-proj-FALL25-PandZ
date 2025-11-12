@@ -7,3 +7,4 @@ SOURCE pandz_schema_mariadb_final.sql;
 SOURCE database_sample_insert.sql;
 SOURCE auth_schema.sql;
 SOURCE form_insert_procedures.sql;
+SOURCE database_views.sql;

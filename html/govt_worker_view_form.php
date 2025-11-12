@@ -1,4 +1,3 @@
-
 <?php
 require_once 'config.php';
 requireLogin();
@@ -11,126 +10,136 @@ if (getUserType() != 'govt_worker') {
 $conn = getDBConnection();
 $form_id = $_GET['id'] ?? 0;
 
-// Get form basic info
-$stmt = $conn->prepare("SELECT * FROM forms WHERE form_id = ?");
-$stmt->bind_param("i", $form_id);
-$stmt->execute();
-$form = $stmt->fetch_all(MYSQLI_ASSOC);
-
-if (!$form) {
+// Validate form_id
+if (!is_numeric($form_id) || $form_id <= 0) {
     header('Location: govt_worker_dashboard.php');
     exit();
 }
 
-// Get client info
-$stmt = $conn->prepare("
-    SELECT c.client_id, c.client_username
-    FROM clients c
-    JOIN client_forms cf ON c.client_id = cf.client_id
-    WHERE cf.form_id = ?
-");
+// Get form summary using view
+$stmt = $conn->prepare("SELECT * FROM vw_form_summary WHERE form_id = ?");
 $stmt->bind_param("i", $form_id);
 $stmt->execute();
-$clients = $stmt->fetch_all(MYSQLI_ASSOC);
+$result = $stmt->get_result();
+$form = $result->fetch_assoc();
 
-// Get form-specific details
+if (!$form) {
+    header('Location: govt_worker_dashboard.php?error=form_not_found');
+    exit();
+}
+
+// Get client info using view
+$stmt = $conn->prepare("SELECT * FROM vw_form_clients WHERE form_id = ?");
+$stmt->bind_param("i", $form_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$clients = $result->fetch_all(MYSQLI_ASSOC);
+
+// Get form-specific details based on form type
 $form_details = null;
+$appellants = [];
+$error = null;
+
 try {
     switch ($form['form_type']) {
         case 'Administrative Appeal Request':
-            $stmt = $conn->prepare("SELECT * FROM administrative_appeal_requests WHERE form_id = ?");
+            $stmt = $conn->prepare("SELECT * FROM vw_administrative_appeal_details WHERE form_id = ?");
             $stmt->bind_param("i", $form_id);
             $stmt->execute();
-            $form_details = $stmt->fetch_all(MYSQLI_ASSOC);
+            $result = $stmt->get_result();
+            $form_details = $result->fetch_assoc();
             
-            // Get appellants
-            $stmt = $conn->prepare("
-                SELECT a.* FROM aar_appellants a
-                JOIN administrative_appellants aa ON a.aar_appellant_id = aa.aar_appellant_id
-                WHERE aa.form_id = ?
-            ");
+            // Get individual appellants
+            $stmt = $conn->prepare("SELECT * FROM vw_appeal_appellants WHERE form_id = ?");
             $stmt->bind_param("i", $form_id);
             $stmt->execute();
-            $appellants = $stmt->fetch_all(MYSQLI_ASSOC);
+            $result = $stmt->get_result();
+            $appellants = $result->fetch_all(MYSQLI_ASSOC);
             break;
             
-        case 'Variance Applicatioin':
-            $stmt = $conn->prepare("SELECT * FROM variance_applications WHERE form_id = ?");
+        case 'Variance Application':
+            $stmt = $conn->prepare("SELECT * FROM vw_variance_application_details WHERE form_id = ?");
             $stmt->bind_param("i", $form_id);
             $stmt->execute();
-            $form_details = $stmt->fetch_all(MYSQLI_ASSOC);
+            $result = $stmt->get_result();
+            $form_details = $result->fetch_assoc();
             break;
             
         case 'Zoning Verification Application':
-            $stmt = $conn->prepare("SELECT * FROM zoning_verification_letter WHERE form_id = ?");
+            $stmt = $conn->prepare("SELECT * FROM vw_zoning_verification_details WHERE form_id = ?");
             $stmt->bind_param("i", $form_id);
             $stmt->execute();
-            $form_details = $stmt->fetch_all(MYSQLI_ASSOC);
-            
-            // Get applicant
-            $stmt = $conn->prepare("SELECT * FROM zva_applicants LIMIT 1");
-            $stmt->execute();
-            $zva_applicant = $stmt->fetch_all(MYSQLI_ASSOC);
+            $result = $stmt->get_result();
+            $form_details = $result->fetch_assoc();
             break;
             
         case 'Major Subdivision Plat Application':
-            $stmt = $conn->prepare("
-                SELECT m.*, s.surveyor_first_name, s.surveyor_last_name, s.surveyor_firm,
-                       e.engineer_first_name, e.engineer_last_name, e.engineer_firm
-                FROM major_subdivision_plat_applications m
-                LEFT JOIN surveyors s ON m.surveyor_id = s.surveyor_id
-                LEFT JOIN engineers e ON m.engineer_id = e.engineer_id
-                WHERE m.form_id = ?
-            ");
+            $stmt = $conn->prepare("SELECT * FROM vw_major_subdivision_details WHERE form_id = ?");
             $stmt->bind_param("i", $form_id);
             $stmt->execute();
-            $form_details = $stmt->fetch_all(MYSQLI_ASSOC);
+            $result = $stmt->get_result();
+            $form_details = $result->fetch_assoc();
             break;
             
         case 'Zoning Permit Application':
-            $stmt = $conn->prepare("
-                SELECT z.*, s.surveyor_first_name, s.surveyor_last_name,
-                       a.architect_first_name, a.architect_last_name,
-                       l.land_architect_first_name, l.land_architect_last_name,
-                       c.contractor_first_name, c.contractor_last_name
-                FROM zoning_permit_applications z
-                LEFT JOIN surveyors s ON z.surveyor_id = s.surveyor_id
-                LEFT JOIN architects a ON z.architect_id = a.architect_id
-                LEFT JOIN land_architects l ON z.land_architect_id = l.land_architect_id
-                LEFT JOIN contractors c ON z.contractor_id = c.contractor_id
-                WHERE z.form_id = ?
-            ");
+            $stmt = $conn->prepare("SELECT * FROM vw_zoning_permit_details WHERE form_id = ?");
             $stmt->bind_param("i", $form_id);
             $stmt->execute();
-            $form_details = $stmt->fetch_all(MYSQLI_ASSOC);
+            $result = $stmt->get_result();
+            $form_details = $result->fetch_assoc();
             break;
     }
 } catch(mysqli_sql_exception $e) {
     $error = "Error loading form details: " . $e->getMessage();
 }
 
-// Get department interactions
+// Get department interactions using view
 $stmt = $conn->prepare("
-    SELECT dfi.*, d.department_name
-    FROM department_form_interactions dfi
-    LEFT JOIN departments d ON dfi.department_id = d.department_id
-    WHERE dfi.form_id = ?
-    ORDER BY dfi.department_form_interaction_id DESC
+    SELECT * FROM vw_department_interactions 
+    WHERE form_id = ? 
 ");
 $stmt->bind_param("i", $form_id);
 $stmt->execute();
-$interactions = $stmt->fetch_all(MYSQLI_ASSOC);
+$result = $stmt->get_result();
+$interactions = $result->fetch_all(MYSQLI_ASSOC);
 
-// Get correction forms
+// Get corrections using view
 $stmt = $conn->prepare("
-    SELECT cf.*, cb.correction_box_reviewer, cb.correction_box_text
-    FROM correction_forms cf
-    LEFT JOIN correction_boxes cb ON cf.correction_form_id = cb.correction_form_id
-    WHERE cf.correction_form_id = (SELECT correction_form_id FROM forms WHERE form_id = ?)
+    SELECT * FROM vw_form_corrections 
+    WHERE form_id = ?
 ");
 $stmt->bind_param("i", $form_id);
 $stmt->execute();
-$corrections = $stmt->fetch_all(MYSQLI_ASSOC);
+$result = $stmt->get_result();
+$corrections = $result->fetch_all(MYSQLI_ASSOC);
+
+/**
+ * Helper function to format field names for display
+ */
+function formatFieldName($fieldName) {
+    // Remove common prefixes
+    $fieldName = preg_replace('/^(va_|zvl_|mspa_|zpa_|aar_|zva_)/', '', $fieldName);
+    
+    // Convert underscores to spaces and capitalize words
+    return ucwords(str_replace('_', ' ', $fieldName));
+}
+
+/**
+ * Helper function to check if field should be displayed
+ */
+function shouldDisplayField($key, $value) {
+    // Skip form_id and null/empty values
+    if ($key === 'form_id' || $value === null || $value === '') {
+        return false;
+    }
+    
+    // Skip ID fields that end with _id
+    if (preg_match('/_id$/', $key)) {
+        return false;
+    }
+    
+    return true;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -151,8 +160,12 @@ $corrections = $stmt->fetch_all(MYSQLI_ASSOC);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .navbar h1 { font-size: 24px; }
+        .navbar h1 { 
+            font-size: 24px;
+            font-weight: 600;
+        }
         .navbar a {
             color: white;
             text-decoration: none;
@@ -167,6 +180,14 @@ $corrections = $stmt->fetch_all(MYSQLI_ASSOC);
             margin: 30px auto;
             padding: 0 20px;
         }
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #721c24;
+        }
         .card {
             background: white;
             padding: 30px;
@@ -179,6 +200,7 @@ $corrections = $stmt->fetch_all(MYSQLI_ASSOC);
             margin-bottom: 20px;
             border-bottom: 2px solid #dc3545;
             padding-bottom: 10px;
+            font-size: 20px;
         }
         .detail-grid {
             display: grid;
@@ -192,6 +214,7 @@ $corrections = $stmt->fetch_all(MYSQLI_ASSOC);
         }
         .detail-value {
             color: #333;
+            word-break: break-word;
         }
         .status-badge {
             display: inline-block;
@@ -227,28 +250,68 @@ $corrections = $stmt->fetch_all(MYSQLI_ASSOC);
             font-weight: 600;
             color: #dc3545;
             margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .interaction-date, .correction-date {
+            font-size: 12px;
+            color: #666;
+            font-weight: normal;
+        }
+        .interaction-text, .correction-text {
+            color: #333;
+            line-height: 1.6;
+            margin-top: 8px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
         }
         th, td {
-            padding: 10px;
+            padding: 12px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
         th {
             background: #f8f9fa;
             font-weight: 600;
+            color: #333;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+        .metric-badge {
+            display: inline-block;
+            background: #e9ecef;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 13px;
+            color: #495057;
+            margin-left: 10px;
         }
     </style>
 </head>
 <body>
     <div class="navbar">
         <h1>Form Details - ID: <?php echo htmlspecialchars($form_id); ?></h1>
-        <a href="govt_worker_dashboard.php">Back to Dashboard</a>
+        <a href="govt_worker_dashboard.php">← Back to Dashboard</a>
     </div>
+    
     <div class="container">
+        <?php if ($error): ?>
+            <div class="error-message">
+                <?php echo htmlspecialchars($error); ?>
+            </div>
+        <?php endif; ?>
+        
+        <!-- Basic Information Card -->
         <div class="card">
             <h2>Basic Information</h2>
             <div class="detail-grid">
@@ -259,29 +322,43 @@ $corrections = $stmt->fetch_all(MYSQLI_ASSOC);
                 <div class="detail-value"><?php echo htmlspecialchars($form['form_type']); ?></div>
                 
                 <div class="detail-label">Submitted:</div>
-                <div class="detail-value"><?php echo htmlspecialchars($form['form_datetime_submitted']); ?></div>
+                <div class="detail-value">
+                    <?php echo htmlspecialchars($form['form_datetime_submitted']); ?>
+                    <span class="metric-badge"><?php echo $form['days_since_submission']; ?> days ago</span>
+                </div>
                 
                 <div class="detail-label">Status:</div>
                 <div class="detail-value">
                     <span class="status-badge <?php echo $form['form_datetime_resolved'] ? 'status-resolved' : 'status-pending'; ?>">
-                        <?php echo $form['form_datetime_resolved'] ? 'Resolved' : 'Pending'; ?>
+                        <?php echo htmlspecialchars($form['form_status']); ?>
                     </span>
                 </div>
                 
                 <div class="detail-label">Payment:</div>
                 <div class="detail-value">
                     <span class="status-badge <?php echo $form['form_paid_bool'] ? 'status-paid' : 'status-unpaid'; ?>">
-                        <?php echo $form['form_paid_bool'] ? 'Paid' : 'Unpaid'; ?>
+                        <?php echo htmlspecialchars($form['payment_status']); ?>
                     </span>
                 </div>
                 
                 <?php if ($form['form_datetime_resolved']): ?>
                     <div class="detail-label">Resolved:</div>
-                    <div class="detail-value"><?php echo htmlspecialchars($form['form_datetime_resolved']); ?></div>
+                    <div class="detail-value">
+                        <?php echo htmlspecialchars($form['form_datetime_resolved']); ?>
+                        <?php if ($form['days_to_resolve']): ?>
+                            <span class="metric-badge">Resolved in <?php echo $form['days_to_resolve']; ?> days</span>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if ($form['correction_form_id']): ?>
+                    <div class="detail-label">Correction Form ID:</div>
+                    <div class="detail-value"><?php echo htmlspecialchars($form['correction_form_id']); ?></div>
                 <?php endif; ?>
             </div>
         </div>
         
+        <!-- Associated Clients Card -->
         <?php if (count($clients) > 0): ?>
             <div class="card">
                 <h2>Associated Clients</h2>
@@ -290,6 +367,8 @@ $corrections = $stmt->fetch_all(MYSQLI_ASSOC);
                         <tr>
                             <th>Client ID</th>
                             <th>Username</th>
+                            <th>Name</th>
+                            <th>Email</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -297,6 +376,12 @@ $corrections = $stmt->fetch_all(MYSQLI_ASSOC);
                             <tr>
                                 <td><?php echo htmlspecialchars($client['client_id']); ?></td>
                                 <td><?php echo htmlspecialchars($client['client_username']); ?></td>
+                                <td>
+                                    <?php 
+                                    echo htmlspecialchars($client['client_first_name'] . ' ' . $client['client_last_name']); 
+                                    ?>
+                                </td>
+                                <td><?php echo htmlspecialchars($client['client_email']); ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -304,13 +389,14 @@ $corrections = $stmt->fetch_all(MYSQLI_ASSOC);
             </div>
         <?php endif; ?>
         
+        <!-- Form-Specific Details Card -->
         <?php if ($form_details): ?>
             <div class="card">
                 <h2>Form-Specific Details</h2>
                 <div class="detail-grid">
                     <?php foreach ($form_details as $key => $value): ?>
-                        <?php if ($key != 'form_id' && $value !== null && $value !== ''): ?>
-                            <div class="detail-label"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $key))); ?>:</div>
+                        <?php if (shouldDisplayField($key, $value)): ?>
+                            <div class="detail-label"><?php echo htmlspecialchars(formatFieldName($key)); ?>:</div>
                             <div class="detail-value"><?php echo htmlspecialchars($value); ?></div>
                         <?php endif; ?>
                     <?php endforeach; ?>
@@ -318,21 +404,30 @@ $corrections = $stmt->fetch_all(MYSQLI_ASSOC);
             </div>
         <?php endif; ?>
         
-        <?php if (isset($appellants) && count($appellants) > 0): ?>
+        <!-- Appellants Card (for Administrative Appeals) -->
+        <?php if (count($appellants) > 0): ?>
             <div class="card">
                 <h2>Appellants</h2>
                 <table>
                     <thead>
                         <tr>
-                            <th>First Name</th>
-                            <th>Last Name</th>
+                            <th>Name</th>
+                            <th>Address</th>
+                            <th>Phone</th>
+                            <th>Email</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($appellants as $appellant): ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($appellant['aar_first_name']); ?></td>
-                                <td><?php echo htmlspecialchars($appellant['aar_last_name']); ?></td>
+                                <td>
+                                    <?php 
+                                    echo htmlspecialchars($appellant['aar_first_name'] . ' ' . $appellant['aar_last_name']); 
+                                    ?>
+                                </td>
+                                <td><?php echo htmlspecialchars($appellant['aar_address'] ?? 'N/A'); ?></td>
+                                <td><?php echo htmlspecialchars($appellant['aar_phone'] ?? 'N/A'); ?></td>
+                                <td><?php echo htmlspecialchars($appellant['aar_email'] ?? 'N/A'); ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -340,33 +435,64 @@ $corrections = $stmt->fetch_all(MYSQLI_ASSOC);
             </div>
         <?php endif; ?>
         
+        <!-- Department Interactions Card -->
         <?php if (count($interactions) > 0): ?>
             <div class="card">
-                <h2>Department Interactions</h2>
+                <h2>Department Interactions <span class="metric-badge"><?php echo count($interactions); ?> total</span></h2>
                 <?php foreach ($interactions as $interaction): ?>
                     <div class="interaction-item">
                         <div class="interaction-header">
-                            <?php echo htmlspecialchars($interaction['department_name'] ?? 'Department'); ?>
+                            <span><?php echo htmlspecialchars($interaction['department_name'] ?? 'Department'); ?></span>
+                            <span class="interaction-date">
+                                <?php echo htmlspecialchars($interaction['department_form_interaction_datetime'] ?? ''); ?>
+                            </span>
                         </div>
-                        <div><?php echo htmlspecialchars($interaction['department_form_interaction_description']); ?></div>
+                        <div class="interaction-text">
+                            <?php echo nl2br(htmlspecialchars($interaction['department_form_interaction_description'] ?? 'No description')); ?>
+                        </div>
                     </div>
                 <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div class="card">
+                <h2>Department Interactions</h2>
+                <div class="empty-state">No department interactions recorded for this form.</div>
             </div>
         <?php endif; ?>
         
-        <?php if (count($corrections) > 0): ?>
-            <div class="card">
-                <h2>Corrections</h2>
-                <?php foreach ($corrections as $correction): ?>
-                    <div class="correction-item">
-                        <div class="correction-header">
-                            Reviewer: <?php echo htmlspecialchars($correction['correction_box_reviewer'] ?? 'N/A'); ?>
-                        </div>
-                        <div><?php echo htmlspecialchars($correction['correction_box_text'] ?? 'No text provided'); ?></div>
-                    </div>
-                <?php endforeach; ?>
+ <!-- Corrections Card -->
+<?php if (count($corrections) > 0): ?>
+    <div class="card">
+        <h2>Corrections <span class="metric-badge"><?php echo count($corrections); ?> total</span></h2>
+        <?php foreach ($corrections as $correction): ?>
+            <div class="correction-item">
+                <div class="correction-header">
+                    <span>Reviewer: <?php echo htmlspecialchars($correction['correction_box_reviewer'] ?? 'N/A'); ?></span>
+                    <span class="correction-date">
+                        <?php echo htmlspecialchars($correction['correction_box_datetime'] ?? ''); ?>
+                    </span>
+                </div>
+                <div class="correction-text">
+                    <?php echo nl2br(htmlspecialchars($correction['correction_box_text'] ?? 'No text provided')); ?>
+                </div>
             </div>
-        <?php endif; ?>
+        <?php endforeach; ?>
     </div>
+<?php else: ?>
+    <div class="card">
+        <h2>Corrections</h2>
+        <div class="empty-state">No corrections recorded for this form.</div>
+    </div>
+<?php endif; ?>
+
+<!-- Add Correction Button -->
+<div class="text-center" style="margin-top: 20px;">
+    <form method="get" action="add_correction.php">
+        <input type="hidden" name="form_id" value="<?php echo htmlspecialchars($form_id ?? ''); ?>">
+        <button type="submit" class="btn btn-primary" style="padding: 10px 20px; font-weight: 500;">
+            ➕ Add Correction
+        </button>
+    </form>
+</div>
 </body>
 </html>
