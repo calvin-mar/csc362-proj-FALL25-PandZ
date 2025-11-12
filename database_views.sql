@@ -199,3 +199,19 @@ SELECT
 FROM forms f
 JOIN correction_forms cf ON f.correction_form_id = cf.correction_form_id
 JOIN correction_boxes cb ON cf.correction_form_id = cb.correction_form_id;
+
+-- 11. v_form_metrics: Key performance indicators for forms
+CREATE OR REPLACE VIEW v_form_metrics AS
+SELECT
+    -- Total forms ever submitted
+    COUNT(*) AS total_forms_submitted,
+
+    -- Total forms resolved (those with a non-null resolution date)
+    SUM(CASE WHEN f.form_datetime_resolved IS NOT NULL THEN 1 ELSE 0 END) AS total_forms_resolved,
+
+    -- Total forms flagged for correction (exist in vw_form_corrections)
+    (
+        SELECT COUNT(DISTINCT vc.form_id)
+        FROM vw_form_corrections vc
+    ) AS incomplete_client_forms
+FROM vw_form_summary f;
