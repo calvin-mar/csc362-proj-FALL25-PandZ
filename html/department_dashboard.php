@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_interaction'])) {
     $description = $_POST['description'];
     
     try {
-        $stmt = $conn->prepare("INSERT INTO department_form_interactions (department_id, form_id, department_form_interaction_description) VALUES (?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO department_form_interactions (client_id, form_id, department_form_interaction_description) VALUES (?, ?, ?)");
         $stmt->bind_param("iis", $department_id, $form_id, $description);
         $stmt->execute();
         $success = "Interaction added successfully!";

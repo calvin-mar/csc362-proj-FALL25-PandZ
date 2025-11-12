@@ -22,9 +22,7 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_insert_administrative_appeal_request$$
 CREATE PROCEDURE sp_insert_administrative_appeal_request(
   -- Form metadata
-  IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   -- Hearing/submission dates
   IN p_aar_hearing_date DATE,
   IN p_aar_submit_date DATE,
@@ -73,16 +71,12 @@ BEGIN
   INSERT INTO forms(
     form_type, 
     form_datetime_submitted, 
-    form_datetime_resolved, 
-    form_paid_bool, 
-    correction_form_id
+    form_paid_bool
   )
   VALUES(
     'Administrative Appeal Request', 
     CURRENT_TIMESTAMP, 
-    p_form_datetime_resolved, 
-    p_form_paid_bool, 
-    p_correction_form_id
+    p_form_paid_bool
   );
   SET @new_form_id = LAST_INSERT_ID();
 

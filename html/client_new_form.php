@@ -30,6 +30,7 @@ $error = '';
 <div class="container py-4">
   <h1>Create New Form</h1>
   <p>Select which form you want to fill and submit. This hub will redirect to the individual form page.</p>
+  <p><a href="client_dashboard.php">&larr; Back to dashboard</a></p>
   <div class="card p-4 shadow-sm">
   <form method="get" action="">
     <div class="form-group">

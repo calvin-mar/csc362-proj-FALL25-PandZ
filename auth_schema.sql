@@ -5,7 +5,7 @@
 -- Insert sample client (username: client1, password: password123)
 INSERT INTO clients (client_username, client_password, client_type) VALUES 
   ('client1', '$2y$10$GDH588FxhJiWyrBxgjFAPuQKoVoh8TB2zw17d0USHY/4cyJ8N/zti', 'client'),
-  ('Planning', '$2y$10$GDH588FxhJiWyrBxgjFAPuQKoVoh8TB2zw17d0USHY/4cyJ8N/zti', 'deparment'),
+  ('Planning', '$2y$10$GDH588FxhJiWyrBxgjFAPuQKoVoh8TB2zw17d0USHY/4cyJ8N/zti', 'department'),
   ('admin', '$2y$10$GDH588FxhJiWyrBxgjFAPuQKoVoh8TB2zw17d0USHY/4cyJ8N/zti', 'govt_worker');
 
 INSERT INTO departments(client_id, department_name) VALUES

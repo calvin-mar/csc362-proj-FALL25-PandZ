@@ -160,6 +160,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="login-header">
             <h1>P&Z Database</h1>
             <p>Sign in to access your dashboard</p>
+            <p><a href="https://www.boyleplanning.org/applications-fees">&larr; Return to main site</a></p>
+
         </div>
         
         <?php if ($error): ?>

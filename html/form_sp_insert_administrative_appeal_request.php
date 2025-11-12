@@ -21,7 +21,6 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Form metadata
-        $p_form_datetime_resolved = $_POST['p_form_datetime_resolved'] ?? null;
         $p_form_paid_bool = 0; // Default to unpaid on submission
         $p_correction_form_id = isset($_POST['p_correction_form_id']) && $_POST['p_correction_form_id'] !== '' ? (int)$_POST['p_correction_form_id'] : null;
         
@@ -81,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Call the stored procedure with 23 parameters
-        $sql = "CALL sp_insert_administrative_appeal_request(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "CALL sp_insert_administrative_appeal_request(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
         
         if (!$stmt) {
@@ -89,10 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Bind all parameters
-        $stmt->bind_param('siisssssssssssssssssss',
-            $p_form_datetime_resolved,
+        $stmt->bind_param('isssssssssssssssssss',
             $p_form_paid_bool,
-            $p_correction_form_id,
             $p_aar_hearing_date,
             $p_aar_submit_date,
             $p_aar_street_address,
@@ -470,26 +467,7 @@ if ($states_result) {
                     <input type="text" class="form-control" id="p_adjacent_property_owner_zip" name="p_adjacent_property_owner_zip">
                 </div>
             </div>
-        </div>
-
-        <div class="section-title">ADMINISTRATIVE FIELDS (OPTIONAL)</div>
-        
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="p_form_datetime_resolved">Form Resolved Date:</label>
-                    <input type="datetime-local" class="form-control" id="p_form_datetime_resolved" name="p_form_datetime_resolved">
-                    <small class="form-text text-muted">Leave blank if not yet resolved</small>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="p_correction_form_id">Correction Form ID:</label>
-                    <input type="number" class="form-control" id="p_correction_form_id" name="p_correction_form_id">
-                    <small class="form-text text-muted">Only if correcting a previous form</small>
-                </div>
-            </div>
-        </div>
+        </div> 
 
         <div class="signature-section">
             <p style="font-size: 13px;">I hereby certify that the information provided in this application is true and correct to the best of my knowledge.</p>
