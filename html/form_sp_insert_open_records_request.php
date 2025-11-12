@@ -15,13 +15,24 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $p_form_datetime_resolved = isset($_POST['p_form_datetime_resolved']) && $_POST['p_form_datetime_resolved'] !== '' ? $_POST['p_form_datetime_resolved'] : null;
     $p_form_paid_bool = 0;
-    $p_correction_form_id = isset($_POST['p_correction_form_id']) && $_POST['p_correction_form_id'] !== '' ? $_POST['p_correction_form_id'] : null;
+    $p_correction_form_id = null; // Added: missing parameter
     $p_orr_commercial_purpose = isset($_POST['p_orr_commercial_purpose']) && $_POST['p_orr_commercial_purpose'] !== '' ? $_POST['p_orr_commercial_purpose'] : null;
     $p_orr_request_for_copies = isset($_POST['p_orr_request_for_copies']) && $_POST['p_orr_request_for_copies'] !== '' ? $_POST['p_orr_request_for_copies'] : null;
     $p_orr_received_on_datetime = isset($_POST['p_orr_received_on_datetime']) && $_POST['p_orr_received_on_datetime'] !== '' ? $_POST['p_orr_received_on_datetime'] : null;
     $p_orr_receivable_datetime = isset($_POST['p_orr_receivable_datetime']) && $_POST['p_orr_receivable_datetime'] !== '' ? $_POST['p_orr_receivable_datetime'] : null;
     $p_orr_denied_reasons = isset($_POST['p_orr_denied_reasons']) && $_POST['p_orr_denied_reasons'] !== '' ? $_POST['p_orr_denied_reasons'] : null;
-    $p_orr_applicant_name = isset($_POST['p_orr_applicant_name']) && $_POST['p_orr_applicant_name'] !== '' ? $_POST['p_orr_applicant_name'] : null;
+    
+    // Parse name into first and last name
+    $p_orr_applicant_name = isset($_POST['p_orr_applicant_name']) && $_POST['p_orr_applicant_name'] !== '' ? $_POST['p_orr_applicant_name'] : '';
+    if ($p_orr_applicant_name !== '') {
+        $name_parts = explode(' ', trim($p_orr_applicant_name), 2);
+        $p_orr_applicant_first_name = $name_parts[0];
+        $p_orr_applicant_last_name = isset($name_parts[1]) ? $name_parts[1] : '';
+    } else {
+        $p_orr_applicant_first_name = null;
+        $p_orr_applicant_last_name = null;
+    }
+    
     $p_orr_applicant_telephone = isset($_POST['p_orr_applicant_telephone']) && $_POST['p_orr_applicant_telephone'] !== '' ? $_POST['p_orr_applicant_telephone'] : null;
     $p_orr_applicant_street = isset($_POST['p_orr_applicant_street']) && $_POST['p_orr_applicant_street'] !== '' ? $_POST['p_orr_applicant_street'] : null;
     $p_orr_applicant_city = isset($_POST['p_orr_applicant_city']) && $_POST['p_orr_applicant_city'] !== '' ? $_POST['p_orr_applicant_city'] : null;
@@ -29,28 +40,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $p_orr_applicant_zip_code = isset($_POST['p_orr_applicant_zip_code']) && $_POST['p_orr_applicant_zip_code'] !== '' ? $_POST['p_orr_applicant_zip_code'] : null;
     $p_orr_records_requested = isset($_POST['p_orr_records_requested']) && $_POST['p_orr_records_requested'] !== '' ? $_POST['p_orr_records_requested'] : null;
     
-    $sql = "CALL sp_insert_open_records_request(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    // Fixed: Now calling with 18 parameters matching the stored procedure
+    $sql = "CALL sp_insert_open_records_request(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         $error = 'Prepare failed: ' . $conn->error;
     } else {
-        $types = 'siissssssssssss';
+        $types = 'siissssssssssssss'; // Updated: 18 parameters (s=string, i=integer)
         $bind_names = array();
         $bind_names[] = &$p_form_datetime_resolved;
         $bind_names[] = &$p_form_paid_bool;
-        $bind_names[] = &$p_correction_form_id;
+        $bind_names[] = &$p_correction_form_id; // Added
         $bind_names[] = &$p_orr_commercial_purpose;
         $bind_names[] = &$p_orr_request_for_copies;
         $bind_names[] = &$p_orr_received_on_datetime;
         $bind_names[] = &$p_orr_receivable_datetime;
         $bind_names[] = &$p_orr_denied_reasons;
-        $bind_names[] = &$p_orr_applicant_name;
+        $bind_names[] = &$p_orr_applicant_first_name; // Changed: split name
+        $bind_names[] = &$p_orr_applicant_last_name;  // Changed: split name
         $bind_names[] = &$p_orr_applicant_telephone;
         $bind_names[] = &$p_orr_applicant_street;
         $bind_names[] = &$p_orr_applicant_city;
         $bind_names[] = &$p_orr_state_code;
         $bind_names[] = &$p_orr_applicant_zip_code;
-        $bind_names[] = &$p_orr_records_requested;
+        $bind_names[] = &$p_orr_records_requested; // Changed: renamed to match SP
         array_unshift($bind_names, $types);
         $bindResult = @call_user_func_array(array($stmt, 'bind_param'), $bind_names);
         if ($bindResult === false) {

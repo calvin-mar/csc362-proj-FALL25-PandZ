@@ -13,112 +13,314 @@ $success = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Header fields
-    $application_filing_date = isset($_POST['application_filing_date']) && $_POST['application_filing_date'] !== '' ? $_POST['application_filing_date'] : null;
-    $technical_review_date = isset($_POST['technical_review_date']) && $_POST['technical_review_date'] !== '' ? $_POST['technical_review_date'] : null;
-    $preliminary_approval_date = isset($_POST['preliminary_approval_date']) && $_POST['preliminary_approval_date'] !== '' ? $_POST['preliminary_approval_date'] : null;
-    $final_approval_date = isset($_POST['final_approval_date']) && $_POST['final_approval_date'] !== '' ? $_POST['final_approval_date'] : null;
-    
-    // Primary applicant fields
-    $applicant_name = isset($_POST['applicant_name']) && $_POST['applicant_name'] !== '' ? $_POST['applicant_name'] : null;
-    $officers_names = isset($_POST['officers_names']) && is_array($_POST['officers_names']) ? json_encode($_POST['officers_names']) : null;
-    $applicant_mailing_address = isset($_POST['applicant_mailing_address']) && $_POST['applicant_mailing_address'] !== '' ? $_POST['applicant_mailing_address'] : null;
-    $applicant_phone = isset($_POST['applicant_phone']) && $_POST['applicant_phone'] !== '' ? $_POST['applicant_phone'] : null;
-    $applicant_cell = isset($_POST['applicant_cell']) && $_POST['applicant_cell'] !== '' ? $_POST['applicant_cell'] : null;
-    $applicant_email = isset($_POST['applicant_email']) && $_POST['applicant_email'] !== '' ? $_POST['applicant_email'] : null;
-    
-    // Additional applicants
-    $additional_applicant_names = isset($_POST['additional_applicant_names']) && is_array($_POST['additional_applicant_names']) ? json_encode($_POST['additional_applicant_names']) : null;
-    $additional_applicant_officers = [];
-    foreach ($_POST as $key => $value) {
-        if (preg_match('/^additional_applicant_officers_(\d+)$/', $key, $matches)) {
-            if (is_array($value)) {
-                $additional_applicant_officers[$matches[1]] = $value;
+    try {
+        // Technical form dates
+        $application_filing_date = isset($_POST['application_filing_date']) && $_POST['application_filing_date'] !== '' ? $_POST['application_filing_date'] : null;
+        $technical_review_date = isset($_POST['technical_review_date']) && $_POST['technical_review_date'] !== '' ? $_POST['technical_review_date'] : null;
+        $preliminary_approval_date = isset($_POST['preliminary_approval_date']) && $_POST['preliminary_approval_date'] !== '' ? $_POST['preliminary_approval_date'] : null;
+        $final_approval_date = isset($_POST['final_approval_date']) && $_POST['final_approval_date'] !== '' ? $_POST['final_approval_date'] : null;
+        
+        // Primary applicant fields
+        $applicant_name = isset($_POST['applicant_name']) && $_POST['applicant_name'] !== '' ? $_POST['applicant_name'] : null;
+        $officers_names = isset($_POST['officers_names']) && is_array($_POST['officers_names']) 
+            ? json_encode(array_filter($_POST['officers_names'], function($v) { return $v !== ''; })) 
+            : null;
+        
+        // Parse mailing address into components
+        $applicant_mailing_address = isset($_POST['applicant_mailing_address']) && $_POST['applicant_mailing_address'] !== '' ? $_POST['applicant_mailing_address'] : null;
+        // For now, store full address in street field - could be enhanced to parse
+        $applicant_street = $applicant_mailing_address;
+        $applicant_city = null;
+        $applicant_state = null;
+        $applicant_zip_code = null;
+        $applicant_other_address = null;
+        
+        $applicant_phone = isset($_POST['applicant_phone']) && $_POST['applicant_phone'] !== '' ? $_POST['applicant_phone'] : null;
+        $applicant_cell = isset($_POST['applicant_cell']) && $_POST['applicant_cell'] !== '' ? $_POST['applicant_cell'] : null;
+        $applicant_email = isset($_POST['applicant_email']) && $_POST['applicant_email'] !== '' ? $_POST['applicant_email'] : null;
+        
+        // Additional applicants - filter out empty entries
+        $additional_applicant_names = isset($_POST['additional_applicant_names']) && is_array($_POST['additional_applicant_names']) 
+            ? json_encode(array_values(array_filter($_POST['additional_applicant_names'], function($v) { return $v !== ''; }))) 
+            : null;
+        
+        // Build additional applicant officers structure
+        $additional_applicant_officers = [];
+        foreach ($_POST as $key => $value) {
+            if (preg_match('/^additional_applicant_officers_(\d+)$/', $key, $matches)) {
+                if (is_array($value)) {
+                    $filtered = array_filter($value, function($v) { return $v !== ''; });
+                    if (!empty($filtered)) {
+                        $additional_applicant_officers[$matches[1]] = array_values($filtered);
+                    }
+                }
             }
         }
+        $additional_applicant_officers_json = !empty($additional_applicant_officers) ? json_encode($additional_applicant_officers) : null;
+        
+        // Additional applicant addresses (stored as single strings)
+        $additional_applicant_mailing_addresses = isset($_POST['additional_applicant_mailing_addresses']) && is_array($_POST['additional_applicant_mailing_addresses']) 
+            ? $_POST['additional_applicant_mailing_addresses'] 
+            : [];
+        $additional_applicant_streets = !empty($additional_applicant_mailing_addresses) ? json_encode(array_values($additional_applicant_mailing_addresses)) : null;
+        $additional_applicant_cities = null;
+        $additional_applicant_states = null;
+        $additional_applicant_zip_codes = null;
+        $additional_applicant_other_addresses = null;
+        
+        $additional_applicant_phones = isset($_POST['additional_applicant_phones']) && is_array($_POST['additional_applicant_phones']) 
+            ? json_encode(array_values($_POST['additional_applicant_phones'])) 
+            : null;
+        $additional_applicant_cells = isset($_POST['additional_applicant_cells']) && is_array($_POST['additional_applicant_cells']) 
+            ? json_encode(array_values($_POST['additional_applicant_cells'])) 
+            : null;
+        $additional_applicant_emails = isset($_POST['additional_applicant_emails']) && is_array($_POST['additional_applicant_emails']) 
+            ? json_encode(array_values($_POST['additional_applicant_emails'])) 
+            : null;
+        
+        // Property owner fields - parse name into first/last
+        $owner_name = isset($_POST['owner_name']) && $_POST['owner_name'] !== '' ? $_POST['owner_name'] : null;
+        if ($owner_name) {
+            $name_parts = explode(' ', $owner_name, 2);
+            $owner_first_name = $name_parts[0];
+            $owner_last_name = isset($name_parts[1]) ? $name_parts[1] : '';
+        } else {
+            $owner_first_name = null;
+            $owner_last_name = null;
+        }
+        
+        $owner_mailing_address = isset($_POST['owner_mailing_address']) && $_POST['owner_mailing_address'] !== '' ? $_POST['owner_mailing_address'] : null;
+        $owner_street = $owner_mailing_address;
+        $owner_city = null;
+        $owner_state = null;
+        $owner_zip_code = null;
+        $owner_other_address = null;
+        
+        $owner_phone = isset($_POST['owner_phone']) && $_POST['owner_phone'] !== '' ? $_POST['owner_phone'] : null;
+        $owner_cell = isset($_POST['owner_cell']) && $_POST['owner_cell'] !== '' ? $_POST['owner_cell'] : null;
+        $owner_email = isset($_POST['owner_email']) && $_POST['owner_email'] !== '' ? $_POST['owner_email'] : null;
+        
+        // Additional property owners
+        $additional_owner_names = isset($_POST['additional_owner_names']) && is_array($_POST['additional_owner_names']) 
+            ? json_encode(array_values(array_filter($_POST['additional_owner_names'], function($v) { return $v !== ''; }))) 
+            : null;
+        
+        $additional_owner_mailing_addresses = isset($_POST['additional_owner_mailing_addresses']) && is_array($_POST['additional_owner_mailing_addresses']) 
+            ? $_POST['additional_owner_mailing_addresses'] 
+            : [];
+        $additional_owner_streets = !empty($additional_owner_mailing_addresses) ? json_encode(array_values($additional_owner_mailing_addresses)) : null;
+        $additional_owner_cities = null;
+        $additional_owner_states = null;
+        $additional_owner_zip_codes = null;
+        $additional_owner_other_addresses = null;
+        
+        $additional_owner_phones = isset($_POST['additional_owner_phones']) && is_array($_POST['additional_owner_phones']) 
+            ? json_encode(array_values($_POST['additional_owner_phones'])) 
+            : null;
+        $additional_owner_cells = isset($_POST['additional_owner_cells']) && is_array($_POST['additional_owner_cells']) 
+            ? json_encode(array_values($_POST['additional_owner_cells'])) 
+            : null;
+        $additional_owner_emails = isset($_POST['additional_owner_emails']) && is_array($_POST['additional_owner_emails']) 
+            ? json_encode(array_values($_POST['additional_owner_emails'])) 
+            : null;
+        
+        // Surveyor fields - parse name
+        $surveyor_name = isset($_POST['surveyor_name']) && $_POST['surveyor_name'] !== '' ? $_POST['surveyor_name'] : null;
+        if ($surveyor_name) {
+            $name_parts = explode(' ', $surveyor_name, 2);
+            $surveyor_first_name = $name_parts[0];
+            $surveyor_last_name = isset($name_parts[1]) ? $name_parts[1] : '';
+        } else {
+            $surveyor_first_name = null;
+            $surveyor_last_name = null;
+        }
+        $surveyor_id = null; // Always create new surveyor
+        $surveyor_firm = isset($_POST['surveyor_firm']) && $_POST['surveyor_firm'] !== '' ? $_POST['surveyor_firm'] : null;
+        $surveyor_phone = isset($_POST['surveyor_phone']) && $_POST['surveyor_phone'] !== '' ? $_POST['surveyor_phone'] : null;
+        $surveyor_cell = isset($_POST['surveyor_cell']) && $_POST['surveyor_cell'] !== '' ? $_POST['surveyor_cell'] : null;
+        $surveyor_email = isset($_POST['surveyor_email']) && $_POST['surveyor_email'] !== '' ? $_POST['surveyor_email'] : null;
+        
+        // Engineer fields - parse name
+        $engineer_name = isset($_POST['engineer_name']) && $_POST['engineer_name'] !== '' ? $_POST['engineer_name'] : null;
+        if ($engineer_name) {
+            $name_parts = explode(' ', $engineer_name, 2);
+            $engineer_first_name = $name_parts[0];
+            $engineer_last_name = isset($name_parts[1]) ? $name_parts[1] : '';
+        } else {
+            $engineer_first_name = null;
+            $engineer_last_name = null;
+        }
+        $engineer_id = null; // Always create new engineer
+        $engineer_firm = isset($_POST['engineer_firm']) && $_POST['engineer_firm'] !== '' ? $_POST['engineer_firm'] : null;
+        $engineer_phone = isset($_POST['engineer_phone']) && $_POST['engineer_phone'] !== '' ? $_POST['engineer_phone'] : null;
+        $engineer_cell = isset($_POST['engineer_cell']) && $_POST['engineer_cell'] !== '' ? $_POST['engineer_cell'] : null;
+        $engineer_email = isset($_POST['engineer_email']) && $_POST['engineer_email'] !== '' ? $_POST['engineer_email'] : null;
+        
+        // Property information - parse address
+        $property_address = isset($_POST['property_address']) && $_POST['property_address'] !== '' ? $_POST['property_address'] : null;
+        $property_street = $property_address;
+        $property_city = null;
+        $property_state = null;
+        $property_zip_code = null;
+        $property_other_address = null;
+        
+        $parcel_number = isset($_POST['parcel_number']) && $_POST['parcel_number'] !== '' ? (int)$_POST['parcel_number'] : null;
+        $acreage = isset($_POST['lot_acreage']) && $_POST['lot_acreage'] !== '' ? $_POST['lot_acreage'] : null;
+        $current_zoning = isset($_POST['current_zoning']) && $_POST['current_zoning'] !== '' ? $_POST['current_zoning'] : null;
+        
+        // Subdivision plat details
+        $minspa_proposed_plot_layout = isset($_POST['file_lot_layout']) ? 'Uploaded' : null;
+        $minspa_topographic_survey = isset($_POST['file_topographic']) ? 'Uploaded' : null;
+        $minspa_plat_restrictions = isset($_POST['file_restrictions']) ? 'Uploaded' : null;
+        $minspa_property_owner_covenants = null;
+        $minspa_association_covenants = null;
+        $minspa_master_deed = null;
+        
+        // Checklist items
+        $checklist_application = isset($_POST['checklist_application']) ? 1 : 0;
+        $checklist_agency_signatures = isset($_POST['checklist_agency_signatures']) ? 1 : 0;
+        $checklist_lot_layout = isset($_POST['checklist_lot_layout']) ? 1 : 0;
+        $checklist_topographic = isset($_POST['checklist_topographic']) ? 1 : 0;
+        $checklist_restrictions = isset($_POST['checklist_restrictions']) ? 1 : 0;
+        $checklist_fees = isset($_POST['checklist_fees']) ? 1 : 0;
+        
+        // Handle file uploads - store file paths/names
+        $file_agency_signatures = null;
+        $file_lot_layout = null;
+        $file_topographic = null;
+        $file_restrictions = null;
+        
+        if (isset($_FILES['file_agency_signatures']) && $_FILES['file_agency_signatures']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = 'uploads/subdivision_agency_signatures/';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            $file_agency_signatures = $upload_dir . uniqid() . '_' . basename($_FILES['file_agency_signatures']['name']);
+            move_uploaded_file($_FILES['file_agency_signatures']['tmp_name'], $file_agency_signatures);
+        }
+        
+        if (isset($_FILES['file_lot_layout']) && $_FILES['file_lot_layout']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = 'uploads/subdivision_lot_layout/';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            $file_lot_layout = $upload_dir . uniqid() . '_' . basename($_FILES['file_lot_layout']['name']);
+            move_uploaded_file($_FILES['file_lot_layout']['tmp_name'], $file_lot_layout);
+        }
+        
+        if (isset($_FILES['file_topographic']) && $_FILES['file_topographic']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = 'uploads/subdivision_topographic/';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            $file_topographic = $upload_dir . uniqid() . '_' . basename($_FILES['file_topographic']['name']);
+            move_uploaded_file($_FILES['file_topographic']['tmp_name'], $file_topographic);
+        }
+        
+        if (isset($_FILES['file_restrictions']) && $_FILES['file_restrictions']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = 'uploads/subdivision_restrictions/';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            $file_restrictions = $upload_dir . uniqid() . '_' . basename($_FILES['file_restrictions']['name']);
+            move_uploaded_file($_FILES['file_restrictions']['tmp_name'], $file_restrictions);
+        }
+        
+        // Signature fields
+        $signature_date_1 = isset($_POST['signature_date_1']) && $_POST['signature_date_1'] !== '' ? $_POST['signature_date_1'] : null;
+        $signature_name_1 = isset($_POST['signature_name_1']) && $_POST['signature_name_1'] !== '' ? $_POST['signature_name_1'] : null;
+        $signature_date_2 = isset($_POST['signature_date_2']) && $_POST['signature_date_2'] !== '' ? $_POST['signature_date_2'] : null;
+        $signature_name_2 = isset($_POST['signature_name_2']) && $_POST['signature_name_2'] !== '' ? $_POST['signature_name_2'] : null;
+        
+        // Admin fields
+        $application_fee = isset($_POST['application_fee']) && $_POST['application_fee'] !== '' ? $_POST['application_fee'] : null;
+        $recording_fee = isset($_POST['recording_fee']) && $_POST['recording_fee'] !== '' ? $_POST['recording_fee'] : null;
+        $form_paid_bool = isset($_POST['form_paid_bool']) ? 1 : 0;
+        $correction_form_id = isset($_POST['correction_form_id']) && $_POST['correction_form_id'] !== '' ? (int)$_POST['correction_form_id'] : null;
+        
+        // Prepare the stored procedure call
+        $sql = "CALL sp_insert_minor_subdivision_plat_application(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        $stmt = $conn->prepare($sql);
+        
+        if (!$stmt) {
+            throw new Exception("Failed to prepare statement: " . $conn->error);
+        }
+        
+        // Bind parameters (71 total parameters)
+        $stmt->bind_param(
+            "isisssssssssssssssssssssssssssssssssssissssssssssssssssssssssissssssss",
+            // Form metadata (3)
+            $form_datetime_resolved, $form_paid_bool, $correction_form_id,
+            // Technical dates (4)
+            $application_filing_date, $technical_review_date, $preliminary_approval_date, $final_approval_date,
+            // Primary applicant (10)
+            $applicant_name, $officers_names, $applicant_street, $applicant_phone, $applicant_cell,
+            $applicant_city, $applicant_state, $applicant_zip_code, $applicant_other_address, $applicant_email,
+            // Additional applicants (10)
+            $additional_applicant_names, $additional_applicant_officers_json, $additional_applicant_streets,
+            $additional_applicant_phones, $additional_applicant_cells, $additional_applicant_cities,
+            $additional_applicant_states, $additional_applicant_zip_codes, $additional_applicant_other_addresses,
+            $additional_applicant_emails,
+            // Property owner (10)
+            $owner_first_name, $owner_last_name, $owner_street, $owner_phone, $owner_cell,
+            $owner_city, $owner_state, $owner_zip_code, $owner_other_address, $owner_email,
+            // Additional owners (9)
+            $additional_owner_names, $additional_owner_streets, $additional_owner_phones,
+            $additional_owner_cells, $additional_owner_cities, $additional_owner_states,
+            $additional_owner_zip_codes, $additional_owner_other_addresses, $additional_owner_emails,
+            // Surveyor (7)
+            $surveyor_id, $surveyor_first_name, $surveyor_last_name, $surveyor_firm, 
+            $surveyor_email, $surveyor_phone, $surveyor_cell,
+            // Engineer (7)
+            $engineer_id, $engineer_first_name, $engineer_last_name, $engineer_firm,
+            $engineer_email, $engineer_phone, $engineer_cell,
+            // Property info (8)
+            $property_street, $property_city, $property_state, $property_zip_code, $property_other_address,
+            $parcel_number, $acreage, $current_zoning,
+            // Subdivision details (6)
+            $minspa_topographic_survey, $minspa_proposed_plot_layout, $minspa_plat_restrictions,
+            $minspa_property_owner_covenants, $minspa_association_covenants, $minspa_master_deed,
+            // Checklist (6)
+            $checklist_application, $checklist_agency_signatures, $checklist_lot_layout,
+            $checklist_topographic, $checklist_restrictions, $checklist_fees,
+            // Files (4)
+            $file_agency_signatures, $file_lot_layout, $file_topographic, $file_restrictions,
+            // Signatures (4)
+            $signature_date_1, $signature_name_1, $signature_date_2, $signature_name_2,
+            // Fees (2)
+            $application_fee, $recording_fee
+        );
+        
+        $form_datetime_resolved = null; // Initially unresolved
+        
+        // Execute the stored procedure
+        if (!$stmt->execute()) {
+            throw new Exception("Failed to execute stored procedure: " . $stmt->error);
+        }
+        
+        // Get the result (form_id)
+        $result = $stmt->get_result();
+        if ($result && $row = $result->fetch_assoc()) {
+            $new_form_id = $row['form_id'];
+            
+            // Link form to client
+            $link_sql = "INSERT INTO client_forms (form_id, client_id) VALUES (?, ?)";
+            $link_stmt = $conn->prepare($link_sql);
+            $link_stmt->bind_param("ii", $new_form_id, $client_id);
+            $link_stmt->execute();
+            $link_stmt->close();
+            
+            $success = "Minor Subdivision Plat Application submitted successfully! Form ID: " . $new_form_id;
+        } else {
+            throw new Exception("Failed to retrieve form ID");
+        }
+        
+        $stmt->close();
+        
+    } catch (Exception $e) {
+        $error = "Error submitting form: " . $e->getMessage();
     }
-    $additional_applicant_officers = !empty($additional_applicant_officers) ? json_encode($additional_applicant_officers) : null;
-    $additional_applicant_mailing_addresses = isset($_POST['additional_applicant_mailing_addresses']) && is_array($_POST['additional_applicant_mailing_addresses']) ? json_encode($_POST['additional_applicant_mailing_addresses']) : null;
-    $additional_applicant_phones = isset($_POST['additional_applicant_phones']) && is_array($_POST['additional_applicant_phones']) ? json_encode($_POST['additional_applicant_phones']) : null;
-    $additional_applicant_cells = isset($_POST['additional_applicant_cells']) && is_array($_POST['additional_applicant_cells']) ? json_encode($_POST['additional_applicant_cells']) : null;
-    $additional_applicant_emails = isset($_POST['additional_applicant_emails']) && is_array($_POST['additional_applicant_emails']) ? json_encode($_POST['additional_applicant_emails']) : null;
-    
-    // Property owner fields
-    $owner_name = isset($_POST['owner_name']) && $_POST['owner_name'] !== '' ? $_POST['owner_name'] : null;
-    $owner_mailing_address = isset($_POST['owner_mailing_address']) && $_POST['owner_mailing_address'] !== '' ? $_POST['owner_mailing_address'] : null;
-    $owner_phone = isset($_POST['owner_phone']) && $_POST['owner_phone'] !== '' ? $_POST['owner_phone'] : null;
-    $owner_cell = isset($_POST['owner_cell']) && $_POST['owner_cell'] !== '' ? $_POST['owner_cell'] : null;
-    $owner_email = isset($_POST['owner_email']) && $_POST['owner_email'] !== '' ? $_POST['owner_email'] : null;
-    
-    // Additional property owners
-    $additional_owner_names = isset($_POST['additional_owner_names']) && is_array($_POST['additional_owner_names']) ? json_encode($_POST['additional_owner_names']) : null;
-    $additional_owner_mailing_addresses = isset($_POST['additional_owner_mailing_addresses']) && is_array($_POST['additional_owner_mailing_addresses']) ? json_encode($_POST['additional_owner_mailing_addresses']) : null;
-    $additional_owner_phones = isset($_POST['additional_owner_phones']) && is_array($_POST['additional_owner_phones']) ? json_encode($_POST['additional_owner_phones']) : null;
-    $additional_owner_cells = isset($_POST['additional_owner_cells']) && is_array($_POST['additional_owner_cells']) ? json_encode($_POST['additional_owner_cells']) : null;
-    $additional_owner_emails = isset($_POST['additional_owner_emails']) && is_array($_POST['additional_owner_emails']) ? json_encode($_POST['additional_owner_emails']) : null;
-    
-    // Surveyor fields
-    $surveyor_name = isset($_POST['surveyor_name']) && $_POST['surveyor_name'] !== '' ? $_POST['surveyor_name'] : null;
-    $surveyor_firm = isset($_POST['surveyor_firm']) && $_POST['surveyor_firm'] !== '' ? $_POST['surveyor_firm'] : null;
-    $surveyor_phone = isset($_POST['surveyor_phone']) && $_POST['surveyor_phone'] !== '' ? $_POST['surveyor_phone'] : null;
-    $surveyor_cell = isset($_POST['surveyor_cell']) && $_POST['surveyor_cell'] !== '' ? $_POST['surveyor_cell'] : null;
-    $surveyor_email = isset($_POST['surveyor_email']) && $_POST['surveyor_email'] !== '' ? $_POST['surveyor_email'] : null;
-    
-    // Engineer fields
-    $engineer_name = isset($_POST['engineer_name']) && $_POST['engineer_name'] !== '' ? $_POST['engineer_name'] : null;
-    $engineer_firm = isset($_POST['engineer_firm']) && $_POST['engineer_firm'] !== '' ? $_POST['engineer_firm'] : null;
-    $engineer_phone = isset($_POST['engineer_phone']) && $_POST['engineer_phone'] !== '' ? $_POST['engineer_phone'] : null;
-    $engineer_cell = isset($_POST['engineer_cell']) && $_POST['engineer_cell'] !== '' ? $_POST['engineer_cell'] : null;
-    $engineer_email = isset($_POST['engineer_email']) && $_POST['engineer_email'] !== '' ? $_POST['engineer_email'] : null;
-    
-    // Property information
-    $property_address = isset($_POST['property_address']) && $_POST['property_address'] !== '' ? $_POST['property_address'] : null;
-    $parcel_number = isset($_POST['parcel_number']) && $_POST['parcel_number'] !== '' ? $_POST['parcel_number'] : null;
-    $lot_acreage = isset($_POST['lot_acreage']) && $_POST['lot_acreage'] !== '' ? $_POST['lot_acreage'] : null;
-    $current_zoning = isset($_POST['current_zoning']) && $_POST['current_zoning'] !== '' ? $_POST['current_zoning'] : null;
-    
-    // Checklist items
-    $checklist_application = isset($_POST['checklist_application']) ? 1 : 0;
-    $checklist_agency_signatures = isset($_POST['checklist_agency_signatures']) ? 1 : 0;
-    $checklist_lot_layout = isset($_POST['checklist_lot_layout']) ? 1 : 0;
-    $checklist_topographic = isset($_POST['checklist_topographic']) ? 1 : 0;
-    $checklist_restrictions = isset($_POST['checklist_restrictions']) ? 1 : 0;
-    $checklist_fees = isset($_POST['checklist_fees']) ? 1 : 0;
-    
-    // Handle file uploads
-    $file_agency_signatures = null;
-    $file_lot_layout = null;
-    $file_topographic = null;
-    $file_restrictions = null;
-    
-    if (isset($_FILES['file_agency_signatures']) && $_FILES['file_agency_signatures']['error'] === UPLOAD_ERR_OK) {
-        $file_agency_signatures = file_get_contents($_FILES['file_agency_signatures']['tmp_name']);
-    }
-    if (isset($_FILES['file_lot_layout']) && $_FILES['file_lot_layout']['error'] === UPLOAD_ERR_OK) {
-        $file_lot_layout = file_get_contents($_FILES['file_lot_layout']['tmp_name']);
-    }
-    if (isset($_FILES['file_topographic']) && $_FILES['file_topographic']['error'] === UPLOAD_ERR_OK) {
-        $file_topographic = file_get_contents($_FILES['file_topographic']['tmp_name']);
-    }
-    if (isset($_FILES['file_restrictions']) && $_FILES['file_restrictions']['error'] === UPLOAD_ERR_OK) {
-        $file_restrictions = file_get_contents($_FILES['file_restrictions']['tmp_name']);
-    }
-    
-    // Signature fields
-    $signature_date_1 = isset($_POST['signature_date_1']) && $_POST['signature_date_1'] !== '' ? $_POST['signature_date_1'] : null;
-    $signature_name_1 = isset($_POST['signature_name_1']) && $_POST['signature_name_1'] !== '' ? $_POST['signature_name_1'] : null;
-    $signature_date_2 = isset($_POST['signature_date_2']) && $_POST['signature_date_2'] !== '' ? $_POST['signature_date_2'] : null;
-    $signature_name_2 = isset($_POST['signature_name_2']) && $_POST['signature_name_2'] !== '' ? $_POST['signature_name_2'] : null;
-    
-    // Admin fields
-    $application_fee = isset($_POST['application_fee']) && $_POST['application_fee'] !== '' ? $_POST['application_fee'] : null;
-    $recording_fee = isset($_POST['recording_fee']) && $_POST['recording_fee'] !== '' ? $_POST['recording_fee'] : null;
-    $date_fees_received = isset($_POST['date_fees_received']) && $_POST['date_fees_received'] !== '' ? $_POST['date_fees_received'] : null;
-    $form_paid_bool = isset($_POST['form_paid_bool']) ? 1 : 0;
-    $correction_form_id = isset($_POST['correction_form_id']) && $_POST['correction_form_id'] !== '' ? $_POST['correction_form_id'] : null;
-    
-    // Insert into database
-    $success = 'Form submitted successfully!';
 }
 ?>
 <!doctype html>

@@ -1,4 +1,10 @@
 <?php
+// Show all errors
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
 require_once 'config.php';
 requireLogin();
 
@@ -13,101 +19,194 @@ $success = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Header fields
-    $docket_number = isset($_POST['docket_number']) && $_POST['docket_number'] !== '' ? $_POST['docket_number'] : null;
-    $public_hearing_date = isset($_POST['public_hearing_date']) && $_POST['public_hearing_date'] !== '' ? $_POST['public_hearing_date'] : null;
-    $date_application_filed = isset($_POST['date_application_filed']) && $_POST['date_application_filed'] !== '' ? $_POST['date_application_filed'] : null;
-    $pre_application_meeting_date = isset($_POST['pre_application_meeting_date']) && $_POST['pre_application_meeting_date'] !== '' ? $_POST['pre_application_meeting_date'] : null;
-    
-    // Primary applicant fields
-    $applicant_name = isset($_POST['applicant_name']) && $_POST['applicant_name'] !== '' ? $_POST['applicant_name'] : null;
-    $officers_names = isset($_POST['officers_names']) && is_array($_POST['officers_names']) ? json_encode($_POST['officers_names']) : null;
-    $applicant_mailing_address = isset($_POST['applicant_mailing_address']) && $_POST['applicant_mailing_address'] !== '' ? $_POST['applicant_mailing_address'] : null;
-    $applicant_phone = isset($_POST['applicant_phone']) && $_POST['applicant_phone'] !== '' ? $_POST['applicant_phone'] : null;
-    $applicant_cell = isset($_POST['applicant_cell']) && $_POST['applicant_cell'] !== '' ? $_POST['applicant_cell'] : null;
-    $applicant_email = isset($_POST['applicant_email']) && $_POST['applicant_email'] !== '' ? $_POST['applicant_email'] : null;
-    
-    // Additional applicants
-    $additional_applicant_names = isset($_POST['additional_applicant_names']) && is_array($_POST['additional_applicant_names']) ? json_encode($_POST['additional_applicant_names']) : null;
-    $additional_applicant_officers = [];
-    foreach ($_POST as $key => $value) {
-        if (preg_match('/^additional_applicant_officers_(\d+)$/', $key, $matches)) {
-            if (is_array($value)) {
-                $additional_applicant_officers[$matches[1]] = $value;
+    try {
+        // Form metadata
+        $p_form_datetime_resolved = $_POST['date_fees_received'] ?? null;
+        $p_form_paid_bool = isset($_POST['form_paid_bool']) ? 1 : 0;
+        $p_correction_form_id = isset($_POST['correction_form_id']) && $_POST['correction_form_id'] !== '' ? (int)$_POST['correction_form_id'] : null;
+        
+        // Hearing information
+        $p_docket_number = $_POST['docket_number'] ?? null;
+        $p_public_hearing_date = $_POST['public_hearing_date'] ?? null;
+        $p_date_application_filed = $_POST['date_application_filed'] ?? null;
+        $p_preapp_meeting_date = $_POST['pre_application_meeting_date'] ?? null;
+        
+        // Primary applicant
+        $p_applicant_name = $_POST['applicant_name'] ?? null;
+        $p_officers_names = isset($_POST['officers_names']) && is_array($_POST['officers_names']) ? json_encode(array_filter($_POST['officers_names'])) : null;
+        $p_applicant_mailing_address = $_POST['applicant_mailing_address'] ?? null;
+        $p_applicant_phone = $_POST['applicant_phone'] ?? null;
+        $p_applicant_cell = $_POST['applicant_cell'] ?? null;
+        $p_applicant_email = $_POST['applicant_email'] ?? null;
+        
+        // Additional applicants - convert arrays to JSON
+        $p_additional_applicant_names = isset($_POST['additional_applicant_names']) && is_array($_POST['additional_applicant_names']) ? json_encode(array_filter($_POST['additional_applicant_names'])) : null;
+        
+        // Handle additional applicant officers dynamically
+        $additional_applicant_officers = [];
+        foreach ($_POST as $key => $value) {
+            if (preg_match('/^additional_applicant_officers_(\d+)$/', $key, $matches)) {
+                if (is_array($value) && !empty(array_filter($value))) {
+                    $additional_applicant_officers[$matches[1]] = array_filter($value);
+                }
             }
         }
+        $p_additional_applicant_officers = !empty($additional_applicant_officers) ? json_encode($additional_applicant_officers) : null;
+        
+        $p_additional_applicant_mailing_addresses = isset($_POST['additional_applicant_mailing_addresses']) && is_array($_POST['additional_applicant_mailing_addresses']) ? json_encode($_POST['additional_applicant_mailing_addresses']) : null;
+        $p_additional_applicant_phones = isset($_POST['additional_applicant_phones']) && is_array($_POST['additional_applicant_phones']) ? json_encode($_POST['additional_applicant_phones']) : null;
+        $p_additional_applicant_cells = isset($_POST['additional_applicant_cells']) && is_array($_POST['additional_applicant_cells']) ? json_encode($_POST['additional_applicant_cells']) : null;
+        $p_additional_applicant_emails = isset($_POST['additional_applicant_emails']) && is_array($_POST['additional_applicant_emails']) ? json_encode($_POST['additional_applicant_emails']) : null;
+        
+        // Property owner
+        $p_owner_name = $_POST['owner_name'] ?? null;
+        $p_owner_mailing_address = $_POST['owner_mailing_address'] ?? null;
+        $p_owner_phone = $_POST['owner_phone'] ?? null;
+        $p_owner_cell = $_POST['owner_cell'] ?? null;
+        $p_owner_email = $_POST['owner_email'] ?? null;
+        
+        // Additional owners (JSON arrays)
+        $p_additional_owner_names = isset($_POST['additional_owner_names']) && is_array($_POST['additional_owner_names']) ? json_encode(array_filter($_POST['additional_owner_names'])) : null;
+        $p_additional_owner_mailing_addresses = isset($_POST['additional_owner_mailing_addresses']) && is_array($_POST['additional_owner_mailing_addresses']) ? json_encode($_POST['additional_owner_mailing_addresses']) : null;
+        $p_additional_owner_phones = isset($_POST['additional_owner_phones']) && is_array($_POST['additional_owner_phones']) ? json_encode($_POST['additional_owner_phones']) : null;
+        $p_additional_owner_cells = isset($_POST['additional_owner_cells']) && is_array($_POST['additional_owner_cells']) ? json_encode($_POST['additional_owner_cells']) : null;
+        $p_additional_owner_emails = isset($_POST['additional_owner_emails']) && is_array($_POST['additional_owner_emails']) ? json_encode($_POST['additional_owner_emails']) : null;
+        
+        // Attorney
+        $p_attorney_first_name = $_POST['attorney_first_name'] ?? null;
+        $p_attorney_last_name = $_POST['attorney_last_name'] ?? null;
+        $p_law_firm = $_POST['law_firm'] ?? null;
+        $p_attorney_phone = $_POST['attorney_phone'] ?? null;
+        $p_attorney_cell = $_POST['attorney_cell'] ?? null;
+        $p_attorney_email = $_POST['attorney_email'] ?? null;
+        
+        // Property information
+        $p_property_address = $_POST['property_address'] ?? null;
+        $p_parcel_number = isset($_POST['parcel_number']) && $_POST['parcel_number'] !== '' ? (int)$_POST['parcel_number'] : null;
+        $p_acreage = $_POST['acreage'] ?? null;
+        $p_current_zoning = $_POST['current_zoning'] ?? null;
+        
+        // CUP request
+        $p_cupa_permit_request = $_POST['cup_request'] ?? null;
+        $p_cupa_proposed_conditions = $_POST['proposed_conditions'] ?? null;
+        
+        // Checklist items
+        $p_checklist_application = isset($_POST['checklist_application']) ? 1 : 0;
+        $p_checklist_exhibit = isset($_POST['checklist_exhibit']) ? 1 : 0;
+        $p_checklist_adjacent = isset($_POST['checklist_adjacent']) ? 1 : 0;
+        $p_checklist_fees = isset($_POST['checklist_fees']) ? 1 : 0;
+        
+        // File uploads - store filenames
+        $p_file_exhibit = isset($_FILES['file_exhibit']) && $_FILES['file_exhibit']['error'] === UPLOAD_ERR_OK ? $_FILES['file_exhibit']['name'] : null;
+        $p_file_adjacent = isset($_FILES['file_adjacent']) && $_FILES['file_adjacent']['error'] === UPLOAD_ERR_OK ? $_FILES['file_adjacent']['name'] : null;
+        
+        // Signatures
+        $p_signature_date_1 = $_POST['signature_date_1'] ?? null;
+        $p_signature_name_1 = $_POST['signature_name_1'] ?? null;
+        $p_signature_date_2 = $_POST['signature_date_2'] ?? null;
+        $p_signature_name_2 = $_POST['signature_name_2'] ?? null;
+        
+        // Admin/fees
+        $p_application_fee = $_POST['application_fee'] ?? null;
+        $p_certificate_fee = $_POST['certificate_fee'] ?? null;
+        $p_date_fees_received = $_POST['date_fees_received'] ?? null;
+
+        // Call the stored procedure with all 54 parameters
+        $sql = "CALL sp_insert_conditional_use_permit_application(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        
+        if (!$stmt) {
+            throw new Exception('Prepare failed: ' . $conn->error);
+        }
+
+        // Bind all parameters
+        $stmt->bind_param('siisssssssssssssssssssssssssssssissssissssssssssssssss',
+            $p_form_datetime_resolved,
+            $p_form_paid_bool,
+            $p_correction_form_id,
+            $p_docket_number,
+            $p_public_hearing_date,
+            $p_date_application_filed,
+            $p_preapp_meeting_date,
+            $p_applicant_name,
+            $p_officers_names,
+            $p_applicant_mailing_address,
+            $p_applicant_phone,
+            $p_applicant_cell,
+            $p_applicant_email,
+            $p_additional_applicant_names,
+            $p_additional_applicant_officers,
+            $p_additional_applicant_mailing_addresses,
+            $p_additional_applicant_phones,
+            $p_additional_applicant_cells,
+            $p_additional_applicant_emails,
+            $p_owner_name,
+            $p_owner_mailing_address,
+            $p_owner_phone,
+            $p_owner_cell,
+            $p_owner_email,
+            $p_additional_owner_names,
+            $p_additional_owner_mailing_addresses,
+            $p_additional_owner_phones,
+            $p_additional_owner_cells,
+            $p_additional_owner_emails,
+            $p_attorney_first_name,
+            $p_attorney_last_name,
+            $p_law_firm,
+            $p_attorney_phone,
+            $p_attorney_cell,
+            $p_attorney_email,
+            $p_property_address,
+            $p_parcel_number,
+            $p_acreage,
+            $p_current_zoning,
+            $p_cupa_permit_request,
+            $p_cupa_proposed_conditions,
+            $p_checklist_application,
+            $p_checklist_exhibit,
+            $p_checklist_adjacent,
+            $p_checklist_fees,
+            $p_file_exhibit,
+            $p_file_adjacent,
+            $p_signature_date_1,
+            $p_signature_name_1,
+            $p_signature_date_2,
+            $p_signature_name_2,
+            $p_application_fee,
+            $p_certificate_fee,
+            $p_date_fees_received
+        );
+
+        if (!$stmt->execute()) {
+            throw new Exception('Execute failed: ' . $stmt->error);
+        }
+
+        // Get the result with form_id
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $form_id = $row['form_id'];
+        $stmt->close();
+
+        // Close the stored procedure result set
+        while($conn->more_results()) {
+            $conn->next_result();
+        }
+
+        // Link form to client
+        $sql = "INSERT INTO client_forms(form_id, client_id) VALUES(?, ?)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param('ii', $form_id, $client_id);
+        $stmt->execute();
+        $stmt->close();
+
+        $success = "Form submitted successfully! Form ID: {$form_id}";
+
+    } catch (Exception $e) {
+        $error = "Error: " . $e->getMessage();
+        if ($conn->errno) {
+            $conn->rollback();
+        }
     }
-    $additional_applicant_officers = !empty($additional_applicant_officers) ? json_encode($additional_applicant_officers) : null;
-    $additional_applicant_mailing_addresses = isset($_POST['additional_applicant_mailing_addresses']) && is_array($_POST['additional_applicant_mailing_addresses']) ? json_encode($_POST['additional_applicant_mailing_addresses']) : null;
-    $additional_applicant_phones = isset($_POST['additional_applicant_phones']) && is_array($_POST['additional_applicant_phones']) ? json_encode($_POST['additional_applicant_phones']) : null;
-    $additional_applicant_cells = isset($_POST['additional_applicant_cells']) && is_array($_POST['additional_applicant_cells']) ? json_encode($_POST['additional_applicant_cells']) : null;
-    $additional_applicant_emails = isset($_POST['additional_applicant_emails']) && is_array($_POST['additional_applicant_emails']) ? json_encode($_POST['additional_applicant_emails']) : null;
-    
-    // Property owner fields
-    $owner_name = isset($_POST['owner_name']) && $_POST['owner_name'] !== '' ? $_POST['owner_name'] : null;
-    $owner_mailing_address = isset($_POST['owner_mailing_address']) && $_POST['owner_mailing_address'] !== '' ? $_POST['owner_mailing_address'] : null;
-    $owner_phone = isset($_POST['owner_phone']) && $_POST['owner_phone'] !== '' ? $_POST['owner_phone'] : null;
-    $owner_cell = isset($_POST['owner_cell']) && $_POST['owner_cell'] !== '' ? $_POST['owner_cell'] : null;
-    $owner_email = isset($_POST['owner_email']) && $_POST['owner_email'] !== '' ? $_POST['owner_email'] : null;
-    
-    // Additional property owners
-    $additional_owner_names = isset($_POST['additional_owner_names']) && is_array($_POST['additional_owner_names']) ? json_encode($_POST['additional_owner_names']) : null;
-    $additional_owner_mailing_addresses = isset($_POST['additional_owner_mailing_addresses']) && is_array($_POST['additional_owner_mailing_addresses']) ? json_encode($_POST['additional_owner_mailing_addresses']) : null;
-    $additional_owner_phones = isset($_POST['additional_owner_phones']) && is_array($_POST['additional_owner_phones']) ? json_encode($_POST['additional_owner_phones']) : null;
-    $additional_owner_cells = isset($_POST['additional_owner_cells']) && is_array($_POST['additional_owner_cells']) ? json_encode($_POST['additional_owner_cells']) : null;
-    $additional_owner_emails = isset($_POST['additional_owner_emails']) && is_array($_POST['additional_owner_emails']) ? json_encode($_POST['additional_owner_emails']) : null;
-    
-    // Attorney fields
-    $attorney_name = isset($_POST['attorney_name']) && $_POST['attorney_name'] !== '' ? $_POST['attorney_name'] : null;
-    $law_firm = isset($_POST['law_firm']) && $_POST['law_firm'] !== '' ? $_POST['law_firm'] : null;
-    $attorney_phone = isset($_POST['attorney_phone']) && $_POST['attorney_phone'] !== '' ? $_POST['attorney_phone'] : null;
-    $attorney_cell = isset($_POST['attorney_cell']) && $_POST['attorney_cell'] !== '' ? $_POST['attorney_cell'] : null;
-    $attorney_email = isset($_POST['attorney_email']) && $_POST['attorney_email'] !== '' ? $_POST['attorney_email'] : null;
-    
-    // Property information
-    $property_address = isset($_POST['property_address']) && $_POST['property_address'] !== '' ? $_POST['property_address'] : null;
-    $parcel_number = isset($_POST['parcel_number']) && $_POST['parcel_number'] !== '' ? $_POST['parcel_number'] : null;
-    $acreage = isset($_POST['acreage']) && $_POST['acreage'] !== '' ? $_POST['acreage'] : null;
-    $current_zoning = isset($_POST['current_zoning']) && $_POST['current_zoning'] !== '' ? $_POST['current_zoning'] : null;
-    
-    // CUP request
-    $cup_request = isset($_POST['cup_request']) && $_POST['cup_request'] !== '' ? $_POST['cup_request'] : null;
-    
-    // Proposed conditions
-    $proposed_conditions = isset($_POST['proposed_conditions']) && $_POST['proposed_conditions'] !== '' ? $_POST['proposed_conditions'] : null;
-    
-    // Checklist items
-    $checklist_application = isset($_POST['checklist_application']) ? 1 : 0;
-    $checklist_exhibit = isset($_POST['checklist_exhibit']) ? 1 : 0;
-    $checklist_adjacent = isset($_POST['checklist_adjacent']) ? 1 : 0;
-    $checklist_fees = isset($_POST['checklist_fees']) ? 1 : 0;
-    
-    // Handle file uploads
-    $file_exhibit = null;
-    $file_adjacent = null;
-    
-    if (isset($_FILES['file_exhibit']) && $_FILES['file_exhibit']['error'] === UPLOAD_ERR_OK) {
-        $file_exhibit = file_get_contents($_FILES['file_exhibit']['tmp_name']);
-    }
-    if (isset($_FILES['file_adjacent']) && $_FILES['file_adjacent']['error'] === UPLOAD_ERR_OK) {
-        $file_adjacent = file_get_contents($_FILES['file_adjacent']['tmp_name']);
-    }
-    
-    // Signature fields
-    $signature_date_1 = isset($_POST['signature_date_1']) && $_POST['signature_date_1'] !== '' ? $_POST['signature_date_1'] : null;
-    $signature_name_1 = isset($_POST['signature_name_1']) && $_POST['signature_name_1'] !== '' ? $_POST['signature_name_1'] : null;
-    $signature_date_2 = isset($_POST['signature_date_2']) && $_POST['signature_date_2'] !== '' ? $_POST['signature_date_2'] : null;
-    $signature_name_2 = isset($_POST['signature_name_2']) && $_POST['signature_name_2'] !== '' ? $_POST['signature_name_2'] : null;
-    
-    // Admin fields
-    $application_fee = isset($_POST['application_fee']) && $_POST['application_fee'] !== '' ? $_POST['application_fee'] : null;
-    $certificate_fee = isset($_POST['certificate_fee']) && $_POST['certificate_fee'] !== '' ? $_POST['certificate_fee'] : null;
-    $date_fees_received = isset($_POST['date_fees_received']) && $_POST['date_fees_received'] !== '' ? $_POST['date_fees_received'] : null;
-    $form_paid_bool = isset($_POST['form_paid_bool']) ? 1 : 0;
-    $correction_form_id = isset($_POST['correction_form_id']) && $_POST['correction_form_id'] !== '' ? $_POST['correction_form_id'] : null;
-    
-    // Insert into database
-    $success = 'Form submitted successfully!';
 }
 ?>
 <!doctype html>
@@ -233,7 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       border-radius: 4px;
     }
   </style>
- <script>
+  <script>
     let applicantCount = 0;
     let ownerCount = 0;
     let officerCount = 0;
@@ -297,59 +396,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             + Add Another Name
           </button>
         </div>
-        <label><b>Contact Information:</b></label>
+
+        <div class="form-group">
+          <label>Mailing Address:</label>
+          <input type="text" class="form-control" name="additional_applicant_mailing_addresses[]">
+        </div>
+
         <div class="row">
-          <div class="col-md-6">
-            <div class="form-group">
-              <label>Street:</label>
-              <input type="text" class="form-control" name="additional_applicant_streets[]">
-            </div>
-          </div>
-          <div class="col-md-3">
+          <div class="col-md-4">
             <div class="form-group">
               <label>Phone Number:</label>
               <input type="text" class="form-control" name="additional_applicant_phones[]">
             </div>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-4">
             <div class="form-group">
               <label>Cell Number:</label>
               <input type="text" class="form-control" name="additional_applicant_cells[]">
             </div>
           </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-3">
+          <div class="col-md-4">
             <div class="form-group">
-              <label>City:</label>
-              <input type="text" class="form-control" name="additional_applicant_cities[]">
+              <label>E-Mail:</label>
+              <input type="email" class="form-control" name="additional_applicant_emails[]">
             </div>
           </div>
-          <div class="col-md-1">
-            <div class="form-group">
-              <label>State:</label>
-              <input type="text" class="form-control" name="additional_applicant_states[]">
-            </div>
-          </div>
-          <div class="col-md-2">
-            <div class="form-group">
-              <label>Zip Code:</label>
-              <input type="text" class="form-control" name="additional_applicant_zip_codes[]">
-            </div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-md-6">
-            <div class="form-group">
-              <label>Other Information:</label>
-              <input type="text" class="form-control" name="additional_applicant_other_addresses[]">
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>E-Mail Address:</label>
-          <input type="email" class="form-control" name="additional_applicant_emails[]">
         </div>
       `;
       container.appendChild(div);
@@ -368,59 +439,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <label>Property Owner Name(s):</label>
           <input type="text" class="form-control" name="additional_owner_names[]">
         </div>
-        <label><b>Contact Information:</b></label>
+        <div class="form-group">
+          <label>Mailing Address:</label>
+          <input type="text" class="form-control" name="additional_owner_mailing_addresses[]">
+        </div>
         <div class="row">
-          <div class="col-md-6">
-            <div class="form-group">
-              <label>Street:</label>
-              <input type="text" class="form-control" name="additional_owner_streets[]">
-            </div>
-          </div>
-          <div class="col-md-3">
+          <div class="col-md-4">
             <div class="form-group">
               <label>Phone Number:</label>
               <input type="text" class="form-control" name="additional_owner_phones[]">
             </div>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-4">
             <div class="form-group">
               <label>Cell Number:</label>
               <input type="text" class="form-control" name="additional_owner_cells[]">
             </div>
           </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-3">
+          <div class="col-md-4">
             <div class="form-group">
-              <label>City:</label>
-              <input type="text" class="form-control" name="additional_owner_cities[]">
+              <label>E-Mail:</label>
+              <input type="email" class="form-control" name="additional_owner_emails[]">
             </div>
           </div>
-          <div class="col-md-1">
-            <div class="form-group">
-              <label>State:</label>
-              <input type="text" class="form-control" name="additional_owner_states[]">
-            </div>
-          </div>
-          <div class="col-md-2">
-            <div class="form-group">
-              <label>Zip Code:</label>
-              <input type="text" class="form-control" name="additional_owner_zip_codes[]">
-            </div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-md-6">
-            <div class="form-group">
-              <label>Other Information:</label>
-              <input type="text" class="form-control" name="additional_owner_other_addresses[]">
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>E-Mail Address:</label>
-          <input type="email" class="form-control" name="additional_owner_emails[]">
         </div>
       `;
       container.appendChild(div);
@@ -446,28 +487,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   <div class="form-header">
     <h1>Danville-Boyle County Planning & Zoning Commission</h1>
-    <h2>Application for Zoning Map Amendment</h2>
+    <h2>Application for Conditional Use Permit</h2>
   </div>
   <p><a href="client_new_form.php">&larr; Back to form selector</a></p>
 
-  <div class="header-info">
-    <div>
-      <strong>Docket Number:</strong> <input type="text" name="p_docket_number" class="form-control small-input d-inline" style="width: 150px;">
-    </div>
-    <div>
-      <strong>Public Hearing Date:</strong> <input type="text" name="p_public_hearing_date" class="form-control small-input d-inline" style="width: 150px;">
-    </div>
-  </div>
-  <div class="header-info">
-    <div>
-      <strong>Date Application Filed:</strong> <input type="text" name="p_date_application_filed" class="form-control small-input d-inline" style="width: 150px;">
-    </div>
-    <div>
-      <strong>Pre-Application Meeting Date:</strong> <input type="text" name="p_application_meeting_date" class="form-control small-input d-inline" style="width: 150px;">
-    </div>
-  </div>
-
   <form method="post" enctype="multipart/form-data">
+    
+    <div class="header-info">
+      <div>
+        <strong>Docket Number:</strong> 
+        <input type="text" name="docket_number" class="form-control small-input d-inline" style="width: 150px;">
+      </div>
+      <div>
+        <strong>Public Hearing Date:</strong> 
+        <input type="date" name="public_hearing_date" class="form-control small-input d-inline" style="width: 150px;">
+      </div>
+    </div>
+    <div class="header-info">
+      <div>
+        <strong>Date Application Filed:</strong> 
+        <input type="date" name="date_application_filed" class="form-control small-input d-inline" style="width: 150px;">
+      </div>
+      <div>
+        <strong>Pre-Application Meeting Date:</strong> 
+        <input type="date" name="pre_application_meeting_date" class="form-control small-input d-inline" style="width: 150px;">
+      </div>
+    </div>
+
     <!-- APPLICANT'S INFORMATION -->
     <div class="section-title">APPLICANT(S) INFORMATION</div>
 
@@ -485,60 +531,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </button>
     </div>
 
-    <label><b>Contact Information:</b></label>
+    <div class="form-group">
+      <label>Mailing Address:</label>
+      <input type="text" class="form-control" name="applicant_mailing_address">
+    </div>
+
     <div class="row">
-      <div class="col-md-6">
-        <div class="form-group">
-          <label>Street:</label>
-          <input type="text" class="form-control" name="applicant_street">
-        </div>
-      </div>
-      <div class="col-md-3">
+      <div class="col-md-4">
         <div class="form-group">
           <label>Phone Number:</label>
           <input type="text" class="form-control" name="applicant_phone">
         </div>
       </div>
-      <div class="col-md-3">
+      <div class="col-md-4">
         <div class="form-group">
           <label>Cell Number:</label>
           <input type="text" class="form-control" name="applicant_cell">
         </div>
       </div>
-    </div>
-
-    <div class="row">
-      <div class="col-md-3">
+      <div class="col-md-4">
         <div class="form-group">
-          <label>City:</label>
-          <input type="text" class="form-control" name="applicant_city">
+          <label>E-Mail Address:</label>
+          <input type="email" class="form-control" name="applicant_email">
         </div>
       </div>
-      <div class="col-md-1">
-        <div class="form-group">
-          <label>State:</label>
-          <input type="text" class="form-control" name="applicant_state">
-        </div>
-      </div>
-      <div class="col-md-2">
-        <div class="form-group">
-          <label>Zip Code:</label>
-          <input type="text" class="form-control" name="applicant_zip_code">
-        </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-6">
-        <div class="form-group">
-          <label>Other Information:</label>
-          <input type="text" class="form-control" name="applicant_other_address">
-        </div>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label>E-Mail Address:</label>
-      <input type="email" class="form-control" name="applicant_email">
     </div>
 
     <div id="additional-applicants"></div>
@@ -547,75 +563,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       + Add Another Applicant
     </button>
 
-    <div class="row">
-      <div class="col-md-6">
-        <div class="form-group">
-          <label>2) PROPERTY OWNER FIRST NAME:</label>
-          <input type="text" class="form-control" name="applicant_first_name">
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="form-group">
-          <label>PROPERTY OWNER LAST NAME:</label>
-          <input type="text" class="form-control" name="applicant_last_name">
-        </div>
-      </div>
+    <div class="form-group">
+      <label>2) PROPERTY OWNER NAME(S):</label>
+      <input type="text" class="form-control" name="owner_name">
     </div>
 
-    <label><b>Contact Information:</b></label>
+    <div class="form-group">
+      <label>Mailing Address:</label>
+      <input type="text" class="form-control" name="owner_mailing_address">
+    </div>
+
     <div class="row">
-      <div class="col-md-6">
-        <div class="form-group">
-          <label>Street:</label>
-          <input type="text" class="form-control" name="owner_street">
-        </div>
-      </div>
-      <div class="col-md-3">
+      <div class="col-md-4">
         <div class="form-group">
           <label>Phone Number:</label>
           <input type="text" class="form-control" name="owner_phone">
         </div>
       </div>
-      <div class="col-md-3">
+      <div class="col-md-4">
         <div class="form-group">
           <label>Cell Number:</label>
           <input type="text" class="form-control" name="owner_cell">
         </div>
       </div>
-    </div>
-
-    <div class="row">
-      <div class="col-md-3">
+      <div class="col-md-4">
         <div class="form-group">
-          <label>City:</label>
-          <input type="text" class="form-control" name="owner_city">
+          <label>E-Mail Address:</label>
+          <input type="email" class="form-control" name="owner_email">
         </div>
       </div>
-      <div class="col-md-1">
-        <div class="form-group">
-          <label>State:</label>
-          <input type="text" class="form-control" name="owner_state">
-        </div>
-      </div>
-      <div class="col-md-2">
-        <div class="form-group">
-          <label>Zip Code:</label>
-          <input type="text" class="form-control" name="owner_zip_code">
-        </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-6">
-        <div class="form-group">
-          <label>Other Information:</label>
-          <input type="text" class="form-control" name="owner_other_address">
-        </div>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label>E-Mail Address:</label>
-      <input type="email" class="form-control" name="owner_email">
     </div>
 
     <div id="additional-owners"></div>
@@ -647,65 +623,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <div class="row">
-      <div class="col-md-6">
+      <div class="col-md-4">
         <div class="form-group">
           <label>Phone Number:</label>
           <input type="text" class="form-control" name="attorney_phone">
         </div>
       </div>
-      <div class="col-md-6">
+      <div class="col-md-4">
         <div class="form-group">
           <label>Cell Number:</label>
           <input type="text" class="form-control" name="attorney_cell">
         </div>
       </div>
-    </div>
-
-    <div class="form-group">
-      <label>E-Mail Address:</label>
-      <input type="email" class="form-control" name="attorney_email">
+      <div class="col-md-4">
+        <div class="form-group">
+          <label>E-Mail Address:</label>
+          <input type="email" class="form-control" name="attorney_email">
+        </div>
+      </div>
     </div>
 
     <!-- PROPERTY INFORMATION -->
     <div class="section-title">PROPERTY INFORMATION</div>
 
     <div class="form-group">
-      <label>Street:</label>
-      <input type="text" class="form-control" name="property_street">
-    </div>
-
-    <div class="row">
-      <div class="col-md-3">
-        <div class="form-group">
-          <label>City:</label>
-          <input type="text" class="form-control" name="property_city">
-        </div>
-      </div>
-      <div class="col-md-1">
-        <div class="form-group">
-          <label>State:</label>
-          <input type="text" class="form-control" name="property_state">
-        </div>
-      </div>
-      <div class="col-md-2">
-        <div class="form-group">
-          <label>Zip Code:</label>
-          <input type="text" class="form-control" name="property_zip_code">
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="form-group">
-          <label>Other Information:</label>
-          <input type="text" class="form-control" name="property_other_address">
-        </div>
-      </div>
+      <label>Property Address:</label>
+      <input type="text" class="form-control" name="property_address">
     </div>
 
     <div class="row">
       <div class="col-md-4">
         <div class="form-group">
           <label>PVA Parcel Number:</label>
-          <input type="text" class="form-control" name="parcel_number">
+          <input type="number" class="form-control" name="parcel_number">
         </div>
       </div>
       <div class="col-md-4">
@@ -800,4 +750,104 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- APPLICANT'S CERTIFICATION -->
     <div class="section-title">APPLICANT'S CERTIFICATION</div>
 
-    <p style="font-size: 13px;">I do hereby certify that, to the best of my knowledge and belief, all application materials have been submitted and that the information they contain is true and correct. Please attach additional signature pages if needed.</p
+    <p style="font-size: 13px;">I do hereby certify that, to the best of my knowledge and belief, all application materials have been submitted and that the information they contain is true and correct. Please attach additional signature pages if needed.</p>
+
+    <p><strong>Signature of Applicant(s) and Property Owner(s):</strong></p>
+
+    <div class="row">
+      <div class="col-md-8">
+        <div class="form-group">
+          <label>1) Signature:</label>
+          <div class="signature-line"></div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="form-group">
+          <label>Date:</label>
+          <input type="date" class="form-control" name="signature_date_1">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>(please print name and title)</label>
+      <input type="text" class="form-control" name="signature_name_1">
+    </div>
+
+    <div class="row">
+      <div class="col-md-8">
+        <div class="form-group">
+          <label>2) Signature:</label>
+          <div class="signature-line"></div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="form-group">
+          <label>Date:</label>
+          <input type="date" class="form-control" name="signature_date_2">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>(please print name and title)</label>
+      <input type="text" class="form-control" name="signature_name_2">
+    </div>
+
+    <p class="info-text">The foregoing signatures constitute all of the owners of the affected property necessary to convey fee title, their attorney, or their legally constituted attorney-in-fact.</p>
+
+    <!-- ADMIN SECTION -->
+    <div class="section-title" style="background: #d0d0d0;">REQUIRED FILING FEES MUST BE PAID BEFORE ANY APPLICATION WILL BE ACCEPTED</div>
+
+    <div class="row">
+      <div class="col-md-4">
+        <div class="form-group">
+          <label>Application Fee:</label>
+          <input type="text" class="form-control" name="application_fee">
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="form-group">
+          <label>Certificate Fee:</label>
+          <input type="text" class="form-control" name="certificate_fee">
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="form-group">
+          <label>Date Fees Received:</label>
+          <input type="datetime-local" class="form-control" name="date_fees_received">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" name="form_paid_bool" value="1" id="paid">
+      <label class="form-check-label" for="paid">
+        <strong>Form Paid</strong>
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>Correction Form ID (if applicable):</label>
+      <input type="number" class="form-control" name="correction_form_id">
+    </div>
+
+    <div class="form-group mt-4">
+      <button class="btn btn-primary btn-lg btn-block" type="submit">Submit Application</button>
+    </div>
+
+  </form>
+
+  <div class="footer-info">
+    <strong>Submit Application to:</strong><br>
+    Danville-Boyle County Planning and Zoning Commission<br>
+    P.O. Box 670<br>
+    Danville, KY 40423-0670<br>
+    859.238.1235<br>
+    zoning@danvilleky.gov<br>
+    www.boyleplanning.org
+  </div>
+</div>
+
+</body>
+</html>

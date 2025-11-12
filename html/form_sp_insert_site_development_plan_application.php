@@ -154,7 +154,263 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $correction_form_id = isset($_POST['correction_form_id']) && $_POST['correction_form_id'] !== '' ? $_POST['correction_form_id'] : null;
     
     // Insert into database
-    $success = 'Form submitted successfully!';
+    // Parse address components
+$applicant_street = isset($_POST['applicant_street']) ? $_POST['applicant_street'] : null;
+$applicant_city = isset($_POST['applicant_city']) ? $_POST['applicant_city'] : null;
+$applicant_state = isset($_POST['applicant_state']) ? $_POST['applicant_state'] : null;
+$applicant_zip_code = isset($_POST['applicant_zip_code']) ? $_POST['applicant_zip_code'] : null;
+
+$additional_applicant_streets = isset($_POST['additional_applicant_streets']) && is_array($_POST['additional_applicant_streets']) ? json_encode($_POST['additional_applicant_streets']) : null;
+$additional_applicant_cities = isset($_POST['additional_applicant_cities']) && is_array($_POST['additional_applicant_cities']) ? json_encode($_POST['additional_applicant_cities']) : null;
+$additional_applicant_states = isset($_POST['additional_applicant_states']) && is_array($_POST['additional_applicant_states']) ? json_encode($_POST['additional_applicant_states']) : null;
+$additional_applicant_zip_codes = isset($_POST['additional_applicant_zip_codes']) && is_array($_POST['additional_applicant_zip_codes']) ? json_encode($_POST['additional_applicant_zip_codes']) : null;
+
+$owner_street = isset($_POST['owner_street']) ? $_POST['owner_street'] : null;
+$owner_city = isset($_POST['owner_city']) ? $_POST['owner_city'] : null;
+$owner_state = isset($_POST['owner_state']) ? $_POST['owner_state'] : null;
+$owner_zip_code = isset($_POST['owner_zip_code']) ? $_POST['owner_zip_code'] : null;
+
+$additional_owner_streets = isset($_POST['additional_owner_streets']) && is_array($_POST['additional_owner_streets']) ? json_encode($_POST['additional_owner_streets']) : null;
+$additional_owner_cities = isset($_POST['additional_owner_cities']) && is_array($_POST['additional_owner_cities']) ? json_encode($_POST['additional_owner_cities']) : null;
+$additional_owner_states = isset($_POST['additional_owner_states']) && is_array($_POST['additional_owner_states']) ? json_encode($_POST['additional_owner_states']) : null;
+$additional_owner_zip_codes = isset($_POST['additional_owner_zip_codes']) && is_array($_POST['additional_owner_zip_codes']) ? json_encode($_POST['additional_owner_zip_codes']) : null;
+
+// Parse owner name from form fields
+$owner_first_name = isset($_POST['applicant_first_name']) ? $_POST['applicant_first_name'] : null;
+$owner_last_name = isset($_POST['applicant_last_name']) ? $_POST['applicant_last_name'] : null;
+
+// Parse professional names
+$surveyor_first_name = null;
+$surveyor_last_name = null;
+if ($surveyor_name) {
+    $name_parts = explode(' ', trim($surveyor_name), 2);
+    $surveyor_first_name = $name_parts[0];
+    $surveyor_last_name = isset($name_parts[1]) ? $name_parts[1] : '';
+}
+
+$engineer_first_name = null;
+$engineer_last_name = null;
+if ($engineer_name) {
+    $name_parts = explode(' ', trim($engineer_name), 2);
+    $engineer_first_name = $name_parts[0];
+    $engineer_last_name = isset($name_parts[1]) ? $name_parts[1] : '';
+}
+
+$architect_first_name = null;
+$architect_last_name = null;
+if ($architect_name) {
+    $name_parts = explode(' ', trim($architect_name), 2);
+    $architect_first_name = $name_parts[0];
+    $architect_last_name = isset($name_parts[1]) ? $name_parts[1] : '';
+}
+
+$landscape_architect_first_name = null;
+$landscape_architect_last_name = null;
+if ($landscape_architect_name) {
+    $name_parts = explode(' ', trim($landscape_architect_name), 2);
+    $landscape_architect_first_name = $name_parts[0];
+    $landscape_architect_last_name = isset($name_parts[1]) ? $name_parts[1] : '';
+}
+
+// Parse attorney name
+$attorney_first_name = isset($_POST['attorney_first_name']) ? $_POST['attorney_first_name'] : null;
+$attorney_last_name = isset($_POST['attorney_last_name']) ? $_POST['attorney_last_name'] : null;
+
+// Handle file uploads - save to disk
+$file_verification_name = null;
+$file_project_plans_name = null;
+$file_landscape_name = null;
+$file_topographic_name = null;
+$file_traffic_name = null;
+$file_architectural_name = null;
+$file_covenants_name = null;
+
+$upload_dir = 'uploads/';
+if (!is_dir($upload_dir)) {
+    mkdir($upload_dir, 0755, true);
+}
+
+if (isset($_FILES['file_verification']) && $_FILES['file_verification']['error'] === UPLOAD_ERR_OK) {
+    $file_verification_name = 'verification_' . time() . '_' . basename($_FILES['file_verification']['name']);
+    move_uploaded_file($_FILES['file_verification']['tmp_name'], $upload_dir . $file_verification_name);
+}
+if (isset($_FILES['file_project_plans']) && $_FILES['file_project_plans']['error'] === UPLOAD_ERR_OK) {
+    $file_project_plans_name = 'project_plans_' . time() . '_' . basename($_FILES['file_project_plans']['name']);
+    move_uploaded_file($_FILES['file_project_plans']['tmp_name'], $upload_dir . $file_project_plans_name);
+}
+if (isset($_FILES['file_landscape']) && $_FILES['file_landscape']['error'] === UPLOAD_ERR_OK) {
+    $file_landscape_name = 'landscape_' . time() . '_' . basename($_FILES['file_landscape']['name']);
+    move_uploaded_file($_FILES['file_landscape']['tmp_name'], $upload_dir . $file_landscape_name);
+}
+if (isset($_FILES['file_topographic']) && $_FILES['file_topographic']['error'] === UPLOAD_ERR_OK) {
+    $file_topographic_name = 'topographic_' . time() . '_' . basename($_FILES['file_topographic']['name']);
+    move_uploaded_file($_FILES['file_topographic']['tmp_name'], $upload_dir . $file_topographic_name);
+}
+if (isset($_FILES['file_traffic']) && $_FILES['file_traffic']['error'] === UPLOAD_ERR_OK) {
+    $file_traffic_name = 'traffic_' . time() . '_' . basename($_FILES['file_traffic']['name']);
+    move_uploaded_file($_FILES['file_traffic']['tmp_name'], $upload_dir . $file_traffic_name);
+}
+if (isset($_FILES['file_architectural']) && $_FILES['file_architectural']['error'] === UPLOAD_ERR_OK) {
+    $file_architectural_name = 'architectural_' . time() . '_' . basename($_FILES['file_architectural']['name']);
+    move_uploaded_file($_FILES['file_architectural']['tmp_name'], $upload_dir . $file_architectural_name);
+}
+if (isset($_FILES['file_covenants']) && $_FILES['file_covenants']['error'] === UPLOAD_ERR_OK) {
+    $file_covenants_name = 'covenants_' . time() . '_' . basename($_FILES['file_covenants']['name']);
+    move_uploaded_file($_FILES['file_covenants']['tmp_name'], $upload_dir . $file_covenants_name);
+}
+
+// Call stored procedure
+$sql = "CALL sp_insert_site_development_plan_application_comprehensive(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+$stmt = $conn->prepare($sql);
+if (!$stmt) {
+    $error = 'Prepare failed: ' . $conn->error;
+} else {
+    // 84 parameters total
+    $types = 'siisssssssssssssssssssssssssssssssssssssssssssssssssssssiiiiiiiiiisssssss';
+    
+    $params = array();
+    $params[] = &$types;
+    
+    // Form metadata (3)
+    $form_datetime_resolved = null;
+    $params[] = &$form_datetime_resolved;
+    $params[] = &$form_paid_bool;
+    $params[] = &$correction_form_id;
+    
+    // Hearing information (4)
+    $params[] = &$docket_number;
+    $params[] = &$public_hearing_date;
+    $params[] = &$date_application_filed;
+    $params[] = &$pre_application_meeting_date;
+    
+    // Primary applicant (9)
+    $params[] = &$applicant_name;
+    $params[] = &$officers_names;
+    $params[] = &$applicant_street;
+    $params[] = &$applicant_phone;
+    $params[] = &$applicant_cell;
+    $params[] = &$applicant_city;
+    $params[] = &$applicant_state;
+    $params[] = &$applicant_zip_code;
+    $params[] = &$applicant_email;
+    
+    // Additional applicants (9)
+    $params[] = &$additional_applicant_names;
+    $params[] = &$additional_applicant_officers;
+    $params[] = &$additional_applicant_streets;
+    $params[] = &$additional_applicant_phones;
+    $params[] = &$additional_applicant_cells;
+    $params[] = &$additional_applicant_cities;
+    $params[] = &$additional_applicant_states;
+    $params[] = &$additional_applicant_zip_codes;
+    $params[] = &$additional_applicant_emails;
+    
+    // Property owner (9)
+    $params[] = &$owner_first_name;
+    $params[] = &$owner_last_name;
+    $params[] = &$owner_street;
+    $params[] = &$owner_phone;
+    $params[] = &$owner_cell;
+    $params[] = &$owner_city;
+    $params[] = &$owner_state;
+    $params[] = &$owner_zip_code;
+    $params[] = &$owner_email;
+    
+    // Additional owners (8)
+    $params[] = &$additional_owner_names;
+    $params[] = &$additional_owner_streets;
+    $params[] = &$additional_owner_phones;
+    $params[] = &$additional_owner_cells;
+    $params[] = &$additional_owner_cities;
+    $params[] = &$additional_owner_states;
+    $params[] = &$additional_owner_zip_codes;
+    $params[] = &$additional_owner_emails;
+    
+    // Attorney (6)
+    $params[] = &$attorney_first_name;
+    $params[] = &$attorney_last_name;
+    $params[] = &$law_firm;
+    $params[] = &$attorney_phone;
+    $params[] = &$attorney_cell;
+    $params[] = &$attorney_email;
+    
+    // Surveyor (6)
+    $params[] = &$surveyor_first_name;
+    $params[] = &$surveyor_last_name;
+    $params[] = &$surveyor_firm;
+    $params[] = &$surveyor_phone;
+    $params[] = &$surveyor_cell;
+    $params[] = &$surveyor_email;
+    
+    // Engineer (6)
+    $params[] = &$engineer_first_name;
+    $params[] = &$engineer_last_name;
+    $params[] = &$engineer_firm;
+    $params[] = &$engineer_phone;
+    $params[] = &$engineer_cell;
+    $params[] = &$engineer_email;
+    
+    // Architect (6)
+    $params[] = &$architect_first_name;
+    $params[] = &$architect_last_name;
+    $params[] = &$architect_firm;
+    $params[] = &$architect_phone;
+    $params[] = &$architect_cell;
+    $params[] = &$architect_email;
+    
+    // Landscape Architect (6)
+    $params[] = &$landscape_architect_first_name;
+    $params[] = &$landscape_architect_last_name;
+    $params[] = &$landscape_architect_firm;
+    $params[] = &$landscape_architect_phone;
+    $params[] = &$landscape_architect_cell;
+    $params[] = &$landscape_architect_email;
+    
+    // Application details (2)
+    $params[] = &$application_type;
+    $params[] = &$site_plan_request;
+    
+    // Checklist items (9)
+    $params[] = &$checklist_application;
+    $params[] = &$checklist_verification;
+    $params[] = &$checklist_project_plans;
+    $params[] = &$checklist_landscape;
+    $params[] = &$checklist_topographic;
+    $params[] = &$checklist_traffic;
+    $params[] = &$checklist_architectural;
+    $params[] = &$checklist_covenants;
+    $params[] = &$checklist_fees;
+    
+    // File uploads (7)
+    $params[] = &$file_verification_name;
+    $params[] = &$file_project_plans_name;
+    $params[] = &$file_landscape_name;
+    $params[] = &$file_topographic_name;
+    $params[] = &$file_traffic_name;
+    $params[] = &$file_architectural_name;
+    $params[] = &$file_covenants_name;
+    
+    // Signatures (4)
+    $params[] = &$signature_date_1;
+    $params[] = &$signature_name_1;
+    $params[] = &$signature_date_2;
+    $params[] = &$signature_name_2;
+    
+    // Bind all parameters
+    $bindResult = @call_user_func_array(array($stmt, 'bind_param'), $params);
+    
+    if ($bindResult === false) {
+        $error = 'Bind failed: ' . $stmt->error;
+    } else {
+        if (!$stmt->execute()) {
+            $error = 'Execute failed: ' . $stmt->error;
+        } else {
+            $success = 'Form submitted successfully!';
+        }
+    }
+    $stmt->close();
+}
 }
 ?>
 <!doctype html>

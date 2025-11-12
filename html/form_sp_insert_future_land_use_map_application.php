@@ -111,8 +111,202 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $form_paid_bool = isset($_POST['form_paid_bool']) ? 1 : 0;
     $correction_form_id = isset($_POST['correction_form_id']) && $_POST['correction_form_id'] !== '' ? $_POST['correction_form_id'] : null;
     
-    // Insert into database
-    $success = 'Form submitted successfully!';
+    // Parse address components for applicant
+$applicant_street = isset($_POST['applicant_street']) ? $_POST['applicant_street'] : null;
+$applicant_city = isset($_POST['applicant_city']) ? $_POST['applicant_city'] : null;
+$applicant_state = isset($_POST['applicant_state']) ? $_POST['applicant_state'] : null;
+$applicant_zip_code = isset($_POST['applicant_zip_code']) ? $_POST['applicant_zip_code'] : null;
+
+// Parse address components for additional applicants
+$additional_applicant_streets = isset($_POST['additional_applicant_streets']) && is_array($_POST['additional_applicant_streets']) ? json_encode($_POST['additional_applicant_streets']) : null;
+$additional_applicant_cities = isset($_POST['additional_applicant_cities']) && is_array($_POST['additional_applicant_cities']) ? json_encode($_POST['additional_applicant_cities']) : null;
+$additional_applicant_states = isset($_POST['additional_applicant_states']) && is_array($_POST['additional_applicant_states']) ? json_encode($_POST['additional_applicant_states']) : null;
+$additional_applicant_zip_codes = isset($_POST['additional_applicant_zip_codes']) && is_array($_POST['additional_applicant_zip_codes']) ? json_encode($_POST['additional_applicant_zip_codes']) : null;
+
+// Parse address components for owners
+$owner_street = isset($_POST['owner_street']) ? $_POST['owner_street'] : null;
+$owner_city = isset($_POST['owner_city']) ? $_POST['owner_city'] : null;
+$owner_state = isset($_POST['owner_state']) ? $_POST['owner_state'] : null;
+$owner_zip_code = isset($_POST['owner_zip_code']) ? $_POST['owner_zip_code'] : null;
+
+// Parse address components for additional owners
+$additional_owner_streets = isset($_POST['additional_owner_streets']) && is_array($_POST['additional_owner_streets']) ? json_encode($_POST['additional_owner_streets']) : null;
+$additional_owner_cities = isset($_POST['additional_owner_cities']) && is_array($_POST['additional_owner_cities']) ? json_encode($_POST['additional_owner_cities']) : null;
+$additional_owner_states = isset($_POST['additional_owner_states']) && is_array($_POST['additional_owner_states']) ? json_encode($_POST['additional_owner_states']) : null;
+$additional_owner_zip_codes = isset($_POST['additional_owner_zip_codes']) && is_array($_POST['additional_owner_zip_codes']) ? json_encode($_POST['additional_owner_zip_codes']) : null;
+
+// Parse property address components
+$property_street = isset($_POST['property_street']) ? $_POST['property_street'] : null;
+$property_city = isset($_POST['property_city']) ? $_POST['property_city'] : null;
+$property_state = isset($_POST['property_state']) ? $_POST['property_state'] : null;
+$property_zip_code = isset($_POST['property_zip_code']) ? $_POST['property_zip_code'] : null;
+
+// Parse owner name
+$owner_first_name = null;
+$owner_last_name = null;
+if (isset($_POST['applicant_first_name']) && isset($_POST['applicant_last_name'])) {
+    $owner_first_name = $_POST['applicant_first_name'];
+    $owner_last_name = $_POST['applicant_last_name'];
+}
+
+// Parse attorney name
+$attorney_first_name = isset($_POST['attorney_first_name']) ? $_POST['attorney_first_name'] : null;
+$attorney_last_name = isset($_POST['attorney_last_name']) ? $_POST['attorney_last_name'] : null;
+
+// Call the stored procedure
+$sql = "CALL sp_insert_future_land_use_map_application_comprehensive(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+$stmt = $conn->prepare($sql);
+if (!$stmt) {
+    $error = 'Prepare failed: ' . $conn->error;
+} else {
+    // Bind parameters (60 parameters total)
+    $types = 'siisssssssssssssssssssssssssssssssssssisssssssssssssssssss';
+    
+    $params = array();
+    $params[] = &$types;
+    
+    // Form metadata (3)
+    $form_datetime_resolved = null;
+    $params[] = &$form_datetime_resolved;
+    $params[] = &$form_paid_bool;
+    $params[] = &$correction_form_id;
+    
+    // Hearing information (4)
+    $params[] = &$docket_number;
+    $params[] = &$public_hearing_date;
+    $params[] = &$date_application_filed;
+    $params[] = &$pre_application_meeting_date;
+    
+    // Primary applicant (9)
+    $params[] = &$applicant_name;
+    $params[] = &$officers_names;
+    $params[] = &$applicant_street;
+    $params[] = &$applicant_phone;
+    $params[] = &$applicant_cell;
+    $params[] = &$applicant_city;
+    $params[] = &$applicant_state;
+    $params[] = &$applicant_zip_code;
+    $applicant_other_address = isset($_POST['applicant_other_address']) ? $_POST['applicant_other_address'] : null;
+    $params[] = &$applicant_other_address;
+    $params[] = &$applicant_email;
+    
+    // Additional applicants (10)
+    $params[] = &$additional_applicant_names;
+    $params[] = &$additional_applicant_officers;
+    $params[] = &$additional_applicant_streets;
+    $params[] = &$additional_applicant_phones;
+    $params[] = &$additional_applicant_cells;
+    $params[] = &$additional_applicant_cities;
+    $params[] = &$additional_applicant_states;
+    $params[] = &$additional_applicant_zip_codes;
+    $additional_applicant_other_addresses = isset($_POST['additional_applicant_other_addresses']) && is_array($_POST['additional_applicant_other_addresses']) ? json_encode($_POST['additional_applicant_other_addresses']) : null;
+    $params[] = &$additional_applicant_other_addresses;
+    $params[] = &$additional_applicant_emails;
+    
+    // Property owner (9)
+    $params[] = &$owner_first_name;
+    $params[] = &$owner_last_name;
+    $params[] = &$owner_street;
+    $params[] = &$owner_phone;
+    $params[] = &$owner_cell;
+    $params[] = &$owner_city;
+    $params[] = &$owner_state;
+    $params[] = &$owner_zip_code;
+    $owner_other_address = isset($_POST['owner_other_address']) ? $_POST['owner_other_address'] : null;
+    $params[] = &$owner_other_address;
+    $params[] = &$owner_email;
+    
+    // Additional owners (9)
+    $params[] = &$additional_owner_names;
+    $params[] = &$additional_owner_streets;
+    $params[] = &$additional_owner_phones;
+    $params[] = &$additional_owner_cells;
+    $params[] = &$additional_owner_cities;
+    $params[] = &$additional_owner_states;
+    $params[] = &$additional_owner_zip_codes;
+    $additional_owner_other_addresses = isset($_POST['additional_owner_other_addresses']) && is_array($_POST['additional_owner_other_addresses']) ? json_encode($_POST['additional_owner_other_addresses']) : null;
+    $params[] = &$additional_owner_other_addresses;
+    $params[] = &$additional_owner_emails;
+    
+    // Attorney (6)
+    $params[] = &$attorney_first_name;
+    $params[] = &$attorney_last_name;
+    $params[] = &$law_firm;
+    $params[] = &$attorney_phone;
+    $params[] = &$attorney_cell;
+    $params[] = &$attorney_email;
+    
+    // Property information (8)
+    $params[] = &$property_street;
+    $params[] = &$property_city;
+    $params[] = &$property_state;
+    $params[] = &$property_zip_code;
+    $property_other_address = isset($_POST['property_other_address']) ? $_POST['property_other_address'] : null;
+    $params[] = &$property_other_address;
+    $params[] = &$parcel_number;
+    $params[] = &$acreage;
+    $params[] = &$current_zoning;
+    
+    // FLUM request (1)
+    $params[] = &$flum_request;
+    
+    // Findings (2)
+    $params[] = &$finding_type;
+    $params[] = &$findings_explanation;
+    
+    // Checklist items (4)
+    $params[] = &$checklist_application;
+    $params[] = &$checklist_exhibit;
+    $params[] = &$checklist_concept;
+    $params[] = &$checklist_compatibility;
+    
+    // Files (3) - would need to save to disk and store filenames
+    $file_exhibit_name = null;
+    $file_concept_name = null;
+    $file_compatibility_name = null;
+    
+    if (isset($_FILES['file_exhibit']) && $_FILES['file_exhibit']['error'] === UPLOAD_ERR_OK) {
+        $file_exhibit_name = 'uploads/exhibit_' . time() . '_' . basename($_FILES['file_exhibit']['name']);
+        move_uploaded_file($_FILES['file_exhibit']['tmp_name'], $file_exhibit_name);
+    }
+    if (isset($_FILES['file_concept']) && $_FILES['file_concept']['error'] === UPLOAD_ERR_OK) {
+        $file_concept_name = 'uploads/concept_' . time() . '_' . basename($_FILES['file_concept']['name']);
+        move_uploaded_file($_FILES['file_concept']['tmp_name'], $file_concept_name);
+    }
+    if (isset($_FILES['file_compatibility']) && $_FILES['file_compatibility']['error'] === UPLOAD_ERR_OK) {
+        $file_compatibility_name = 'uploads/compatibility_' . time() . '_' . basename($_FILES['file_compatibility']['name']);
+        move_uploaded_file($_FILES['file_compatibility']['tmp_name'], $file_compatibility_name);
+    }
+    
+    $params[] = &$file_exhibit_name;
+    $params[] = &$file_concept_name;
+    $params[] = &$file_compatibility_name;
+    
+    // Signatures (4)
+    $params[] = &$signature_date_1;
+    $params[] = &$signature_name_1;
+    $params[] = &$signature_date_2;
+    $params[] = &$signature_name_2;
+    
+    // Admin/fees (2)
+    $params[] = &$application_fee;
+    $params[] = &$certificate_fee;
+    
+    // Bind all parameters
+    $bindResult = @call_user_func_array(array($stmt, 'bind_param'), $params);
+    
+    if ($bindResult === false) {
+        $error = 'Bind failed: ' . $stmt->error;
+    } else {
+        if (!$stmt->execute()) {
+            $error = 'Execute failed: ' . $stmt->error;
+        } else {
+            $success = 'Form submitted successfully!';
+        }
+    }
+    $stmt->close();
+}
 }
 ?>
 <!doctype html>

@@ -13,6 +13,7 @@ $success = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  try {
     // Header fields
     $docket_number = isset($_POST['docket_number']) && $_POST['docket_number'] !== '' ? $_POST['docket_number'] : null;
     $public_hearing_date = isset($_POST['public_hearing_date']) && $_POST['public_hearing_date'] !== '' ? $_POST['public_hearing_date'] : null;
@@ -21,52 +22,118 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Primary applicant fields
     $applicant_name = isset($_POST['applicant_name']) && $_POST['applicant_name'] !== '' ? $_POST['applicant_name'] : null;
-    $officers_names = isset($_POST['officers_names']) && is_array($_POST['officers_names']) ? json_encode($_POST['officers_names']) : null;
-    $applicant_mailing_address = isset($_POST['applicant_mailing_address']) && $_POST['applicant_mailing_address'] !== '' ? $_POST['applicant_mailing_address'] : null;
+    $officers_names = isset($_POST['officers_names']) && is_array($_POST['officers_names']) 
+        ? json_encode(array_filter($_POST['officers_names'], function($v) { return $v !== ''; })) 
+        : null;
+    $applicant_street = isset($_POST['applicant_street']) && $_POST['applicant_street'] !== '' ? $_POST['applicant_street'] : null;
     $applicant_phone = isset($_POST['applicant_phone']) && $_POST['applicant_phone'] !== '' ? $_POST['applicant_phone'] : null;
     $applicant_cell = isset($_POST['applicant_cell']) && $_POST['applicant_cell'] !== '' ? $_POST['applicant_cell'] : null;
+    $applicant_city = isset($_POST['applicant_city']) && $_POST['applicant_city'] !== '' ? $_POST['applicant_city'] : null;
+    $applicant_state = isset($_POST['applicant_state']) && $_POST['applicant_state'] !== '' ? $_POST['applicant_state'] : null;
+    $applicant_zip_code = isset($_POST['applicant_zip_code']) && $_POST['applicant_zip_code'] !== '' ? $_POST['applicant_zip_code'] : null;
+    $applicant_other_address = isset($_POST['applicant_other_address']) && $_POST['applicant_other_address'] !== '' ? $_POST['applicant_other_address'] : null;
     $applicant_email = isset($_POST['applicant_email']) && $_POST['applicant_email'] !== '' ? $_POST['applicant_email'] : null;
     
-    // Additional applicants
-    $additional_applicant_names = isset($_POST['additional_applicant_names']) && is_array($_POST['additional_applicant_names']) ? json_encode($_POST['additional_applicant_names']) : null;
+    // Additional applicants - filter out empty entries
+    $additional_applicant_names = isset($_POST['additional_applicant_names']) && is_array($_POST['additional_applicant_names']) 
+        ? json_encode(array_values(array_filter($_POST['additional_applicant_names'], function($v) { return $v !== ''; }))) 
+        : null;
+    
+    // Build additional applicant officers structure
     $additional_applicant_officers = [];
     foreach ($_POST as $key => $value) {
         if (preg_match('/^additional_applicant_officers_(\d+)$/', $key, $matches)) {
             if (is_array($value)) {
-                $additional_applicant_officers[$matches[1]] = $value;
+                $filtered = array_filter($value, function($v) { return $v !== ''; });
+                if (!empty($filtered)) {
+                    $additional_applicant_officers[$matches[1]] = array_values($filtered);
+                }
             }
         }
     }
-    $additional_applicant_officers = !empty($additional_applicant_officers) ? json_encode($additional_applicant_officers) : null;
-    $additional_applicant_mailing_addresses = isset($_POST['additional_applicant_mailing_addresses']) && is_array($_POST['additional_applicant_mailing_addresses']) ? json_encode($_POST['additional_applicant_mailing_addresses']) : null;
-    $additional_applicant_phones = isset($_POST['additional_applicant_phones']) && is_array($_POST['additional_applicant_phones']) ? json_encode($_POST['additional_applicant_phones']) : null;
-    $additional_applicant_cells = isset($_POST['additional_applicant_cells']) && is_array($_POST['additional_applicant_cells']) ? json_encode($_POST['additional_applicant_cells']) : null;
-    $additional_applicant_emails = isset($_POST['additional_applicant_emails']) && is_array($_POST['additional_applicant_emails']) ? json_encode($_POST['additional_applicant_emails']) : null;
+    $additional_applicant_officers_json = !empty($additional_applicant_officers) ? json_encode($additional_applicant_officers) : null;
+    
+    $additional_applicant_streets = isset($_POST['additional_applicant_streets']) && is_array($_POST['additional_applicant_streets']) 
+        ? json_encode(array_values($_POST['additional_applicant_streets'])) 
+        : null;
+    $additional_applicant_phones = isset($_POST['additional_applicant_phones']) && is_array($_POST['additional_applicant_phones']) 
+        ? json_encode(array_values($_POST['additional_applicant_phones'])) 
+        : null;
+    $additional_applicant_cells = isset($_POST['additional_applicant_cells']) && is_array($_POST['additional_applicant_cells']) 
+        ? json_encode(array_values($_POST['additional_applicant_cells'])) 
+        : null;
+    $additional_applicant_cities = isset($_POST['additional_applicant_cities']) && is_array($_POST['additional_applicant_cities']) 
+        ? json_encode(array_values($_POST['additional_applicant_cities'])) 
+        : null;
+    $additional_applicant_states = isset($_POST['additional_applicant_states']) && is_array($_POST['additional_applicant_states']) 
+        ? json_encode(array_values($_POST['additional_applicant_states'])) 
+        : null;
+    $additional_applicant_zip_codes = isset($_POST['additional_applicant_zip_codes']) && is_array($_POST['additional_applicant_zip_codes']) 
+        ? json_encode(array_values($_POST['additional_applicant_zip_codes'])) 
+        : null;
+    $additional_applicant_other_addresses = isset($_POST['additional_applicant_other_addresses']) && is_array($_POST['additional_applicant_other_addresses']) 
+        ? json_encode(array_values($_POST['additional_applicant_other_addresses'])) 
+        : null;
+    $additional_applicant_emails = isset($_POST['additional_applicant_emails']) && is_array($_POST['additional_applicant_emails']) 
+        ? json_encode(array_values($_POST['additional_applicant_emails'])) 
+        : null;
     
     // Property owner fields
-    $owner_name = isset($_POST['owner_name']) && $_POST['owner_name'] !== '' ? $_POST['owner_name'] : null;
-    $owner_mailing_address = isset($_POST['owner_mailing_address']) && $_POST['owner_mailing_address'] !== '' ? $_POST['owner_mailing_address'] : null;
+    $owner_first_name = isset($_POST['owner_first_name']) && $_POST['owner_first_name'] !== '' ? $_POST['owner_first_name'] : null;
+    $owner_last_name = isset($_POST['owner_last_name']) && $_POST['owner_last_name'] !== '' ? $_POST['owner_last_name'] : null;
+    $owner_street = isset($_POST['owner_street']) && $_POST['owner_street'] !== '' ? $_POST['owner_street'] : null;
     $owner_phone = isset($_POST['owner_phone']) && $_POST['owner_phone'] !== '' ? $_POST['owner_phone'] : null;
     $owner_cell = isset($_POST['owner_cell']) && $_POST['owner_cell'] !== '' ? $_POST['owner_cell'] : null;
+    $owner_city = isset($_POST['owner_city']) && $_POST['owner_city'] !== '' ? $_POST['owner_city'] : null;
+    $owner_state = isset($_POST['owner_state']) && $_POST['owner_state'] !== '' ? $_POST['owner_state'] : null;
+    $owner_zip_code = isset($_POST['owner_zip_code']) && $_POST['owner_zip_code'] !== '' ? $_POST['owner_zip_code'] : null;
+    $owner_other_address = isset($_POST['owner_other_address']) && $_POST['owner_other_address'] !== '' ? $_POST['owner_other_address'] : null;
     $owner_email = isset($_POST['owner_email']) && $_POST['owner_email'] !== '' ? $_POST['owner_email'] : null;
     
     // Additional property owners
-    $additional_owner_names = isset($_POST['additional_owner_names']) && is_array($_POST['additional_owner_names']) ? json_encode($_POST['additional_owner_names']) : null;
-    $additional_owner_mailing_addresses = isset($_POST['additional_owner_mailing_addresses']) && is_array($_POST['additional_owner_mailing_addresses']) ? json_encode($_POST['additional_owner_mailing_addresses']) : null;
-    $additional_owner_phones = isset($_POST['additional_owner_phones']) && is_array($_POST['additional_owner_phones']) ? json_encode($_POST['additional_owner_phones']) : null;
-    $additional_owner_cells = isset($_POST['additional_owner_cells']) && is_array($_POST['additional_owner_cells']) ? json_encode($_POST['additional_owner_cells']) : null;
-    $additional_owner_emails = isset($_POST['additional_owner_emails']) && is_array($_POST['additional_owner_emails']) ? json_encode($_POST['additional_owner_emails']) : null;
+    $additional_owner_names = isset($_POST['additional_owner_names']) && is_array($_POST['additional_owner_names']) 
+        ? json_encode(array_values(array_filter($_POST['additional_owner_names'], function($v) { return $v !== ''; }))) 
+        : null;
+    $additional_owner_streets = isset($_POST['additional_owner_streets']) && is_array($_POST['additional_owner_streets']) 
+        ? json_encode(array_values($_POST['additional_owner_streets'])) 
+        : null;
+    $additional_owner_phones = isset($_POST['additional_owner_phones']) && is_array($_POST['additional_owner_phones']) 
+        ? json_encode(array_values($_POST['additional_owner_phones'])) 
+        : null;
+    $additional_owner_cells = isset($_POST['additional_owner_cells']) && is_array($_POST['additional_owner_cells']) 
+        ? json_encode(array_values($_POST['additional_owner_cells'])) 
+        : null;
+    $additional_owner_cities = isset($_POST['additional_owner_cities']) && is_array($_POST['additional_owner_cities']) 
+        ? json_encode(array_values($_POST['additional_owner_cities'])) 
+        : null;
+    $additional_owner_states = isset($_POST['additional_owner_states']) && is_array($_POST['additional_owner_states']) 
+        ? json_encode(array_values($_POST['additional_owner_states'])) 
+        : null;
+    $additional_owner_zip_codes = isset($_POST['additional_owner_zip_codes']) && is_array($_POST['additional_owner_zip_codes']) 
+        ? json_encode(array_values($_POST['additional_owner_zip_codes'])) 
+        : null;
+    $additional_owner_other_addresses = isset($_POST['additional_owner_other_addresses']) && is_array($_POST['additional_owner_other_addresses']) 
+        ? json_encode(array_values($_POST['additional_owner_other_addresses'])) 
+        : null;
+    $additional_owner_emails = isset($_POST['additional_owner_emails']) && is_array($_POST['additional_owner_emails']) 
+        ? json_encode(array_values($_POST['additional_owner_emails'])) 
+        : null;
     
     // Attorney fields
-    $attorney_name = isset($_POST['attorney_name']) && $_POST['attorney_name'] !== '' ? $_POST['attorney_name'] : null;
+    $attorney_first_name = isset($_POST['attorney_first_name']) && $_POST['attorney_first_name'] !== '' ? $_POST['attorney_first_name'] : null;
+    $attorney_last_name = isset($_POST['attorney_last_name']) && $_POST['attorney_last_name'] !== '' ? $_POST['attorney_last_name'] : null;
     $law_firm = isset($_POST['law_firm']) && $_POST['law_firm'] !== '' ? $_POST['law_firm'] : null;
     $attorney_phone = isset($_POST['attorney_phone']) && $_POST['attorney_phone'] !== '' ? $_POST['attorney_phone'] : null;
     $attorney_cell = isset($_POST['attorney_cell']) && $_POST['attorney_cell'] !== '' ? $_POST['attorney_cell'] : null;
     $attorney_email = isset($_POST['attorney_email']) && $_POST['attorney_email'] !== '' ? $_POST['attorney_email'] : null;
     
     // Property information
-    $property_address = isset($_POST['property_address']) && $_POST['property_address'] !== '' ? $_POST['property_address'] : null;
-    $parcel_number = isset($_POST['parcel_number']) && $_POST['parcel_number'] !== '' ? $_POST['parcel_number'] : null;
+    $property_street = isset($_POST['property_street']) && $_POST['property_street'] !== '' ? $_POST['property_street'] : null;
+    $property_city = isset($_POST['property_city']) && $_POST['property_city'] !== '' ? $_POST['property_city'] : null;
+    $property_state = isset($_POST['property_state']) && $_POST['property_state'] !== '' ? $_POST['property_state'] : null;
+    $property_zip_code = isset($_POST['property_zip_code']) && $_POST['property_zip_code'] !== '' ? $_POST['property_zip_code'] : null;
+    $property_other_address = isset($_POST['property_other_address']) && $_POST['property_other_address'] !== '' ? $_POST['property_other_address'] : null;
+    $parcel_number = isset($_POST['parcel_number']) && $_POST['parcel_number'] !== '' ? (int)$_POST['parcel_number'] : null;
     $acreage = isset($_POST['acreage']) && $_POST['acreage'] !== '' ? $_POST['acreage'] : null;
     $current_zoning = isset($_POST['current_zoning']) && $_POST['current_zoning'] !== '' ? $_POST['current_zoning'] : null;
     
@@ -85,15 +152,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $checklist_adjacent = isset($_POST['checklist_adjacent']) ? 1 : 0;
     $checklist_fees = isset($_POST['checklist_fees']) ? 1 : 0;
     
-    // Handle file uploads
+    // Handle file uploads - store file paths/names
     $file_exhibit = null;
     $file_adjacent = null;
     
     if (isset($_FILES['file_exhibit']) && $_FILES['file_exhibit']['error'] === UPLOAD_ERR_OK) {
-        $file_exhibit = file_get_contents($_FILES['file_exhibit']['tmp_name']);
+        $upload_dir = 'uploads/variance_exhibits/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+        $file_exhibit = $upload_dir . uniqid() . '_' . basename($_FILES['file_exhibit']['name']);
+        move_uploaded_file($_FILES['file_exhibit']['tmp_name'], $file_exhibit);
     }
+    
     if (isset($_FILES['file_adjacent']) && $_FILES['file_adjacent']['error'] === UPLOAD_ERR_OK) {
-        $file_adjacent = file_get_contents($_FILES['file_adjacent']['tmp_name']);
+        $upload_dir = 'uploads/variance_adjacent/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+        $file_adjacent = $upload_dir . uniqid() . '_' . basename($_FILES['file_adjacent']['name']);
+        move_uploaded_file($_FILES['file_adjacent']['tmp_name'], $file_adjacent);
     }
     
     // Signature fields
@@ -105,12 +183,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Admin fields
     $application_fee = isset($_POST['application_fee']) && $_POST['application_fee'] !== '' ? $_POST['application_fee'] : null;
     $certificate_fee = isset($_POST['certificate_fee']) && $_POST['certificate_fee'] !== '' ? $_POST['certificate_fee'] : null;
-    $date_fees_received = isset($_POST['date_fees_received']) && $_POST['date_fees_received'] !== '' ? $_POST['date_fees_received'] : null;
     $form_paid_bool = isset($_POST['form_paid_bool']) ? 1 : 0;
-    $correction_form_id = isset($_POST['correction_form_id']) && $_POST['correction_form_id'] !== '' ? $_POST['correction_form_id'] : null;
+    $correction_form_id = isset($_POST['correction_form_id']) && $_POST['correction_form_id'] !== '' ? (int)$_POST['correction_form_id'] : null;
     
-    // Insert into database
-    $success = 'Form submitted successfully!';
+    // Prepare the stored procedure call
+    $sql = "CALL sp_insert_variance_application(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    $stmt = $conn->prepare($sql);
+    
+    if (!$stmt) {
+        throw new Exception("Failed to prepare statement: " . $conn->error);
+    }
+    
+    // Bind parameters (59 total parameters)
+    $stmt->bind_param(
+        "isisssssssssssssssssssssssssssssssssssssssssissssssssss",
+        // Form metadata (3)
+        $form_datetime_resolved, $form_paid_bool, $correction_form_id,
+        // Hearing info (4)
+        $docket_number, $public_hearing_date, $date_application_filed, $pre_application_meeting_date,
+        // Primary applicant (10)
+        $applicant_name, $officers_names, $applicant_street, $applicant_phone, $applicant_cell,
+        $applicant_city, $applicant_state, $applicant_zip_code, $applicant_other_address, $applicant_email,
+        // Additional applicants (10)
+        $additional_applicant_names, $additional_applicant_officers_json, $additional_applicant_streets,
+        $additional_applicant_phones, $additional_applicant_cells, $additional_applicant_cities,
+        $additional_applicant_states, $additional_applicant_zip_codes, $additional_applicant_other_addresses,
+        $additional_applicant_emails,
+        // Property owner (10)
+        $owner_first_name, $owner_last_name, $owner_street, $owner_phone, $owner_cell,
+        $owner_city, $owner_state, $owner_zip_code, $owner_other_address, $owner_email,
+        // Additional owners (9)
+        $additional_owner_names, $additional_owner_streets, $additional_owner_phones,
+        $additional_owner_cells, $additional_owner_cities, $additional_owner_states,
+        $additional_owner_zip_codes, $additional_owner_other_addresses, $additional_owner_emails,
+        // Attorney (6)
+        $attorney_first_name, $attorney_last_name, $law_firm, $attorney_phone, $attorney_cell, $attorney_email,
+        // Property info (8)
+        $property_street, $property_city, $property_state, $property_zip_code, $property_other_address,
+        $parcel_number, $acreage, $current_zoning,
+        // Variance details (3)
+        $variance_request, $proposed_conditions, $findings_explanation,
+        // Checklist (4)
+        $checklist_application, $checklist_exhibit, $checklist_adjacent, $checklist_fees,
+        // Files (2)
+        $file_exhibit, $file_adjacent,
+        // Signatures (4)
+        $signature_date_1, $signature_name_1, $signature_date_2, $signature_name_2,
+        // Fees (2)
+        $application_fee, $certificate_fee
+    );
+    
+    $form_datetime_resolved = null; // Initially unresolved
+    
+    // Execute the stored procedure
+    if (!$stmt->execute()) {
+        throw new Exception("Failed to execute stored procedure: " . $stmt->error);
+    }
+    
+    // Get the result (form_id)
+    $result = $stmt->get_result();
+    if ($result && $row = $result->fetch_assoc()) {
+        $new_form_id = $row['form_id'];
+        
+        // Link form to client
+        $link_sql = "INSERT INTO client_forms (form_id, client_id) VALUES (?, ?)";
+        $link_stmt = $conn->prepare($link_sql);
+        $link_stmt->bind_param("ii", $new_form_id, $client_id);
+        $link_stmt->execute();
+        $link_stmt->close();
+        
+        $success = "Variance Application submitted successfully! Form ID: " . $new_form_id;
+    } else {
+        throw new Exception("Failed to retrieve form ID");
+    }
+    
+    $stmt->close();
+      
+  } catch (Exception $e) {
+      $error = "Error submitting form: " . $e->getMessage();
+  }
 }
 ?>
 <!doctype html>
