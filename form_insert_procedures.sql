@@ -1789,12 +1789,7 @@ DELIMITER ;
    --------------------------- */
 DELIMITER $$
 CREATE PROCEDURE sp_insert_sign_permit_application(
-  IN p_form_datetime_resolved DATETIME,
-  IN p_form_paid_bool BOOLEAN,
   -- sign_permit_applications fields
-  IN p_sp_owner_id INT, -- optional: if provided will use existing owner id
-  IN p_contractor_id INT, -- optional existing contractor
-  IN p_sp_business_id INT, -- optional existing business
   IN p_sp_date DATE,
   IN p_sp_permit_number VARCHAR(255),
   IN p_sp_building_coverage_percent VARCHAR(255),
@@ -1812,6 +1807,12 @@ CREATE PROCEDURE sp_insert_sign_permit_application(
   IN p_sp_business_city VARCHAR(255),
   IN p_sp_business_state_code CHAR(2),
   IN p_sp_business_zip_code VARCHAR(50),
+  -- new applicant fields (if p_sp_business_id IS NULL)
+  IN p_sp_applicant_name VARCHAR(255),
+  IN p_sp_applicant_street VARCHAR(255),
+  IN p_sp_applicant_city VARCHAR(255),
+  IN p_sp_applicant_state_code CHAR(2),
+  IN p_sp_applicant_zip_code VARCHAR(50),
   -- new contractor fields (if p_contractor_id IS NULL)
   IN p_sp_contractor_first_name VARCHAR(255),
   IN p_sp_contractor_last_name VARCHAR(255),
@@ -1822,16 +1823,31 @@ CREATE PROCEDURE sp_insert_sign_permit_application(
   IN p_lettering_height VARCHAR(255)
 )
 BEGIN
+  DECLARE owner_address_id INT DEFAULT 0;
+  DECLARE business_address_id INT DEFAULT 0;
+  DECLARE applicant_address_id INT DEFAULT 0;
+  DECLARE p_sp_owner_id INT DEFAULT NULL;
+  DECLARE p_contractor_id INT DEFAULT NULL;
+  DECLARE p_sp_business_id INT DEFAULT NULL;
+  DECLARE p_sp_applicant_id INT DEFAULT NULL;
+
   START TRANSACTION;
-  INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Sign Permit Appplication', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
+  INSERT INTO forms(form_type, form_datetime_submitted)
+    VALUES('Sign Permit Application', CURRENT_TIMESTAMP);
   SET @new_form_id = LAST_INSERT_ID();
 
-  -- owner
+
+ -- owner
+  IF p_sp_owner_street IS NOT NULL OR p_sp_owner_city IS NOT NULL THEN
+    INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
+      VALUES(p_sp_owner_street, p_sp_owner_city, p_sp_owner_state_code, p_sp_owner_zip_code);
+    SET owner_address_id = LAST_INSERT_ID();
+  END IF;
+
   IF p_sp_owner_id IS NULL THEN
     IF p_sp_owner_first_name IS NOT NULL OR p_sp_owner_last_name IS NOT NULL THEN
-      INSERT INTO sp_property_owners(sp_owner_first_name, sp_owner_last_name, sp_owner_street, sp_owner_city, state_code, sp_owner_zip_code)
-        VALUES(p_sp_owner_first_name, p_sp_owner_last_name, p_sp_owner_street, p_sp_owner_city, p_sp_owner_state_code, p_sp_owner_zip_code);
+      INSERT INTO sp_property_owners(sp_owner_first_name, sp_owner_last_name, address_id)
+        VALUES(p_sp_owner_first_name, p_sp_owner_last_name, owner_address_id);
       SET @insert_owner_id = LAST_INSERT_ID();
     ELSE
       SET @insert_owner_id = NULL;
@@ -1841,16 +1857,41 @@ BEGIN
   END IF;
 
   -- business
+  IF p_sp_business_street IS NOT NULL OR p_sp_business_city IS NOT NULL THEN
+    INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
+      VALUES(p_sp_business_street, p_sp_business_city, p_sp_business_state_code, p_sp_business_zip_code);
+    SET business_address_id = LAST_INSERT_ID();
+  END IF;
+
   IF p_sp_business_id IS NULL THEN
     IF p_sp_business_name IS NOT NULL THEN
-      INSERT INTO sp_businesses(sp_business_name, sp_business_street, sp_business_city, state_code, sp_business_zip_code)
-        VALUES(p_sp_business_name, p_sp_business_street, p_sp_business_city, p_sp_business_state_code, p_sp_business_zip_code);
+      INSERT INTO sp_businesses(sp_business_name, address_id)
+        VALUES(p_sp_business_name, business_address_id);
       SET @insert_business_id = LAST_INSERT_ID();
     ELSE
       SET @insert_business_id = NULL;
     END IF;
   ELSE
     SET @insert_business_id = p_sp_business_id;
+  END IF;
+
+  -- applicant
+  IF p_sp_applicant_street IS NOT NULL OR p_sp_applicant_city IS NOT NULL THEN
+    INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
+      VALUES(p_sp_applicant_street, p_sp_applicant_city, p_sp_applicant_state_code, p_sp_applicant_zip_code);
+    SET applicant_address_id = LAST_INSERT_ID();
+  END IF;
+
+  IF p_sp_applicant_id IS NULL THEN
+    IF p_sp_applicant_name IS NOT NULL THEN
+      INSERT INTO sp_applicants(sp_applicant_name, address_id)
+        VALUES(p_sp_applicant_name, applicant_address_id);
+      SET @insert_applicant_id = LAST_INSERT_ID();
+    ELSE
+      SET @insert_applicant_id = NULL;
+    END IF;
+  ELSE
+    SET @insert_applicant_id = p_sp_applicant_id;
   END IF;
 
   -- contractor
@@ -1866,8 +1907,8 @@ BEGIN
     SET @insert_contractor_id = p_contractor_id;
   END IF;
 
-  INSERT INTO sign_permit_applications(form_id, sp_owner_id, contractor_id, sp_business_id, sp_date, sp_permit_number, sp_building_coverage_percent, sp_permit_fee)
-    VALUES(@new_form_id, @insert_owner_id, @insert_contractor_id, @insert_business_id, p_sp_date, p_sp_permit_number, p_sp_building_coverage_percent, p_sp_permit_fee);
+  INSERT INTO sign_permit_applications(form_id, owner_id, sp_contractor_id, business_id, sp_applicant_id, sp_date, sp_permit_number, sp_building_coverage_percent, sp_permit_fee)
+    VALUES(@new_form_id, @insert_owner_id, @insert_contractor_id, @insert_business_id, @insert_applicant_id, p_sp_date, p_sp_permit_number, p_sp_building_coverage_percent, p_sp_permit_fee);
 
   -- optional sign
   IF p_sign_type IS NOT NULL OR p_sign_square_footage IS NOT NULL THEN
@@ -1878,6 +1919,7 @@ BEGIN
   END IF;
 
   COMMIT;
+    SELECT @new_form_id AS form_id;
 END$$
 DELIMITER ;
 

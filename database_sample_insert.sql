@@ -597,7 +597,7 @@ INSERT INTO administrative_appeal_requests (form_id, aar_hearing_date, aar_submi
 (6, '2023-01-25', '2023-01-06', 6, 'Modified', 'Zoning Ordinance 3.3');
 
 -- sign_permit_applications (form_id 43-48)
-INSERT INTO sign_permit_applications (form_id, sp_owner_id, sp_contractor_id, sp_business_id, sp_date, sp_permit_number, sp_building_coverage_percent, sp_permit_fee) VALUES
+INSERT INTO sign_permit_applications (form_id, owner_id, sp_contractor_id, business_id, sp_date, sp_permit_number, sp_building_coverage_percent, sp_permit_fee) VALUES
 (43, 1, 1, 1, '2023-08-01', 'SP-2023-001', '5%', '100.00'),
 (44, 2, 2, 2, '2023-08-02', 'SP-2023-002', '7%', '120.00'),
 (45, 3, 3, 3, '2023-08-03', 'SP-2023-003', '6%', '110.00'),

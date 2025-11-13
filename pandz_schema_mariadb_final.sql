@@ -369,6 +369,14 @@ CREATE TABLE sp_contractors (
     PRIMARY KEY (sp_contractor_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE sp_applicants (
+    sp_applicant_id INT NOT NULL AUTO_INCREMENT,
+    sp_applicant_name VARCHAR(255),
+    address_id INT,
+    PRIMARY KEY ( sp_applicant_id),
+    FOREIGN KEY (address_id) REFERENCES addresses(address_id) ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE sp_businesses (
     sp_business_id INT NOT NULL AUTO_INCREMENT,
     sp_business_name VARCHAR(255),
@@ -579,9 +587,10 @@ CREATE TABLE administrative_appeal_requests (
 
 CREATE TABLE sign_permit_applications (
     form_id INT NOT NULL,
-    sp_owner_id INT,
+    owner_id INT,
     sp_contractor_id INT,
-    sp_business_id INT,
+    business_id INT,
+    sp_applicant_id INT,
     sp_date DATE,
     sp_permit_number VARCHAR(
     255
@@ -596,9 +605,10 @@ CREATE TABLE sign_permit_applications (
     form_id
   ),
   FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT,
-  FOREIGN KEY (sp_owner_id) REFERENCES sp_property_owners(sp_owner_id) ON DELETE RESTRICT,
+  FOREIGN KEY (owner_id) REFERENCES sp_property_owners(sp_owner_id) ON DELETE RESTRICT,
+  FOREIGN KEY (sp_applicant_id) REFERENCES sp_applicants(sp_applicant_id) ON DELETE RESTRICT,
   FOREIGN KEY (sp_contractor_id) REFERENCES sp_contractors(sp_contractor_id) ON DELETE RESTRICT,
-  FOREIGN KEY (sp_business_id) REFERENCES sp_businesses(sp_business_id) ON DELETE RESTRICT
+  FOREIGN KEY (business_id) REFERENCES sp_businesses(sp_business_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE departments (
