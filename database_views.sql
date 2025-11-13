@@ -587,12 +587,12 @@ CREATE OR REPLACE VIEW vw_department_interactions AS
 SELECT 
     dfi.department_form_interaction_id,
     dfi.form_id,
-    dfi.department_id,
+    dfi.client_id,
     d.department_name,
     dfi.department_form_interaction_description,
     dfi.client_id
 FROM department_form_interactions dfi
-LEFT JOIN departments d ON dfi.department_id = d.department_id
+LEFT JOIN departments d ON dfi.client_id_id = d.client_id
 ORDER BY dfi.form_id, dfi.department_form_interaction_id DESC;
 
 -- 13. Adjacent Property Owners Form - Complete View
@@ -961,7 +961,7 @@ LEFT JOIN clients c ON cf.client_id = c.client_id;
 -- 26. Department Workload Summary (Aggregated for Reports)
 CREATE OR REPLACE VIEW vw_department_workload_summary AS
 SELECT 
-    d.department_id,
+    d.client_id,
     d.department_name,
     COUNT(DISTINCT dfi.form_id) AS total_forms_interacted_with,
     COUNT(dfi.department_form_interaction_id) AS total_interactions,
@@ -974,9 +974,9 @@ SELECT
         THEN dfi.form_id 
     END) AS resolved_forms_with_interactions
 FROM departments d
-LEFT JOIN department_form_interactions dfi ON d.department_id = dfi.department_id
+LEFT JOIN department_form_interactions dfi ON d.client_id = dfi.client_id
 LEFT JOIN forms f ON dfi.form_id = f.form_id
-GROUP BY d.department_id, d.department_name;
+GROUP BY d.client_id, d.department_name;
 
 -- 27. Form Type Usage Summary (for Reports)
 CREATE OR REPLACE VIEW vw_form_type_usage_summary AS
@@ -1082,7 +1082,7 @@ SELECT
     d.department_name,
     LEFT(dfi.department_form_interaction_description, 100) AS description
 FROM department_form_interactions dfi
-LEFT JOIN departments d ON dfi.department_id = d.department_id
+LEFT JOIN departments d ON dfi.client_id = d.client_id
 LEFT JOIN forms f ON dfi.form_id = f.form_id
 LEFT JOIN clients c ON dfi.client_id = c.client_id
 
@@ -1097,21 +1097,21 @@ LIMIT 100;
 -- 1. Department Activity Summary (for KPIs)
 CREATE OR REPLACE VIEW vw_department_activity_summary AS
 SELECT 
-    dfi.department_id,
+    dfi.client_id,
     d.department_name,
     COUNT(DISTINCT dfi.department_form_interaction_id) as total_interactions,
     COUNT(DISTINCT dfi.form_id) as forms_interacted,
     COUNT(DISTINCT CASE WHEN f.form_datetime_resolved IS NULL THEN dfi.form_id END) as pending_forms,
     COUNT(DISTINCT CASE WHEN f.form_datetime_resolved IS NOT NULL THEN dfi.form_id END) as resolved_forms
 FROM department_form_interactions dfi
-LEFT JOIN departments d ON dfi.department_id = d.department_id
+LEFT JOIN departments d ON dfi.client_id = d.client_id
 LEFT JOIN forms f ON dfi.form_id = f.form_id
-GROUP BY dfi.department_id, d.department_name;
+GROUP BY dfi.client_id, d.department_name;
 
 -- 2. Department Recent Interactions
 CREATE OR REPLACE VIEW vw_department_recent_interactions AS
 SELECT 
-    dfi.department_id,
+    dfi.client_id,
     dfi.form_id,
     dfi.department_form_interaction_id,
     dfi.department_form_interaction_description,
@@ -1125,13 +1125,13 @@ SELECT
     END as form_status
 FROM department_form_interactions dfi
 JOIN forms f ON dfi.form_id = f.form_id
-LEFT JOIN departments d ON dfi.department_id = d.department_id
+LEFT JOIN departments d ON dfi.client_id = d.client_id
 ORDER BY dfi.department_form_interaction_id DESC;
 
 -- 3. Department Form Type Breakdown
 CREATE OR REPLACE VIEW vw_department_form_type_breakdown AS
 SELECT 
-    dfi.department_id,
+    dfi.client_id,
     d.department_name,
     f.form_type,
     COUNT(DISTINCT dfi.form_id) as forms_count,
@@ -1145,8 +1145,8 @@ SELECT
     END as avg_interactions_per_form
 FROM department_form_interactions dfi
 JOIN forms f ON dfi.form_id = f.form_id
-LEFT JOIN departments d ON dfi.department_id = d.department_id
-GROUP BY dfi.department_id, d.department_name, f.form_type;
+LEFT JOIN departments d ON dfi.client_id = d.client_id
+GROUP BY dfi.client_id, d.department_name, f.form_type;
 
 -- 4. All Pending Forms with Department Interaction Counts
 CREATE OR REPLACE VIEW vw_pending_forms_with_dept_interactions AS
@@ -1172,22 +1172,22 @@ ORDER BY days_pending DESC;
 -- 5. Department Monthly Activity Trend
 CREATE OR REPLACE VIEW vw_department_monthly_activity AS
 SELECT 
-    dfi.department_id,
+    dfi.client_id,
     d.department_name,
     DATE_FORMAT(f.form_datetime_submitted, '%Y-%m') as month,
     COUNT(DISTINCT dfi.form_id) as forms_interacted,
     COUNT(dfi.department_form_interaction_id) as total_interactions
 FROM department_form_interactions dfi
 JOIN forms f ON dfi.form_id = f.form_id
-LEFT JOIN departments d ON dfi.department_id = d.department_id
+LEFT JOIN departments d ON dfi.client_id = d.client_id
 WHERE f.form_datetime_submitted >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-GROUP BY dfi.department_id, d.department_name, month
+GROUP BY dfi.client_id, d.department_name, month
 ORDER BY month ASC;
 
 -- 6. Department Comparison (All Departments)
 CREATE OR REPLACE VIEW vw_department_comparison AS
 SELECT 
-    d.department_id,
+    d.client_id,
     d.department_name,
     COUNT(DISTINCT dfi.form_id) as forms_handled,
     COUNT(dfi.department_form_interaction_id) as total_interactions,
@@ -1197,8 +1197,8 @@ SELECT
         ELSE 0 
     END as avg_interactions_per_form
 FROM departments d
-LEFT JOIN department_form_interactions dfi ON d.department_id = dfi.department_id
-GROUP BY d.department_id, d.department_name
+LEFT JOIN department_form_interactions dfi ON d.client_id = dfi.client_id
+GROUP BY d.client_id, d.department_name
 ORDER BY forms_handled DESC;
 
 -- 7. Department Forms Needing Attention (forms with few/no interactions from specific dept)
@@ -1219,7 +1219,7 @@ SELECT
     END as form_status
 FROM forms f
 LEFT JOIN department_form_interactions dfi ON f.form_id = dfi.form_id
-LEFT JOIN departments d ON dfi.department_id = d.department_id
+LEFT JOIN departments d ON dfi.client_id = d.client_id
 LEFT JOIN client_forms cf ON f.form_id = cf.form_id
 LEFT JOIN clients c ON cf.client_id = c.client_id
 GROUP BY f.form_id, f.form_type, f.form_datetime_submitted, f.form_datetime_resolved, 
@@ -1229,7 +1229,7 @@ ORDER BY f.form_datetime_submitted DESC;
 -- 8. Department Performance Metrics (Enhanced)
 CREATE OR REPLACE VIEW vw_department_performance_metrics AS
 SELECT 
-    d.department_id,
+    d.client_id,
     d.department_name,
     COUNT(DISTINCT dfi.form_id) as total_forms_handled,
     COUNT(dfi.department_form_interaction_id) as total_interactions,
@@ -1260,6 +1260,6 @@ SELECT
         THEN dfi.form_id 
     END) as forms_last_7_days
 FROM departments d
-LEFT JOIN department_form_interactions dfi ON d.department_id = dfi.department_id
+LEFT JOIN department_form_interactions dfi ON d.client_id = dfi.client_id
 LEFT JOIN forms f ON dfi.form_id = f.form_id
-GROUP BY d.department_id, d.department_name;
+GROUP BY d.client_id, d.department_name;
