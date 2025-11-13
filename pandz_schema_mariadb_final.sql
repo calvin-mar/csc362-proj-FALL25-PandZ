@@ -612,7 +612,7 @@ CREATE TABLE sign_permit_applications (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE departments (
-    client_id INT,
+    client_id INT NOT NULL PRIMARY KEY,
     department_name VARCHAR(255),
     FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -620,10 +620,13 @@ CREATE TABLE departments (
 CREATE TABLE department_form_interactions (
     client_id INT NOT NULL,
     form_id INT NOT NULL,
+    interaction_status ENUM('ongoing', 'resolved') NOT NULL DEFAULT 'ongoing',
+    interaction_started DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    interaction_resolved DATETIME NULL,
     department_form_interaction_description TEXT,
-    PRIMARY KEY (client_id, form_id),
-  FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE RESTRICT,
-  FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
+    PRIMARY KEY (client_id, form_id,interaction_started),
+    FOREIGN KEY (client_id) REFERENCES departments(client_id) ON DELETE RESTRICT,
+    FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS govt_workers (
