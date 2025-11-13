@@ -1,10 +1,13 @@
 <?php
-// Show all errors
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+    // Show all errors from the PHP interpreter.
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
 
+    // Show all errors from the MySQLi Extension.
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);  
+?>
+<?php
 require_once 'config.php';
 requireLogin();
 
@@ -111,8 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $p_certificate_fee = $_POST['certificate_fee'] ?? null;
         $p_date_fees_received = $_POST['date_fees_received'] ?? null;
 
-        // Call the stored procedure with all 54 parameters
-        $sql = "CALL sp_insert_conditional_use_permit_application(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        // Call the stored procedure with all 44 parameters
+        $sql = "CALL sp_insert_conditional_use_permit_application(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
         
         if (!$stmt) {
@@ -120,9 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Bind all parameters
-        $stmt->bind_param('iisssssssssssssssssssssssssssssissssisssssssssssss',
-            $p_form_paid_bool,
-            $p_correction_form_id,
+        $stmt->bind_param('issssssssssssssssssssssssssssssissssisssssss',
             $p_docket_number,
             $p_public_hearing_date,
             $p_date_application_filed,
@@ -166,11 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $p_checklist_adjacent,
             $p_checklist_fees,
             $p_file_exhibit,
-            $p_file_adjacent,
-            $p_signature_date_1,
-            $p_signature_name_1,
-            $p_signature_date_2,
-            $p_signature_name_2,
+            $p_file_adjacent
         );
 
         if (!$stmt->execute()) {
@@ -794,7 +791,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- ADMIN SECTION -->
     <div class="section-title" style="background: #d0d0d0;">REQUIRED FILING FEES MUST BE PAID BEFORE ANY APPLICATION WILL BE ACCEPTED</div>
-
+    
+    <div class="form-group mt-4">
+      <button class="btn btn-primary btn-lg btn-block" type="submit">Submit Application</button>
+    </div>
 
   </form>
 

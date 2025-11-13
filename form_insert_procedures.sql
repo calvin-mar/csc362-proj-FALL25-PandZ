@@ -296,9 +296,6 @@ DELIMITER ;
 DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_insert_conditional_use_permit_application$$
 CREATE PROCEDURE sp_insert_conditional_use_permit_application(
-  -- Form metadata
-  IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   -- Hearing information
   IN p_docket_number VARCHAR(255),
   IN p_public_hearing_date DATE,
@@ -352,16 +349,8 @@ CREATE PROCEDURE sp_insert_conditional_use_permit_application(
   IN p_checklist_fees BOOLEAN,
   -- File uploads (filenames)
   IN p_file_exhibit VARCHAR(255),
-  IN p_file_adjacent VARCHAR(255),
-  -- Signatures
-  IN p_signature_date_1 DATE,
-  IN p_signature_name_1 VARCHAR(255),
-  IN p_signature_date_2 DATE,
-  IN p_signature_name_2 VARCHAR(255),
-  -- Admin/fees
-  IN p_application_fee VARCHAR(255),
-  IN p_certificate_fee VARCHAR(255),
-  IN p_date_fees_received DATE
+  IN p_file_adjacent VARCHAR(255)
+
 )
 BEGIN
   DECLARE v_primary_applicant_id INT DEFAULT NULL;
@@ -386,15 +375,11 @@ BEGIN
   -- 1. Insert into forms table
   INSERT INTO forms(
     form_type, 
-    form_datetime_submitted, 
-    form_paid_bool, 
-    correction_form_id
+    form_datetime_submitted
   )
   VALUES(
     'Conditional Use Permit Application', 
-    CURRENT_TIMESTAMP, 
-    p_form_paid_bool, 
-    p_correction_form_id
+    CURRENT_TIMESTAMP
   );
   SET @new_form_id = LAST_INSERT_ID();
 
