@@ -1,4 +1,13 @@
 <?php
+    // Show all errors from the PHP interpreter.
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+
+    // Show all errors from the MySQLi Extension.
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);  
+?>
+<?php
 require_once 'config.php';
 requireLogin();
 
@@ -239,7 +248,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $correction_form_id = isset($_POST['correction_form_id']) && $_POST['correction_form_id'] !== '' ? (int)$_POST['correction_form_id'] : null;
         
         // Prepare the stored procedure call
-        $sql = "CALL sp_insert_minor_subdivision_plat_application(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "CALL sp_insert_minor_subdivision_plat_application(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $conn->prepare($sql);
         
@@ -247,9 +256,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Failed to prepare statement: " . $conn->error);
         }
         
-        // Bind parameters (71 total parameters)
+        // Bind parameters (81 total parameters)
         $stmt->bind_param(
-            "sssssssssssssssssssssssssssssssssssissssssssssssssssssssssiss",
+            "sssssssssssssssssssssssssssssssssssissssssssssssssssssssssissssssssssssssssssssss",
             // Technical dates (4)
             $application_filing_date, $technical_review_date, $preliminary_approval_date, $final_approval_date,
             // Primary applicant (10)
@@ -297,7 +306,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = $stmt->get_result();
         if ($result && $row = $result->fetch_assoc()) {
             $new_form_id = $row['form_id'];
-            
+
+            while($conn->more_results()) {
+              $conn->next_result();
+            }
+
             // Link form to client
             $link_sql = "INSERT INTO client_forms (form_id, client_id) VALUES (?, ?)";
             $link_stmt = $conn->prepare($link_sql);

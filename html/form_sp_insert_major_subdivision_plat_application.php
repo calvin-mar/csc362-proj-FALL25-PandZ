@@ -1,3 +1,4 @@
+
 <?php
 require_once 'config.php';
 requireLogin();
@@ -229,7 +230,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $checklist_notice_proceed = isset($_POST['checklist_notice_proceed']) ? 1 : 0;
             
         // Prepare the stored procedure call with 98 parameters
-        $sql = "CALL sp_insert_major_subdivision_plat_application(" . str_repeat("?,", 97) . "?)";
+        $sql = "CALL sp_insert_major_subdivision_plat_application(" . str_repeat("?,", 104) . "?)";
         
         $stmt = $conn->prepare($sql);
         
@@ -237,9 +238,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Failed to prepare statement: " . $conn->error);
         }
         
-        // Bind all 98 parameters
+        // Bind all 105 parameters
         $stmt->bind_param(
-            "sssssssssssssssssssssssssssssssssssissssssssssssssssssssssssssssssssssiiiiiiiiiiiiiiissssssssss",
+            "sssssssssssssssssssssssssssssssssssissssssssssssssssssssssssssssssssssiiiiiiiiiiiiiiissssssssssssssssssss",
             // Technical dates (4)
             $application_filing_date, $technical_review_date, $preliminary_approval_date, $final_approval_date,
             // Primary applicant (10)
@@ -297,7 +298,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = $stmt->get_result();
         if ($result && $row = $result->fetch_assoc()) {
             $new_form_id = $row['form_id'];
-            
+            while($conn->more_results()) {
+              $conn->next_result();
+            }
             // Link form to client
             $link_sql = "INSERT INTO client_forms (form_id, client_id) VALUES (?, ?)";
             $link_stmt = $conn->prepare($link_sql);
