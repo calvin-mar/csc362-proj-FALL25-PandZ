@@ -297,7 +297,6 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_insert_conditional_use_permit_application$$
 CREATE PROCEDURE sp_insert_conditional_use_permit_application(
   -- Form metadata
-  IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
   IN p_correction_form_id INT,
   -- Hearing information
@@ -388,14 +387,12 @@ BEGIN
   INSERT INTO forms(
     form_type, 
     form_datetime_submitted, 
-    form_datetime_resolved, 
     form_paid_bool, 
     correction_form_id
   )
   VALUES(
     'Conditional Use Permit Application', 
     CURRENT_TIMESTAMP, 
-    p_form_datetime_resolved, 
     p_form_paid_bool, 
     p_correction_form_id
   );

@@ -120,8 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Bind all parameters
-        $stmt->bind_param('siisssssssssssssssssssssssssssssissssissssssssssssssss',
-            $p_form_datetime_resolved,
+        $stmt->bind_param('iisssssssssssssssssssssssssssssissssisssssssssssss',
             $p_form_paid_bool,
             $p_correction_form_id,
             $p_docket_number,
@@ -172,9 +171,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $p_signature_name_1,
             $p_signature_date_2,
             $p_signature_name_2,
-            $p_application_fee,
-            $p_certificate_fee,
-            $p_date_fees_received
         );
 
         if (!$stmt->execute()) {
@@ -799,42 +795,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- ADMIN SECTION -->
     <div class="section-title" style="background: #d0d0d0;">REQUIRED FILING FEES MUST BE PAID BEFORE ANY APPLICATION WILL BE ACCEPTED</div>
 
-    <div class="row">
-      <div class="col-md-4">
-        <div class="form-group">
-          <label>Application Fee:</label>
-          <input type="text" class="form-control" name="application_fee">
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="form-group">
-          <label>Certificate Fee:</label>
-          <input type="text" class="form-control" name="certificate_fee">
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="form-group">
-          <label>Date Fees Received:</label>
-          <input type="datetime-local" class="form-control" name="date_fees_received">
-        </div>
-      </div>
-    </div>
-
-    <div class="form-check mb-3">
-      <input class="form-check-input" type="checkbox" name="form_paid_bool" value="1" id="paid">
-      <label class="form-check-label" for="paid">
-        <strong>Form Paid</strong>
-      </label>
-    </div>
-
-    <div class="form-group">
-      <label>Correction Form ID (if applicable):</label>
-      <input type="number" class="form-control" name="correction_form_id">
-    </div>
-
-    <div class="form-group mt-4">
-      <button class="btn btn-primary btn-lg btn-block" type="submit">Submit Application</button>
-    </div>
 
   </form>
 
