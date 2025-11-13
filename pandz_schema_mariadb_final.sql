@@ -440,13 +440,22 @@ CREATE TABLE variance_applications (
     FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE flum_required_findings (
+    required_findings_type VARCHAR(255),
+    required_findings_description TEXT,
+    PRIMARY KEY (required_findings_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE future_land_use_map_applications (
     form_id INT NOT NULL,
     future_land_use_map_amendment_prop VARCHAR(255),
+    required_findings_type VARCHAR(255),
+    findings_explanation TEXT,
     PVA_parcel_number INT NOT NULL,
     PRIMARY KEY (form_id),
   FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT,
-  FOREIGN KEY (PVA_parcel_number) REFERENCES properties(PVA_parcel_number) ON DELETE RESTRICT
+  FOREIGN KEY (PVA_parcel_number) REFERENCES properties(PVA_parcel_number) ON DELETE RESTRICT,
+  FOREIGN KEY (required_findings_type) REFERENCES flum_required_findings(required_findings_type) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE conditional_use_permit_applications (
@@ -743,6 +752,19 @@ question in accordance with the General Development Plan which is being amended.
     ("petition_movement","Any application to amend the General Development Plan shall require the signature of 100 percent of
 the property owners within the area covered by the General Development Plan and shall be amended
 by the same process as the original zoning amendment.");
+
+INSERT INTO flum_required_findings (required_findings_type, required_findings_description) VALUES
+    ("public_benefit","A demonstrated over-riding public benefit of the proposed development (this may include the provision
+of a major public facility or amenity, the provision of a major source of employment or an economic
+development asset that cannot be accommodated in a location consistent with the current FLUM);"),
+    ("inconsistency_correction","The request is a correction of inconsistencies or mapping errors contained within the FLUM;"),
+    ("clear_compatability","That the proposed use is clearly compatible with existing surrounding development as demonstrated by
+the applicant. This review should include a compatibility assessment of the proposed use, which includes,
+but is not limited to, location and bulk of buildings and other structures, building height, building
+materials, intensity of use, density of development, location of parking and signage within the
+surrounding area. In addition, the applicant must prove that the proposed amendment will not result in
+development that exceeds the capacity of existing infrastructure (such as roads, water, sewer and
+stormwater).");
 
 INSERT INTO form_types (form_type) VALUES
     ("Administrative Appeal Request"),

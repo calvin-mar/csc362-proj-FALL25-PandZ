@@ -622,10 +622,6 @@ DELIMITER ;
 DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_insert_general_development_plan_application_comprehensive$$
 CREATE PROCEDURE sp_insert_general_development_plan_application_comprehensive(
-  -- Form metadata (3)
-  IN p_form_datetime_resolved DATETIME,
-  IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   -- Hearing information (4)
   IN p_docket_number VARCHAR(255),
   IN p_public_hearing_date DATE,
@@ -701,13 +697,6 @@ CREATE PROCEDURE sp_insert_general_development_plan_application_comprehensive(
   IN p_checklist_concept BOOLEAN,
   IN p_checklist_traffic BOOLEAN,
   IN p_checklist_geologic BOOLEAN,
-  -- File uploads (6)
-  IN p_file_adjacent VARCHAR(255),
-  IN p_file_verification VARCHAR(255),
-  IN p_file_gdp_conditions VARCHAR(255),
-  IN p_file_concept VARCHAR(255),
-  IN p_file_traffic VARCHAR(255),
-  IN p_file_geologic VARCHAR(255),
   -- Signatures (4)
   IN p_signature_date_1 DATE,
   IN p_signature_name_1 VARCHAR(255),
@@ -744,17 +733,11 @@ BEGIN
   -- 1. Insert into forms table
   INSERT INTO forms(
     form_type, 
-    form_datetime_submitted, 
-    form_datetime_resolved, 
-    form_paid_bool, 
-    correction_form_id
+    form_datetime_submitted
   )
   VALUES(
     'Development Plan Application (General)', 
-    CURRENT_TIMESTAMP, 
-    p_form_datetime_resolved, 
-    p_form_paid_bool, 
-    p_correction_form_id
+    CURRENT_TIMESTAMP
   );
   SET @new_form_id = LAST_INSERT_ID();
 
@@ -965,12 +948,10 @@ BEGIN
   -- 9. Insert into general_development_plan_applications
   INSERT INTO general_development_plan_applications(
     form_id, address_id, gdpa_applicant_phone, gdpa_plan_amendment_request,
-    gdpa_proposed_conditions, required_findings_type, gdpa_concept_plan,
-    gdpa_traffic_study, gdpa_geologic_analysis
+    gdpa_proposed_conditions, required_findings_type
   ) VALUES (
     @new_form_id, v_primary_applicant_address_id, p_applicant_phone,
-    p_gdp_amendment_request, p_proposed_conditions, p_finding_type,
-    p_file_concept, p_file_traffic, p_file_geologic
+    p_gdp_amendment_request, p_proposed_conditions, p_finding_type
   );
 
   COMMIT;
@@ -1404,10 +1385,6 @@ DELIMITER ;
 DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_insert_future_land_use_map_application_comprehensive$$
 CREATE PROCEDURE sp_insert_future_land_use_map_application_comprehensive(
-  -- Form metadata
-  IN p_form_datetime_resolved DATETIME,
-  IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
   -- Hearing information
   IN p_docket_number VARCHAR(255),
   IN p_public_hearing_date DATE,
@@ -1477,23 +1454,10 @@ CREATE PROCEDURE sp_insert_future_land_use_map_application_comprehensive(
   -- Findings
   IN p_finding_type VARCHAR(255),
   IN p_findings_explanation TEXT,
-  -- Checklist items
-  IN p_checklist_application BOOLEAN,
-  IN p_checklist_exhibit BOOLEAN,
-  IN p_checklist_concept BOOLEAN,
-  IN p_checklist_compatibility BOOLEAN,
   -- File uploads (stored as file paths/names)
   IN p_file_exhibit VARCHAR(255),
   IN p_file_concept VARCHAR(255),
-  IN p_file_compatibility VARCHAR(255),
-  -- Signatures
-  IN p_signature_date_1 DATE,
-  IN p_signature_name_1 VARCHAR(255),
-  IN p_signature_date_2 DATE,
-  IN p_signature_name_2 VARCHAR(255),
-  -- Admin/fees
-  IN p_application_fee VARCHAR(255),
-  IN p_certificate_fee VARCHAR(255)
+  IN p_file_compatibility VARCHAR(255)
 )
 BEGIN
   DECLARE v_property_address_id INT DEFAULT NULL;
@@ -1525,17 +1489,11 @@ BEGIN
   -- 1. Insert into forms table
   INSERT INTO forms(
     form_type, 
-    form_datetime_submitted, 
-    form_datetime_resolved, 
-    form_paid_bool, 
-    correction_form_id
+    form_datetime_submitted
   )
   VALUES(
     'Future Land Use Map (FLUM) Application', 
-    CURRENT_TIMESTAMP, 
-    p_form_datetime_resolved, 
-    p_form_paid_bool, 
-    p_correction_form_id
+    CURRENT_TIMESTAMP
   );
   SET @new_form_id = LAST_INSERT_ID();
 
@@ -1747,10 +1705,14 @@ BEGIN
   INSERT INTO future_land_use_map_applications(
     form_id,
     future_land_use_map_amendment_prop,
+    required_findings_type,
+    findings_explanation,
     PVA_parcel_number
   ) VALUES (
     @new_form_id,
     p_flum_request,
+    p_finding_type,
+    p_findings_explanation,
     p_parcel_number
   );
 

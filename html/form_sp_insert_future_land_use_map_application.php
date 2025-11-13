@@ -1,4 +1,13 @@
 <?php
+    // Show all errors from the PHP interpreter.
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+
+    // Show all errors from the MySQLi Extension.
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);  
+?>
+<?php
 require_once 'config.php';
 requireLogin();
 
@@ -13,76 +22,7 @@ $success = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Header fields
-    $docket_number = isset($_POST['docket_number']) && $_POST['docket_number'] !== '' ? $_POST['docket_number'] : null;
-    $public_hearing_date = isset($_POST['public_hearing_date']) && $_POST['public_hearing_date'] !== '' ? $_POST['public_hearing_date'] : null;
-    $date_application_filed = isset($_POST['date_application_filed']) && $_POST['date_application_filed'] !== '' ? $_POST['date_application_filed'] : null;
-    $pre_application_meeting_date = isset($_POST['pre_application_meeting_date']) && $_POST['pre_application_meeting_date'] !== '' ? $_POST['pre_application_meeting_date'] : null;
-    
-    // Primary applicant fields
-    $applicant_name = isset($_POST['applicant_name']) && $_POST['applicant_name'] !== '' ? $_POST['applicant_name'] : null;
-    $officers_names = isset($_POST['officers_names']) && is_array($_POST['officers_names']) ? json_encode($_POST['officers_names']) : null;
-    $applicant_mailing_address = isset($_POST['applicant_mailing_address']) && $_POST['applicant_mailing_address'] !== '' ? $_POST['applicant_mailing_address'] : null;
-    $applicant_phone = isset($_POST['applicant_phone']) && $_POST['applicant_phone'] !== '' ? $_POST['applicant_phone'] : null;
-    $applicant_cell = isset($_POST['applicant_cell']) && $_POST['applicant_cell'] !== '' ? $_POST['applicant_cell'] : null;
-    $applicant_email = isset($_POST['applicant_email']) && $_POST['applicant_email'] !== '' ? $_POST['applicant_email'] : null;
-    
-    // Additional applicants
-    $additional_applicant_names = isset($_POST['additional_applicant_names']) && is_array($_POST['additional_applicant_names']) ? json_encode($_POST['additional_applicant_names']) : null;
-    $additional_applicant_officers = [];
-    foreach ($_POST as $key => $value) {
-        if (preg_match('/^additional_applicant_officers_(\d+)$/', $key, $matches)) {
-            if (is_array($value)) {
-                $additional_applicant_officers[$matches[1]] = $value;
-            }
-        }
-    }
-    $additional_applicant_officers = !empty($additional_applicant_officers) ? json_encode($additional_applicant_officers) : null;
-    $additional_applicant_mailing_addresses = isset($_POST['additional_applicant_mailing_addresses']) && is_array($_POST['additional_applicant_mailing_addresses']) ? json_encode($_POST['additional_applicant_mailing_addresses']) : null;
-    $additional_applicant_phones = isset($_POST['additional_applicant_phones']) && is_array($_POST['additional_applicant_phones']) ? json_encode($_POST['additional_applicant_phones']) : null;
-    $additional_applicant_cells = isset($_POST['additional_applicant_cells']) && is_array($_POST['additional_applicant_cells']) ? json_encode($_POST['additional_applicant_cells']) : null;
-    $additional_applicant_emails = isset($_POST['additional_applicant_emails']) && is_array($_POST['additional_applicant_emails']) ? json_encode($_POST['additional_applicant_emails']) : null;
-    
-    // Property owner fields
-    $owner_name = isset($_POST['owner_name']) && $_POST['owner_name'] !== '' ? $_POST['owner_name'] : null;
-    $owner_mailing_address = isset($_POST['owner_mailing_address']) && $_POST['owner_mailing_address'] !== '' ? $_POST['owner_mailing_address'] : null;
-    $owner_phone = isset($_POST['owner_phone']) && $_POST['owner_phone'] !== '' ? $_POST['owner_phone'] : null;
-    $owner_cell = isset($_POST['owner_cell']) && $_POST['owner_cell'] !== '' ? $_POST['owner_cell'] : null;
-    $owner_email = isset($_POST['owner_email']) && $_POST['owner_email'] !== '' ? $_POST['owner_email'] : null;
-    
-    // Additional property owners
-    $additional_owner_names = isset($_POST['additional_owner_names']) && is_array($_POST['additional_owner_names']) ? json_encode($_POST['additional_owner_names']) : null;
-    $additional_owner_mailing_addresses = isset($_POST['additional_owner_mailing_addresses']) && is_array($_POST['additional_owner_mailing_addresses']) ? json_encode($_POST['additional_owner_mailing_addresses']) : null;
-    $additional_owner_phones = isset($_POST['additional_owner_phones']) && is_array($_POST['additional_owner_phones']) ? json_encode($_POST['additional_owner_phones']) : null;
-    $additional_owner_cells = isset($_POST['additional_owner_cells']) && is_array($_POST['additional_owner_cells']) ? json_encode($_POST['additional_owner_cells']) : null;
-    $additional_owner_emails = isset($_POST['additional_owner_emails']) && is_array($_POST['additional_owner_emails']) ? json_encode($_POST['additional_owner_emails']) : null;
-    
-    // Attorney fields
-    $attorney_name = isset($_POST['attorney_name']) && $_POST['attorney_name'] !== '' ? $_POST['attorney_name'] : null;
-    $law_firm = isset($_POST['law_firm']) && $_POST['law_firm'] !== '' ? $_POST['law_firm'] : null;
-    $attorney_phone = isset($_POST['attorney_phone']) && $_POST['attorney_phone'] !== '' ? $_POST['attorney_phone'] : null;
-    $attorney_cell = isset($_POST['attorney_cell']) && $_POST['attorney_cell'] !== '' ? $_POST['attorney_cell'] : null;
-    $attorney_email = isset($_POST['attorney_email']) && $_POST['attorney_email'] !== '' ? $_POST['attorney_email'] : null;
-    
-    // Property information
-    $property_address = isset($_POST['property_address']) && $_POST['property_address'] !== '' ? $_POST['property_address'] : null;
-    $parcel_number = isset($_POST['parcel_number']) && $_POST['parcel_number'] !== '' ? $_POST['parcel_number'] : null;
-    $acreage = isset($_POST['acreage']) && $_POST['acreage'] !== '' ? $_POST['acreage'] : null;
-    $current_zoning = isset($_POST['current_zoning']) && $_POST['current_zoning'] !== '' ? $_POST['current_zoning'] : null;
-    
-    // FLUM request
-    $flum_request = isset($_POST['flum_request']) && $_POST['flum_request'] !== '' ? $_POST['flum_request'] : null;
-    
-    // Findings
-    $finding_type = isset($_POST['finding_type']) && $_POST['finding_type'] !== '' ? $_POST['finding_type'] : null;
-    $findings_explanation = isset($_POST['findings_explanation']) && $_POST['findings_explanation'] !== '' ? $_POST['findings_explanation'] : null;
-    
-    // Checklist items
-    $checklist_application = isset($_POST['checklist_application']) ? 1 : 0;
-    $checklist_exhibit = isset($_POST['checklist_exhibit']) ? 1 : 0;
-    $checklist_concept = isset($_POST['checklist_concept']) ? 1 : 0;
-    $checklist_compatibility = isset($_POST['checklist_compatibility']) ? 1 : 0;
-    
+    // ... (Your existing PHP POST handling code) ...
     // Handle file uploads
     $file_exhibit = null;
     $file_concept = null;
@@ -103,13 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $signature_name_1 = isset($_POST['signature_name_1']) && $_POST['signature_name_1'] !== '' ? $_POST['signature_name_1'] : null;
     $signature_date_2 = isset($_POST['signature_date_2']) && $_POST['signature_date_2'] !== '' ? $_POST['signature_date_2'] : null;
     $signature_name_2 = isset($_POST['signature_name_2']) && $_POST['signature_name_2'] !== '' ? $_POST['signature_name_2'] : null;
-    
-    // Admin fields
-    $application_fee = isset($_POST['application_fee']) && $_POST['application_fee'] !== '' ? $_POST['application_fee'] : null;
-    $certificate_fee = isset($_POST['certificate_fee']) && $_POST['certificate_fee'] !== '' ? $_POST['certificate_fee'] : null;
-    $date_fees_received = isset($_POST['date_fees_received']) && $_POST['date_fees_received'] !== '' ? $_POST['date_fees_received'] : null;
-    $form_paid_bool = isset($_POST['form_paid_bool']) ? 1 : 0;
-    $correction_form_id = isset($_POST['correction_form_id']) && $_POST['correction_form_id'] !== '' ? $_POST['correction_form_id'] : null;
     
     // Parse address components for applicant
 $applicant_street = isset($_POST['applicant_street']) ? $_POST['applicant_street'] : null;
@@ -140,6 +73,7 @@ $property_street = isset($_POST['property_street']) ? $_POST['property_street'] 
 $property_city = isset($_POST['property_city']) ? $_POST['property_city'] : null;
 $property_state = isset($_POST['property_state']) ? $_POST['property_state'] : null;
 $property_zip_code = isset($_POST['property_zip_code']) ? $_POST['property_zip_code'] : null;
+$parcel_number = isset($_POST['parcel_number']) ? $_POST['parcel_number'] : null;
 
 // Parse owner name
 $owner_first_name = null;
@@ -154,23 +88,17 @@ $attorney_first_name = isset($_POST['attorney_first_name']) ? $_POST['attorney_f
 $attorney_last_name = isset($_POST['attorney_last_name']) ? $_POST['attorney_last_name'] : null;
 
 // Call the stored procedure
-$sql = "CALL sp_insert_future_land_use_map_application_comprehensive(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+$sql = "CALL sp_insert_future_land_use_map_application_comprehensive(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
     $error = 'Prepare failed: ' . $conn->error;
 } else {
-    // Bind parameters (60 parameters total)
-    $types = 'siisssssssssssssssssssssssssssssssssssisssssssssssssssssss';
+    // Bind parameters (63 parameters total)
+    $types = 'siisssssssssssssssssssssssssssssssssssissssssssssssssssssssssss';
     
     $params = array();
     $params[] = &$types;
-    
-    // Form metadata (3)
-    $form_datetime_resolved = null;
-    $params[] = &$form_datetime_resolved;
-    $params[] = &$form_paid_bool;
-    $params[] = &$correction_form_id;
     
     // Hearing information (4)
     $params[] = &$docket_number;
@@ -178,7 +106,7 @@ if (!$stmt) {
     $params[] = &$date_application_filed;
     $params[] = &$pre_application_meeting_date;
     
-    // Primary applicant (9)
+    // Primary applicant (10)
     $params[] = &$applicant_name;
     $params[] = &$officers_names;
     $params[] = &$applicant_street;
@@ -204,7 +132,7 @@ if (!$stmt) {
     $params[] = &$additional_applicant_other_addresses;
     $params[] = &$additional_applicant_emails;
     
-    // Property owner (9)
+    // Property owner (10)
     $params[] = &$owner_first_name;
     $params[] = &$owner_last_name;
     $params[] = &$owner_street;
@@ -256,45 +184,20 @@ if (!$stmt) {
     $params[] = &$findings_explanation;
     
     // Checklist items (4)
-    $params[] = &$checklist_application;
     $params[] = &$checklist_exhibit;
     $params[] = &$checklist_concept;
     $params[] = &$checklist_compatibility;
     
-    // Files (3) - would need to save to disk and store filenames
-    $file_exhibit_name = null;
-    $file_concept_name = null;
-    $file_compatibility_name = null;
-    
-    if (isset($_FILES['file_exhibit']) && $_FILES['file_exhibit']['error'] === UPLOAD_ERR_OK) {
-        $file_exhibit_name = 'uploads/exhibit_' . time() . '_' . basename($_FILES['file_exhibit']['name']);
-        move_uploaded_file($_FILES['file_exhibit']['tmp_name'], $file_exhibit_name);
-    }
-    if (isset($_FILES['file_concept']) && $_FILES['file_concept']['error'] === UPLOAD_ERR_OK) {
-        $file_concept_name = 'uploads/concept_' . time() . '_' . basename($_FILES['file_concept']['name']);
-        move_uploaded_file($_FILES['file_concept']['tmp_name'], $file_concept_name);
-    }
-    if (isset($_FILES['file_compatibility']) && $_FILES['file_compatibility']['error'] === UPLOAD_ERR_OK) {
-        $file_compatibility_name = 'uploads/compatibility_' . time() . '_' . basename($_FILES['file_compatibility']['name']);
-        move_uploaded_file($_FILES['file_compatibility']['tmp_name'], $file_compatibility_name);
-    }
-    
-    $params[] = &$file_exhibit_name;
-    $params[] = &$file_concept_name;
-    $params[] = &$file_compatibility_name;
-    
-    // Signatures (4)
-    $params[] = &$signature_date_1;
-    $params[] = &$signature_name_1;
-    $params[] = &$signature_date_2;
-    $params[] = &$signature_name_2;
-    
-    // Admin/fees (2)
-    $params[] = &$application_fee;
-    $params[] = &$certificate_fee;
     
     // Bind all parameters
-    $bindResult = @call_user_func_array(array($stmt, 'bind_param'), $params);
+    // The call_user_func_array needs the parameters to be references.
+    // For string literals or non-variables, you might need to create temporary variables.
+    $refs = array();
+    foreach($params as $key => $value) {
+        $refs[$key] = &$params[$key];
+    }
+    
+    $bindResult = @call_user_func_array(array($stmt, 'bind_param'), $refs);
     
     if ($bindResult === false) {
         $error = 'Bind failed: ' . $stmt->error;
@@ -302,11 +205,41 @@ if (!$stmt) {
         if (!$stmt->execute()) {
             $error = 'Execute failed: ' . $stmt->error;
         } else {
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+            $form_id = $row['form_id'];
+            $stmt->close();
+    
+            // Close the stored procedure result set
+            while($conn->more_results()) {
+                $conn->next_result();
+            }
+    
+            // Link form to client
+            $sql = "INSERT INTO client_forms(form_id, client_id) VALUES(?, ?)";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('ii', $form_id, $client_id);
+            $stmt->execute();
+            $stmt->close();
+
+            $success = 'Form submitted successfully!';
             $success = 'Form submitted successfully!';
         }
     }
-    $stmt->close();
 }
+}
+// Fetch states for dropdown
+$states_result = $conn->query("SELECT state_code FROM states ORDER BY state_code");
+$states = [];
+if ($states_result) {
+    while ($row = $states_result->fetch_assoc()) {
+        $states[] = $row['state_code'];
+    }
+}
+$stateOptionsHtml = '<option value="">Select</option>';
+foreach ($states as $state) {
+    $selected = ($state === 'KY') ? ' selected' : '';
+    $stateOptionsHtml .= '<option value="' . htmlspecialchars($state) . '"' . $selected . '>' . htmlspecialchars($state) . '</option>';
 }
 ?>
 <!doctype html>
@@ -443,6 +376,9 @@ if (!$stmt) {
     }
   </style>
    <script>
+    // Make the PHP generated state options available to JavaScript
+    const stateOptions = `<?php echo $stateOptionsHtml; ?>`;
+
     let applicantCount = 0;
     let ownerCount = 0;
     let officerCount = 0;
@@ -536,10 +472,10 @@ if (!$stmt) {
             </div>
           </div>
           <div class="col-md-1">
-            <div class="form-group">
               <label>State:</label>
-              <input type="text" class="form-control" name="additional_applicant_states[]">
-            </div>
+              <select class="form-control" name="additional_applicant_states[]" required>
+              ${stateOptions}
+               </select>
           </div>
           <div class="col-md-2">
             <div class="form-group">
@@ -609,7 +545,9 @@ if (!$stmt) {
           <div class="col-md-1">
             <div class="form-group">
               <label>State:</label>
-              <input type="text" class="form-control" name="additional_owner_states[]">
+              <select class="form-control" name="additional_owner_states[]" required>
+              ${stateOptions}
+              </select>
             </div>
           </div>
           <div class="col-md-2">
@@ -661,18 +599,18 @@ if (!$stmt) {
 
   <div class="header-info">
     <div>
-      <strong>Docket Number:</strong> <input type="text" name="p_docket_number" class="form-control small-input d-inline" style="width: 150px;">
+      <strong>Docket Number:</strong> <input type="text" name="docket_number" class="form-control small-input d-inline" style="width: 150px;">
     </div>
     <div>
-      <strong>Public Hearing Date:</strong> <input type="text" name="p_public_hearing_date" class="form-control small-input d-inline" style="width: 150px;">
+      <strong>Public Hearing Date:</strong> <input type="date" name="public_hearing_date" class="form-control small-input d-inline" style="width: 150px;">
     </div>
   </div>
   <div class="header-info">
     <div>
-      <strong>Date Application Filed:</strong> <input type="text" name="p_date_application_filed" class="form-control small-input d-inline" style="width: 150px;">
+      <strong>Date Application Filed:</strong> <input type="date" name="date_application_filed" class="form-control small-input d-inline" style="width: 150px;">
     </div>
     <div>
-      <strong>Pre-Application Meeting Date:</strong> <input type="text" name="p_application_meeting_date" class="form-control small-input d-inline" style="width: 150px;">
+      <strong>Pre-Application Meeting Date:</strong> <input type="date" name="pre_application_meeting_date" class="form-control small-input d-inline" style="width: 150px;">
     </div>
   </div>
 
@@ -726,7 +664,9 @@ if (!$stmt) {
       <div class="col-md-1">
         <div class="form-group">
           <label>State:</label>
-          <input type="text" class="form-control" name="applicant_state">
+          <select class="form-control" name="applicant_state" required>
+            <?php echo $stateOptionsHtml; // Use the PHP generated HTML here ?>
+          </select>
         </div>
       </div>
       <div class="col-md-2">
@@ -803,7 +743,9 @@ if (!$stmt) {
       <div class="col-md-1">
         <div class="form-group">
           <label>State:</label>
-          <input type="text" class="form-control" name="owner_state">
+          <select class="form-control" name="owner_state" required>
+            <?php echo $stateOptionsHtml; // Use the PHP generated HTML here ?>
+          </select>
         </div>
       </div>
       <div class="col-md-2">
@@ -893,7 +835,9 @@ if (!$stmt) {
       <div class="col-md-1">
         <div class="form-group">
           <label>State:</label>
-          <input type="text" class="form-control" name="property_state">
+          <select class="form-control" name="property_state" required>
+            <?php echo $stateOptionsHtml; // Use the PHP generated HTML here ?>
+          </select>
         </div>
       </div>
       <div class="col-md-2">
@@ -953,14 +897,14 @@ if (!$stmt) {
       </div>
 
       <div class="form-check mb-3">
-        <input class="form-check-input" type="radio" name="finding_type" id="finding2" value="correction">
+        <input class="form-check-input" type="radio" name="finding_type" id="finding2" value="inconsistency_correction">
         <label class="form-check-label" for="finding2">
           The request is a correction of inconsistencies or mapping errors contained within the FLUM; or
         </label>
       </div>
 
       <div class="form-check mb-3">
-        <input class="form-check-input" type="radio" name="finding_type" id="finding3" value="compatibility">
+        <input class="form-check-input" type="radio" name="finding_type" id="finding3" value="clear_compatability">
         <label class="form-check-label" for="finding3">
           That the proposed use is clearly compatible with existing surrounding development as demonstrated by the applicant. This review should include a compatibility assessment of the proposed use, which includes, but is not limited to, location and bulk of buildings and other structures, building height, building materials, intensity of use, density of development, location of parking and signage within the surrounding area. In addition, the applicant must prove that the proposed amendment will not result in development that exceeds the capacity of existing infrastructure (such as roads, water, sewer and stormwater).
         </label>
@@ -974,6 +918,15 @@ if (!$stmt) {
 
     <!-- APPLICATION CHECKLIST -->
     <div class="section-title">APPLICATION CHECKLIST</div>
+
+    <div class="checklist-item">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="checklist_application" id="check1">
+        <label class="form-check-label" for="check1">
+          A completed and signed Application
+        </label>
+      </div>
+    </div>
 
     <div class="checklist-item">
       <div class="form-check">
@@ -1031,7 +984,7 @@ if (!$stmt) {
       <div class="col-md-4">
         <div class="form-group">
           <label>Date:</label>
-          <input type="text" class="form-control" name="signature_date_1">
+          <input type="date" class="form-control" name="signature_date_1">
         </div>
       </div>
     </div>
@@ -1051,7 +1004,7 @@ if (!$stmt) {
       <div class="col-md-4">
         <div class="form-group">
           <label>Date:</label>
-          <input type="text" class="form-control" name="signature_date_2">
+          <input type="date" class="form-control" name="signature_date_2">
         </div>
       </div>
     </div>
@@ -1084,13 +1037,5 @@ if (!$stmt) {
 </div>
 
 </body>
-</html>check">
-        <input class="form-check-input" type="checkbox" name="checklist_application" id="check1">
-        <label class="form-check-label" for="check1">
-          A completed and signed Application
-        </label>
-      </div>
-    </div>
+</html>
 
-    <div class="checklist-item">
-      <div class="form-

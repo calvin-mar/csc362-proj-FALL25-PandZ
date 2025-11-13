@@ -120,67 +120,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $signature_name_1 = isset($_POST['signature_name_1']) && $_POST['signature_name_1'] !== '' ? $_POST['signature_name_1'] : null;
     $signature_date_2 = isset($_POST['signature_date_2']) && $_POST['signature_date_2'] !== '' ? $_POST['signature_date_2'] : null;
     $signature_name_2 = isset($_POST['signature_name_2']) && $_POST['signature_name_2'] !== '' ? $_POST['signature_name_2'] : null;
+  
     
-    // Admin fields
-    $application_fee = isset($_POST['application_fee']) && $_POST['application_fee'] !== '' ? $_POST['application_fee'] : null;
-    $certificate_fee = isset($_POST['certificate_fee']) && $_POST['certificate_fee'] !== '' ? $_POST['certificate_fee'] : null;
-    $date_fees_received = isset($_POST['date_fees_received']) && $_POST['date_fees_received'] !== '' ? $_POST['date_fees_received'] : null;
-    $form_paid_bool = isset($_POST['form_paid_bool']) ? 1 : 0;
-    $correction_form_id = isset($_POST['correction_form_id']) && $_POST['correction_form_id'] !== '' ? $_POST['correction_form_id'] : null;
-    
-    // Insert into database
-    // Parse address components for applicant
-$applicant_street = isset($_POST['applicant_street']) ? $_POST['applicant_street'] : null;
-$applicant_city = isset($_POST['applicant_city']) ? $_POST['applicant_city'] : null;
-$applicant_state = isset($_POST['applicant_state']) ? $_POST['applicant_state'] : null;
-$applicant_zip_code = isset($_POST['applicant_zip_code']) ? $_POST['applicant_zip_code'] : null;
+        // Insert into database
+        // Parse address components for applicant
+    $applicant_street = isset($_POST['applicant_street']) ? $_POST['applicant_street'] : null;
+    $applicant_city = isset($_POST['applicant_city']) ? $_POST['applicant_city'] : null;
+    $applicant_state = isset($_POST['applicant_state']) ? $_POST['applicant_state'] : null;
+    $applicant_zip_code = isset($_POST['applicant_zip_code']) ? $_POST['applicant_zip_code'] : null;
 
-// Parse address components for additional applicants
-$additional_applicant_streets = isset($_POST['additional_applicant_streets']) && is_array($_POST['additional_applicant_streets']) ? json_encode($_POST['additional_applicant_streets']) : null;
-$additional_applicant_cities = isset($_POST['additional_applicant_cities']) && is_array($_POST['additional_applicant_cities']) ? json_encode($_POST['additional_applicant_cities']) : null;
-$additional_applicant_states = isset($_POST['additional_applicant_states']) && is_array($_POST['additional_applicant_states']) ? json_encode($_POST['additional_applicant_states']) : null;
-$additional_applicant_zip_codes = isset($_POST['additional_applicant_zip_codes']) && is_array($_POST['additional_applicant_zip_codes']) ? json_encode($_POST['additional_applicant_zip_codes']) : null;
+    // Parse address components for additional applicants
+    $additional_applicant_streets = isset($_POST['additional_applicant_streets']) && is_array($_POST['additional_applicant_streets']) ? json_encode($_POST['additional_applicant_streets']) : null;
+    $additional_applicant_cities = isset($_POST['additional_applicant_cities']) && is_array($_POST['additional_applicant_cities']) ? json_encode($_POST['additional_applicant_cities']) : null;
+    $additional_applicant_states = isset($_POST['additional_applicant_states']) && is_array($_POST['additional_applicant_states']) ? json_encode($_POST['additional_applicant_states']) : null;
+    $additional_applicant_zip_codes = isset($_POST['additional_applicant_zip_codes']) && is_array($_POST['additional_applicant_zip_codes']) ? json_encode($_POST['additional_applicant_zip_codes']) : null;
 
-// Parse address components for owners
-$owner_street = isset($_POST['owner_street']) ? $_POST['owner_street'] : null;
-$owner_city = isset($_POST['owner_city']) ? $_POST['owner_city'] : null;
-$owner_state = isset($_POST['owner_state']) ? $_POST['owner_state'] : null;
-$owner_zip_code = isset($_POST['owner_zip_code']) ? $_POST['owner_zip_code'] : null;
+    // Parse address components for owners
+    $owner_street = isset($_POST['owner_street']) ? $_POST['owner_street'] : null;
+    $owner_city = isset($_POST['owner_city']) ? $_POST['owner_city'] : null;
+    $owner_state = isset($_POST['owner_state']) ? $_POST['owner_state'] : null;
+    $owner_zip_code = isset($_POST['owner_zip_code']) ? $_POST['owner_zip_code'] : null;
 
-// Parse address components for additional owners
-$additional_owner_streets = isset($_POST['additional_owner_streets']) && is_array($_POST['additional_owner_streets']) ? json_encode($_POST['additional_owner_streets']) : null;
-$additional_owner_cities = isset($_POST['additional_owner_cities']) && is_array($_POST['additional_owner_cities']) ? json_encode($_POST['additional_owner_cities']) : null;
-$additional_owner_states = isset($_POST['additional_owner_states']) && is_array($_POST['additional_owner_states']) ? json_encode($_POST['additional_owner_states']) : null;
-$additional_owner_zip_codes = isset($_POST['additional_owner_zip_codes']) && is_array($_POST['additional_owner_zip_codes']) ? json_encode($_POST['additional_owner_zip_codes']) : null;
+    // Parse address components for additional owners
+    $additional_owner_streets = isset($_POST['additional_owner_streets']) && is_array($_POST['additional_owner_streets']) ? json_encode($_POST['additional_owner_streets']) : null;
+    $additional_owner_cities = isset($_POST['additional_owner_cities']) && is_array($_POST['additional_owner_cities']) ? json_encode($_POST['additional_owner_cities']) : null;
+    $additional_owner_states = isset($_POST['additional_owner_states']) && is_array($_POST['additional_owner_states']) ? json_encode($_POST['additional_owner_states']) : null;
+    $additional_owner_zip_codes = isset($_POST['additional_owner_zip_codes']) && is_array($_POST['additional_owner_zip_codes']) ? json_encode($_POST['additional_owner_zip_codes']) : null;
 
-// Parse property address components
-$property_street = isset($_POST['property_street']) ? $_POST['property_street'] : null;
-$property_city = isset($_POST['property_city']) ? $_POST['property_city'] : null;
-$property_state = isset($_POST['property_state']) ? $_POST['property_state'] : null;
-$property_zip_code = isset($_POST['property_zip_code']) ? $_POST['property_zip_code'] : null;
-$property_other_address = isset($_POST['property_other_address']) ? $_POST['property_other_address'] : null;
+    // Parse property address components
+    $property_street = isset($_POST['property_street']) ? $_POST['property_street'] : null;
+    $property_city = isset($_POST['property_city']) ? $_POST['property_city'] : null;
+    $property_state = isset($_POST['property_state']) ? $_POST['property_state'] : null;
+    $property_zip_code = isset($_POST['property_zip_code']) ? $_POST['property_zip_code'] : null;
+    $property_other_address = isset($_POST['property_other_address']) ? $_POST['property_other_address'] : null;
 
-// Parse owner name from form fields
-$owner_first_name = isset($_POST['applicant_first_name']) ? $_POST['applicant_first_name'] : null;
-$owner_last_name = isset($_POST['applicant_last_name']) ? $_POST['applicant_last_name'] : null;
+    // Parse owner name from form fields
+    $owner_first_name = isset($_POST['applicant_first_name']) ? $_POST['applicant_first_name'] : null;
+    $owner_last_name = isset($_POST['applicant_last_name']) ? $_POST['applicant_last_name'] : null;
 
-// Parse attorney name
-$attorney_first_name = isset($_POST['attorney_first_name']) ? $_POST['attorney_first_name'] : null;
-$attorney_last_name = isset($_POST['attorney_last_name']) ? $_POST['attorney_last_name'] : null;
+    // Parse attorney name
+    $attorney_first_name = isset($_POST['attorney_first_name']) ? $_POST['attorney_first_name'] : null;
+    $attorney_last_name = isset($_POST['attorney_last_name']) ? $_POST['attorney_last_name'] : null;
 
-// Handle file uploads - save to disk
-$file_adjacent_name = null;
-$file_verification_name = null;
-$file_gdp_conditions_name = null;
-$file_concept_name = null;
-$file_traffic_name = null;
-$file_geologic_name = null;
+    // Handle file uploads - save to disk
+    $file_adjacent_name = null;
+    $file_verification_name = null;
+    $file_gdp_conditions_name = null;
+    $file_concept_name = null;
+    $file_traffic_name = null;
+    $file_geologic_name = null;
 
-$upload_dir = 'uploads/';
-if (!is_dir($upload_dir)) {
-    mkdir($upload_dir, 0755, true);
-}
-
+/*
 if (isset($_FILES['file_adjacent']) && $_FILES['file_adjacent']['error'] === UPLOAD_ERR_OK) {
     $file_adjacent_name = 'adjacent_' . time() . '_' . basename($_FILES['file_adjacent']['name']);
     move_uploaded_file($_FILES['file_adjacent']['tmp_name'], $upload_dir . $file_adjacent_name);
@@ -204,10 +194,10 @@ if (isset($_FILES['file_traffic']) && $_FILES['file_traffic']['error'] === UPLOA
 if (isset($_FILES['file_geologic']) && $_FILES['file_geologic']['error'] === UPLOAD_ERR_OK) {
     $file_geologic_name = 'geologic_' . time() . '_' . basename($_FILES['file_geologic']['name']);
     move_uploaded_file($_FILES['file_geologic']['tmp_name'], $upload_dir . $file_geologic_name);
-}
+}*/
 
 // Call stored procedure - 78 parameters total
-$sql = "CALL sp_insert_general_development_plan_application_comprehensive(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+$sql = "CALL sp_insert_general_development_plan_application_comprehensive(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
@@ -215,16 +205,10 @@ if (!$stmt) {
 } else {
     // Type string: 78 parameters
     // s=string, i=integer, d=date
-    $types = 'siissssssssssssssssssssssssssssssssssssissssssssiiiiiiiiiissssss';
+    $types = 'idddsssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss';
     
     $params = array();
     $params[] = &$types;
-    
-    // Form metadata (3)
-    $form_datetime_resolved = null;
-    $params[] = &$form_datetime_resolved;
-    $params[] = &$form_paid_bool;
-    $params[] = &$correction_form_id;
     
     // Hearing information (4)
     $params[] = &$docket_number;
@@ -312,13 +296,6 @@ if (!$stmt) {
     $params[] = &$checklist_traffic;
     $params[] = &$checklist_geologic;
     
-    // File uploads (6)
-    $params[] = &$file_adjacent_name;
-    $params[] = &$file_verification_name;
-    $params[] = &$file_gdp_conditions_name;
-    $params[] = &$file_concept_name;
-    $params[] = &$file_traffic_name;
-    $params[] = &$file_geologic_name;
     
     // Signatures (4)
     $params[] = &$signature_date_1;
@@ -335,10 +312,27 @@ if (!$stmt) {
         if (!$stmt->execute()) {
             $error = 'Execute failed: ' . $stmt->error;
         } else {
+          
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+            $form_id = $row['form_id'];
+            $stmt->close();
+    
+            // Close the stored procedure result set
+            while($conn->more_results()) {
+                $conn->next_result();
+            }
+    
+            // Link form to client
+            $sql = "INSERT INTO client_forms(form_id, client_id) VALUES(?, ?)";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('ii', $form_id, $client_id);
+            $stmt->execute();
+            $stmt->close();
+
             $success = 'Form submitted successfully!';
         }
     }
-    $stmt->close();
 }
 }
 ?>
@@ -694,18 +688,18 @@ if (!$stmt) {
 
   <div class="header-info">
     <div>
-      <strong>Docket Number:</strong> <input type="text" name="p_docket_number" class="form-control small-input d-inline" style="width: 150px;">
+      <strong>Docket Number:</strong> <input type="date" name="p_docket_number" class="form-control small-input d-inline" style="width: 150px;">
     </div>
     <div>
-      <strong>Public Hearing Date:</strong> <input type="text" name="p_public_hearing_date" class="form-control small-input d-inline" style="width: 150px;">
+      <strong>Public Hearing Date:</strong> <input type="date" name="p_public_hearing_date" class="form-control small-input d-inline" style="width: 150px;">
     </div>
   </div>
   <div class="header-info">
     <div>
-      <strong>Date Application Filed:</strong> <input type="text" name="p_date_application_filed" class="form-control small-input d-inline" style="width: 150px;">
+      <strong>Date Application Filed:</strong> <input type="date" name="p_date_application_filed" value="<?php echo date('Y-m-d'); ?>" class="form-control small-input d-inline" style="width: 150px;">
     </div>
     <div>
-      <strong>Pre-Application Meeting Date:</strong> <input type="text" name="p_application_meeting_date" class="form-control small-input d-inline" style="width: 150px;">
+      <strong>Pre-Application Meeting Date:</strong> <input type="date" name="p_application_meeting_date" class="form-control small-input d-inline" style="width: 150px;">
     </div>
   </div>
 
@@ -987,24 +981,26 @@ if (!$stmt) {
 
     <div class="findings-box">
       <div class="form-check mb-3">
-        <input class="form-check-input" type="radio" name="finding_type" id="finding1" value="major_changes">
+        <input class="form-check-input" type="radio" name="finding_type" id="finding1" value="significant_change">
         <label class="form-check-label" for="finding1">
-          There have been major changes of an economic, physical or social nature within the area of the property in question which were not anticipated at the time of the adoption of the development plan be amended; or
-        </label>
+        There have been major changes of an economic, physical or social nature within the area
+of the property in question which were not anticipated at the time of the adoption of the
+development plan be amended.</label>
       </div>
 
       <div class="form-check mb-3">
-        <input class="form-check-input" type="radio" name="finding_type" id="finding2" value="physical_conditions">
+        <input class="form-check-input" type="radio" name="finding_type" id="finding2" value="physical_development">
         <label class="form-check-label" for="finding2">
-          There have developed physical conditions which would not permit development of property in question in accordance with the General Development Plan which is being amended.
-        </label>
+        There have developed physical conditions which would not permit development of property in
+        question in accordance with the General Development Plan which is being amended.        </label>
       </div>
 
       <div class="form-check mb-3">
-        <input class="form-check-input" type="checkbox" name="owner_signatures_100" id="finding3" value="1">
+        <input class="form-check-input" type="radio" name="finding_type" id="finding3" value="petition_movement">
         <label class="form-check-label" for="finding3">
-          Any application to amend the General Development Plan shall require the signature of 100 percent of the property owners within the area covered by the General Development Plan and shall be amended by the same process as the original zoning amendment.
-        </label>
+        Any application to amend the General Development Plan shall require the signature of 100 percent of
+the property owners within the area covered by the General Development Plan and shall be amended
+by the same process as the original zoning amendment.        </label>
       </div>
     </div>
 
@@ -1129,7 +1125,7 @@ if (!$stmt) {
       <div class="col-md-4">
         <div class="form-group">
           <label>Date:</label>
-          <input type="text" class="form-control" name="signature_date_1">
+          <input type="date" class="form-control" name="signature_date_1">
         </div>
       </div>
     </div>
@@ -1149,7 +1145,7 @@ if (!$stmt) {
       <div class="col-md-4">
         <div class="form-group">
           <label>Date:</label>
-          <input type="text" class="form-control" name="signature_date_2">
+          <input type="date" class="form-control" name="signature_date_2">
         </div>
       </div>
     </div>
