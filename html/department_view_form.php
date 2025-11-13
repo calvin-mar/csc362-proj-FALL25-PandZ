@@ -10,19 +10,53 @@ mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 require_once 'config.php';
 requireLogin();
 
-// Verify user is a government worker
-if (getUserType() != 'govt_worker') {
+// Verify user is a department worker
+if (getUserType() != 'department') {
     header('Location: login.php');
     exit();
 }
 
 $conn = getDBConnection();
+$department_id = getUserId();
 $form_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
 // Validate form_id
 if ($form_id === false || $form_id === null || $form_id <= 0) {
-    header('Location: govt_worker_dashboard.php?error=invalid_form_id');
+    header('Location: department_dashboard.php?error=invalid_form_id');
     exit();
+}
+
+// Handle new interaction submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_interaction'])) {
+    $description = trim($_POST['description'] ?? '');
+    
+    if (!empty($description)) {
+        try {
+            $stmt = $conn->prepare("
+                INSERT INTO department_form_interactions 
+                (department_id, form_id, department_form_interaction_description, client_id) 
+                VALUES (?, ?, ?, NULL)
+            ");
+            $stmt->bind_param("iis", $department_id, $form_id, $description);
+            $stmt->execute();
+            $stmt->close();
+            $success = "Interaction added successfully!";
+            
+            // Refresh the page to show new interaction
+            header("Location: department_view_form.php?id={$form_id}&success=1");
+            exit();
+        } catch(Exception $e) {
+            error_log("Error adding department interaction: " . $e->getMessage());
+            $error = "Error adding interaction. Please try again.";
+        }
+    } else {
+        $error = "Interaction description is required.";
+    }
+}
+
+// Check for success message from redirect
+if (isset($_GET['success']) && $_GET['success'] == '1') {
+    $success = "Interaction added successfully!";
 }
 
 // Get basic form information using the summary view
@@ -34,13 +68,13 @@ $form = $result->fetch_assoc();
 $stmt->close();
 
 if (!$form) {
-    header('Location: govt_worker_dashboard.php?error=form_not_found');
+    header('Location: department_dashboard.php?error=form_not_found');
     exit();
 }
 
 // Initialize variables
 $form_details = null;
-$error = null;
+$error = $error ?? null;
 $view_name = '';
 
 // Get form-specific details based on form type using the complete views
@@ -117,15 +151,23 @@ try {
     $error = "Error loading form details. The database view may not exist.";
 }
 
-// Get department interactions using view
+// Get all department interactions for this form (not just from this department)
 $interactions = [];
 try {
     $stmt = $conn->prepare("
-        SELECT * FROM vw_department_interactions 
-        WHERE form_id = ? 
-        ORDER BY department_form_interaction_id DESC
+        SELECT 
+            dfi.*,
+            d.department_name,
+            CASE 
+                WHEN dfi.department_id = ? THEN 1 
+                ELSE 0 
+            END as is_my_department
+        FROM vw_department_interactions dfi
+        LEFT JOIN departments d ON dfi.department_id = d.department_id
+        WHERE dfi.form_id = ? 
+        ORDER BY dfi.department_form_interaction_id DESC
     ");
-    $stmt->bind_param("i", $form_id);
+    $stmt->bind_param("ii", $department_id, $form_id);
     $stmt->execute();
     $result = $stmt->get_result();
     while ($row = $result->fetch_assoc()) {
@@ -136,7 +178,7 @@ try {
     error_log("Error loading interactions: " . $e->getMessage());
 }
 
-// Get corrections using view
+// Get corrections if this form has any
 $corrections = [];
 try {
     if ($form['correction_form_id']) {
@@ -237,7 +279,7 @@ function isLongText($value) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Form Details - Government Worker</title>
+    <title>View Form Details - Department</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -246,7 +288,7 @@ function isLongText($value) {
             line-height: 1.6;
         }
         .navbar {
-            background: #dc3545;
+            background: #28a745;
             color: white;
             padding: 15px 30px;
             display: flex;
@@ -279,14 +321,21 @@ function isLongText($value) {
             margin: 30px auto;
             padding: 0 20px;
         }
-        .error-message {
-            background: #f8d7da;
-            color: #721c24;
+        .alert {
             padding: 15px 20px;
             border-radius: 8px;
             margin-bottom: 20px;
-            border-left: 4px solid #dc3545;
             font-weight: 500;
+        }
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
         }
         .card {
             background: white;
@@ -298,13 +347,13 @@ function isLongText($value) {
         .card h2 {
             color: #333;
             margin-bottom: 20px;
-            border-bottom: 2px solid #dc3545;
+            border-bottom: 2px solid #28a745;
             padding-bottom: 10px;
             font-size: 20px;
             font-weight: 600;
         }
         .card h3 {
-            color: #dc3545;
+            color: #28a745;
             margin-top: 25px;
             margin-bottom: 15px;
             font-size: 18px;
@@ -366,27 +415,53 @@ function isLongText($value) {
             color: #495057;
             margin-left: 10px;
         }
-        .interaction-item, .correction-item {
+        .interaction-item {
             background: #f8f9fa;
             padding: 15px 20px;
             border-radius: 8px;
             margin-bottom: 12px;
-            border-left: 4px solid #dc3545;
+            border-left: 4px solid #28a745;
         }
-        .interaction-header, .correction-header {
+        .interaction-item.my-department {
+            background: #e7f4ea;
+            border-left-color: #155724;
+        }
+        .interaction-header {
             font-weight: 600;
-            color: #dc3545;
+            color: #28a745;
             margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .interaction-date, .correction-date {
-            font-size: 12px;
-            color: #666;
-            font-weight: normal;
+        .interaction-header .my-dept-badge {
+            background: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
         }
-        .interaction-text, .correction-text {
+        .interaction-text {
+            color: #333;
+            line-height: 1.6;
+            margin-top: 8px;
+            white-space: pre-wrap;
+        }
+        .correction-item {
+            background: #fff3cd;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 4px solid #ffc107;
+        }
+        .correction-header {
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 8px;
+        }
+        .correction-text {
             color: #333;
             line-height: 1.6;
             margin-top: 8px;
@@ -411,7 +486,7 @@ function isLongText($value) {
         .btn {
             display: inline-block;
             padding: 10px 20px;
-            background: #dc3545;
+            background: #28a745;
             color: white;
             text-decoration: none;
             border-radius: 6px;
@@ -422,18 +497,37 @@ function isLongText($value) {
             font-weight: 500;
         }
         .btn:hover { 
-            background: #c82333; 
+            background: #218838; 
         }
-        .btn-secondary {
-            background: #6c757d;
-        }
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-        .action-buttons {
-            display: flex;
-            gap: 10px;
+        .action-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
             margin-top: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+        }
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            min-height: 120px;
+            font-family: inherit;
+            resize: vertical;
+            font-size: 14px;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
         }
         .info-box {
             background: #e7f3ff;
@@ -452,14 +546,19 @@ function isLongText($value) {
     <div class="navbar">
         <h1>Form Details - ID: <?php echo htmlspecialchars($form_id); ?></h1>
         <div class="navbar-links">
-            <a href="add_correction.php?form_id=<?php echo $form_id; ?>">Add Correction</a>
-            <a href="govt_worker_dashboard.php">← Back to Dashboard</a>
+            <a href="department_dashboard.php">← Back to Dashboard</a>
         </div>
     </div>
     
     <div class="container">
-        <?php if ($error): ?>
-            <div class="error-message">
+        <?php if (isset($success)): ?>
+            <div class="alert alert-success">
+                <?php echo htmlspecialchars($success); ?>
+            </div>
+        <?php endif; ?>
+        
+        <?php if (isset($error)): ?>
+            <div class="alert alert-error">
                 <?php echo htmlspecialchars($error); ?>
             </div>
         <?php endif; ?>
@@ -632,9 +731,14 @@ function isLongText($value) {
             </h2>
             <?php if (count($interactions) > 0): ?>
                 <?php foreach ($interactions as $interaction): ?>
-                    <div class="interaction-item">
+                    <div class="interaction-item <?php echo $interaction['is_my_department'] ? 'my-department' : ''; ?>">
                         <div class="interaction-header">
-                            <span><?php echo htmlspecialchars($interaction['department_name'] ?? 'Department'); ?></span>
+                            <span>
+                                <?php echo htmlspecialchars($interaction['department_name'] ?? 'Department'); ?>
+                                <?php if ($interaction['is_my_department']): ?>
+                                    <span class="my-dept-badge">Your Department</span>
+                                <?php endif; ?>
+                            </span>
                         </div>
                         <div class="interaction-text">
                             <?php echo nl2br(htmlspecialchars($interaction['department_form_interaction_description'] ?? 'No description')); ?>
@@ -642,36 +746,46 @@ function isLongText($value) {
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
-                <div class="empty-state">No department interactions recorded for this form.</div>
+                <div class="empty-state">No department interactions recorded for this form yet.</div>
             <?php endif; ?>
+            
+            <!-- Add Interaction Form -->
+            <div class="action-form">
+                <h3 style="margin-top: 0; color: #333;">Add New Interaction</h3>
+                <form method="POST">
+                    <div class="form-group">
+                        <label>Interaction Description *</label>
+                        <textarea name="description" required placeholder="Describe your department's interaction with this form..."></textarea>
+                    </div>
+                    <button type="submit" name="add_interaction" class="btn">➕ Submit Interaction</button>
+                </form>
+            </div>
         </div>
         
         <!-- Corrections Card -->
-        <div class="card">
-            <h2>Corrections 
+        <?php if ($form['correction_form_id']): ?>
+            <div class="card">
+                <h2>Corrections 
+                    <?php if (count($corrections) > 0): ?>
+                        <span class="metric-badge"><?php echo count($corrections); ?> total</span>
+                    <?php endif; ?>
+                </h2>
                 <?php if (count($corrections) > 0): ?>
-                    <span class="metric-badge"><?php echo count($corrections); ?> total</span>
+                    <?php foreach ($corrections as $correction): ?>
+                        <div class="correction-item">
+                            <div class="correction-header">
+                                Reviewer: <?php echo htmlspecialchars($correction['correction_box_reviewer'] ?? 'N/A'); ?>
+                            </div>
+                            <div class="correction-text">
+                                <?php echo nl2br(htmlspecialchars($correction['correction_box_text'] ?? 'No text provided')); ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="empty-state">No corrections recorded for this form.</div>
                 <?php endif; ?>
-            </h2>
-            <?php if (count($corrections) > 0): ?>
-                <?php foreach ($corrections as $correction): ?>
-                    <div class="correction-item">
-                        <div class="correction-header">
-                            <span>Reviewer: <?php echo htmlspecialchars($correction['correction_box_reviewer'] ?? 'N/A'); ?></span>
-                        </div>
-                        <div class="correction-text">
-                            <?php echo nl2br(htmlspecialchars($correction['correction_box_text'] ?? 'No text provided')); ?>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <div class="empty-state">No corrections recorded for this form.</div>
-            <?php endif; ?>
-            
-            <div class="action-buttons">
-                <a href="add_correction.php?form_id=<?php echo $form_id; ?>" class="btn">➕ Add Correction</a>
             </div>
-        </div>
+        <?php endif; ?>
     </div>
 </body>
 </html>
