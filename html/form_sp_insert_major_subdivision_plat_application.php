@@ -227,21 +227,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $checklist_construction_contract = isset($_POST['checklist_construction_contract']) ? 1 : 0;
         $checklist_construction_bond = isset($_POST['checklist_construction_bond']) ? 1 : 0;
         $checklist_notice_proceed = isset($_POST['checklist_notice_proceed']) ? 1 : 0;
-        
-        // Signature fields
-        $signature_date_1 = isset($_POST['signature_date_1']) && $_POST['signature_date_1'] !== '' ? $_POST['signature_date_1'] : null;
-        $signature_name_1 = isset($_POST['signature_name_1']) && $_POST['signature_name_1'] !== '' ? $_POST['signature_name_1'] : null;
-        $signature_date_2 = isset($_POST['signature_date_2']) && $_POST['signature_date_2'] !== '' ? $_POST['signature_date_2'] : null;
-        $signature_name_2 = isset($_POST['signature_name_2']) && $_POST['signature_name_2'] !== '' ? $_POST['signature_name_2'] : null;
-        
-        // Admin fields
-        $application_fee = isset($_POST['application_fee']) && $_POST['application_fee'] !== '' ? $_POST['application_fee'] : null;
-        $recording_fee = isset($_POST['recording_fee']) && $_POST['recording_fee'] !== '' ? $_POST['recording_fee'] : null;
-        $form_paid_bool = isset($_POST['form_paid_bool']) ? 1 : 0;
-        $correction_form_id = isset($_POST['correction_form_id']) && $_POST['correction_form_id'] !== '' ? (int)$_POST['correction_form_id'] : null;
-        
-        // Prepare the stored procedure call with 107 parameters
-        $sql = "CALL sp_insert_major_subdivision_plat_application(" . str_repeat("?,", 106) . "?)";
+            
+        // Prepare the stored procedure call with 98 parameters
+        $sql = "CALL sp_insert_major_subdivision_plat_application(" . str_repeat("?,", 97) . "?)";
         
         $stmt = $conn->prepare($sql);
         
@@ -249,11 +237,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Failed to prepare statement: " . $conn->error);
         }
         
-        // Bind all 107 parameters
+        // Bind all 98 parameters
         $stmt->bind_param(
-            "isisssssssssssssssssssssssssssssssssssissssssssssssssssssssssssssssssssssiiiiiiiiiiiiiiissssssssssssssss",
-            // Form metadata (3)
-            $form_datetime_resolved, $form_paid_bool, $correction_form_id,
+            "sssssssssssssssssssssssssssssssssssissssssssssssssssssssssssssssssssssiiiiiiiiiiiiiiissssssssss",
             // Technical dates (4)
             $application_filing_date, $technical_review_date, $preliminary_approval_date, $final_approval_date,
             // Primary applicant (10)
@@ -298,10 +284,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $uploaded_files['file_drainage'], $uploaded_files['file_pavement'],
             $uploaded_files['file_swppp'], $uploaded_files['file_bond_estimate'],
             $uploaded_files['file_construction_contract'], $uploaded_files['file_construction_bond'],
-            // Signatures (4)
-            $signature_date_1, $signature_name_1, $signature_date_2, $signature_name_2,
-            // Fees (2)
-            $application_fee, $recording_fee
         );
         
         $form_datetime_resolved = null; // Initially unresolved
@@ -333,6 +315,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $error = "Error submitting form: " . $e->getMessage();
     }
+}
+// Fetch states for dropdown
+$states_result = $conn->query("SELECT state_code FROM states ORDER BY state_code");
+$states = [];
+if ($states_result) {
+    while ($row = $states_result->fetch_assoc()) {
+        $states[] = $row['state_code'];
+    }
+}
+$stateOptionsHtml = '<option value="">Select</option>';
+foreach ($states as $state) {
+    $selected = ($state === 'KY') ? ' selected' : '';
+    $stateOptionsHtml .= '<option value="' . htmlspecialchars($state) . '"' . $selected . '>' . htmlspecialchars($state) . '</option>';
 }
 ?>
 <!doctype html>
@@ -459,6 +454,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   </style>
   <script>
+    const stateOptions = `<?php echo $stateOptionsHtml; ?>`;
     let applicantCount = 0;
     let ownerCount = 0;
     let officerCount = 0;
@@ -554,7 +550,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <div class="col-md-1">
             <div class="form-group">
               <label>State:</label>
-              <input type="text" class="form-control" name="additional_applicant_states[]">
+              <select class="form-control" name="additional_applicant_states[]" required>
+              ${stateOptions}
+              </select>
             </div>
           </div>
           <div class="col-md-2">
@@ -625,7 +623,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <div class="col-md-1">
             <div class="form-group">
               <label>State:</label>
-              <input type="text" class="form-control" name="additional_owner_states[]">
+              <select class="form-control" name="additional_owner_states[]" required>
+              ${stateOptions}
+              </select>
             </div>
           </div>
           <div class="col-md-2">
@@ -677,21 +677,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="row mb-3">
     <div class="col-md-6">
       <strong>Application Filing Date:</strong>
-      <input type="text" name="application_filing_date" class="form-control small-input d-inline" style="width: 150px;">
+      <input type="date" name="application_filing_date" class="form-control small-input d-inline" style="width: 150px;">
     </div>
     <div class="col-md-6">
       <strong>Technical Review Date:</strong>
-      <input type="text" name="technical_review_date" class="form-control small-input d-inline" style="width: 150px;">
+      <input type="date" name="technical_review_date" class="form-control small-input d-inline" style="width: 150px;">
     </div>
   </div>
   <div class="row mb-3">
     <div class="col-md-6">
       <strong>Preliminary Approval Date:</strong>
-      <input type="text" name="preliminary_approval_date" class="form-control small-input d-inline" style="width: 150px;">
+      <input type="date" name="preliminary_approval_date" class="form-control small-input d-inline" style="width: 150px;">
     </div>
     <div class="col-md-6">
       <strong>Final Approval Date:</strong>
-      <input type="text" name="final_approval_date" class="form-control small-input d-inline" style="width: 150px;">
+      <input type="date" name="final_approval_date" class="form-control small-input d-inline" style="width: 150px;">
     </div>
   </div>
 
@@ -745,7 +745,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="col-md-1">
         <div class="form-group">
           <label>State:</label>
-          <input type="text" class="form-control" name="applicant_state">
+          <select class="form-control" name="applicant_state" required>
+            <?php echo $stateOptionsHtml;?>
+          </select>
         </div>
       </div>
       <div class="col-md-2">
@@ -822,7 +824,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="col-md-1">
         <div class="form-group">
           <label>State:</label>
-          <input type="text" class="form-control" name="owner_state">
+          <select class="form-control" name="owner_state" required>
+            <?php echo $stateOptionsHtml;?>
+          </select>
         </div>
       </div>
       <div class="col-md-2">
@@ -932,7 +936,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="col-md-1">
         <div class="form-group">
           <label>State:</label>
-          <input type="text" class="form-control" name="property_state">
+          <select class="form-control" name="property_state" required>
+            <?php echo $stateOptionsHtml;?>
+          </select>
         </div>
       </div>
       <div class="col-md-2">
@@ -1177,7 +1183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="col-md-4">
         <div class="form-group">
           <label>Date:</label>
-          <input type="text" class="form-control" name="signature_date_1">
+          <input type="date" class="form-control" name="signature_date_1">
         </div>
       </div>
     </div>
@@ -1197,7 +1203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="col-md-4">
         <div class="form-group">
           <label>Date:</label>
-          <input type="text" class="form-control" name="signature_date_2">
+          <input type="date" class="form-control" name="signature_date_2">
         </div>
       </div>
     </div>
@@ -1211,39 +1217,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- ADMIN SECTION -->
     <div class="section-title" style="background: #d0d0d0;">REQUIRED FILING FEES MUST BE PAID BEFORE ANY APPLICATION WILL BE ACCEPTED</div>
-
-    <div class="row">
-      <div class="col-md-4">
-        <div class="form-group">
-          <label>Application Fee:</label>
-          <input type="text" class="form-control" name="application_fee">
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="form-group">
-          <label>Land Use/Recording Fee:</label>
-          <input type="text" class="form-control" name="recording_fee">
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="form-group">
-          <label>Date Fees Received:</label>
-          <input type="text" class="form-control" name="date_fees_received">
-        </div>
-      </div>
-    </div>
-
-    <div class="form-check mb-3">
-      <input class="form-check-input" type="checkbox" name="form_paid_bool" value="1" id="paid">
-      <label class="form-check-label" for="paid">
-        <strong>Form Paid</strong>
-      </label>
-    </div>
-
-    <div class="form-group">
-      <label>Correction Form ID (if applicable):</label>
-      <input type="number" class="form-control" name="correction_form_id">
-    </div>
 
     <div class="form-group mt-4">
       <button class="btn btn-primary btn-lg btn-block" type="submit">Submit Application</button>
