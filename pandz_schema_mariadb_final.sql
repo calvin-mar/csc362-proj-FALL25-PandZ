@@ -522,19 +522,13 @@ CREATE TABLE orr_public_record_names (
 
 CREATE TABLE open_record_requests (
     form_id INT NOT NULL,
-    orr_commercial_purpose VARCHAR(
-    255
-  ),
-    orr_request_for_copies VARCHAR(
-    255
-  ),
+    orr_commercial_purpose VARCHAR(255),
+    orr_request_for_copies VARCHAR(255),
     orr_received_on_datetime DATE,
     orr_receivable_datetime DATE,
     orr_denied_reasons TEXT,
     orr_applicant_id INT,
-    PRIMARY KEY (
-    form_id
-  ),
+    PRIMARY KEY (form_id),
   FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT,
   FOREIGN KEY (orr_applicant_id) REFERENCES orr_applicants(orr_applicant_id) ON DELETE RESTRICT 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -1718,8 +1718,6 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE PROCEDURE sp_insert_open_records_request(
-  IN p_form_datetime_resolved DATETIME,
-  IN p_form_paid_bool BOOLEAN,
   IN p_orr_commercial_purpose VARCHAR(255),
   IN p_orr_request_for_copies VARCHAR(255),
   IN p_orr_received_on_datetime DATE,
@@ -1737,18 +1735,26 @@ CREATE PROCEDURE sp_insert_open_records_request(
   IN p_public_record_description TEXT
 )
 BEGIN
+DECLARE
+  orr_property_address_id INT DEFAULT NULL;
   START TRANSACTION;
-  INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Open Records Request', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
+  INSERT INTO forms(form_type, form_datetime_submitted)
+    VALUES('Open Records Request', CURRENT_TIMESTAMP);
   SET @new_form_id = LAST_INSERT_ID();
+
+  IF p_orr_applicant_street IS NOT NULL OR p_orr_applicant_city IS NOT NULL THEN
+    INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
+      VALUES(p_orr_applicant_street, p_orr_applicant_city, p_orr_state_code, p_orr_applicant_zip_code);
+    SET orr_property_address_id = LAST_INSERT_ID();
+  END IF;
 
   IF p_orr_applicant_first_name IS NOT NULL OR p_orr_applicant_last_name IS NOT NULL THEN
     INSERT INTO orr_applicants(
       orr_applicant_first_name, orr_applicant_last_name, orr_applicant_telephone,
-      orr_applicant_street, orr_applicant_city, state_code, orr_applicant_zip_code
+      address_id
     ) VALUES (
       p_orr_applicant_first_name, p_orr_applicant_last_name, p_orr_applicant_telephone,
-      p_orr_applicant_street, p_orr_applicant_city, p_orr_state_code, p_orr_applicant_zip_code
+      orr_property_address_id
     );
     SET @new_orr_applicant_id = LAST_INSERT_ID();
   ELSE

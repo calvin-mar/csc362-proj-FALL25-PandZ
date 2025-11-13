@@ -1,4 +1,13 @@
 <?php
+    // Show all errors from the PHP interpreter.
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+
+    // Show all errors from the MySQLi Extension.
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);  
+?>
+<?php
 require_once 'config.php';
 requireLogin();
 
@@ -41,29 +50,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $p_orr_records_requested = isset($_POST['p_orr_records_requested']) && $_POST['p_orr_records_requested'] !== '' ? $_POST['p_orr_records_requested'] : null;
     
     // Fixed: Now calling with 18 parameters matching the stored procedure
-    $sql = "CALL sp_insert_open_records_request(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $sql = "CALL sp_insert_open_records_request(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         $error = 'Prepare failed: ' . $conn->error;
     } else {
-        $types = 'siissssssssssssss'; // Updated: 18 parameters (s=string, i=integer)
+        $types = 'sisssssssssss'; // 13 parameters (s=string, i=integer)
         $bind_names = array();
-        $bind_names[] = &$p_form_datetime_resolved;
-        $bind_names[] = &$p_form_paid_bool;
-        $bind_names[] = &$p_correction_form_id; // Added
         $bind_names[] = &$p_orr_commercial_purpose;
         $bind_names[] = &$p_orr_request_for_copies;
         $bind_names[] = &$p_orr_received_on_datetime;
         $bind_names[] = &$p_orr_receivable_datetime;
         $bind_names[] = &$p_orr_denied_reasons;
-        $bind_names[] = &$p_orr_applicant_first_name; // Changed: split name
-        $bind_names[] = &$p_orr_applicant_last_name;  // Changed: split name
+        $bind_names[] = &$p_orr_applicant_first_name; 
+        $bind_names[] = &$p_orr_applicant_last_name;  
         $bind_names[] = &$p_orr_applicant_telephone;
         $bind_names[] = &$p_orr_applicant_street;
         $bind_names[] = &$p_orr_applicant_city;
         $bind_names[] = &$p_orr_state_code;
         $bind_names[] = &$p_orr_applicant_zip_code;
-        $bind_names[] = &$p_orr_records_requested; // Changed: renamed to match SP
+        $bind_names[] = &$p_orr_records_requested; 
         array_unshift($bind_names, $types);
         $bindResult = @call_user_func_array(array($stmt, 'bind_param'), $bind_names);
         if ($bindResult === false) {
