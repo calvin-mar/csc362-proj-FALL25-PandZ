@@ -52,7 +52,7 @@ CREATE TABLE forms (
 
 CREATE TABLE clients (
     client_id INT NOT NULL AUTO_INCREMENT,
-    client_username VARCHAR(255),
+    client_username VARCHAR(255) UNIQUE,
     client_password VARCHAR(255),
     client_type VARCHAR(255),
     PRIMARY KEY (client_id)
@@ -624,7 +624,7 @@ CREATE TABLE department_form_interactions (
     interaction_started DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     interaction_resolved DATETIME NULL,
     department_form_interaction_description TEXT,
-    PRIMARY KEY (client_id, form_id,interaction_started),
+    PRIMARY KEY (client_id, form_id, interaction_started),
     FOREIGN KEY (client_id) REFERENCES departments(client_id) ON DELETE RESTRICT,
     FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

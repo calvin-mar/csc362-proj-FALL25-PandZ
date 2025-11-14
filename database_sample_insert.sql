@@ -610,7 +610,6 @@ INSERT INTO departments (client_id, department_name) VALUES
 (5, 'Planning Department'),
 (6, 'Clerk Office'),
 (1, 'Public Works'),
-(2, 'Parks and Recreation'),
 (7, 'Housing Authority'),
 (8, 'Economic Development');
 
