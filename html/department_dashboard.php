@@ -28,8 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_interaction'])) {
         try {
             $stmt = $conn->prepare("
                 INSERT INTO department_form_interactions 
-                (department_id, form_id, department_form_interaction_description, client_id) 
-                VALUES (?, ?, ?, NULL)
+                (client_id, form_id, department_form_interaction_description) 
+                VALUES (?, ?, ?)
             ");
             $stmt->bind_param("iis", $department_id, $form_id, $description);
             $stmt->execute();
@@ -57,6 +57,7 @@ $query = "
         f.form_datetime_resolved,
         f.form_paid_bool,
         COUNT(dfi.form_id) as interaction_count
+
     FROM forms f
     LEFT JOIN department_form_interactions dfi ON f.form_id = dfi.form_id
     WHERE 1=1
@@ -89,7 +90,7 @@ if ($status_filter === 'resolved') {
     $query .= " AND f.form_datetime_resolved IS NULL";
 }
 
-$query .= " GROUP BY f.form_id ORDER BY f.form_datetime_submitted DESC LIMIT 100";
+$query .= " GROUP BY f.form_id ORDER BY f.form_datetime_submitted DESC";
 
 $stmt = $conn->prepare($query);
 

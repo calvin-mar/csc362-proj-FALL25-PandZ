@@ -25,6 +25,40 @@ if ($form_id === false || $form_id === null || $form_id <= 0) {
     exit();
 }
 
+// Handle payment status update
+$payment_success = '';
+$payment_error = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_payment') {
+    try {
+        $paid_bool = isset($_POST['form_paid_bool']) && $_POST['form_paid_bool'] == '1' ? 1 : 0;
+        $datetime_resolved = !empty($_POST['form_datetime_resolved']) ? $_POST['form_datetime_resolved'] : null;
+        $payment_method = !empty($_POST['payment_method']) ? $_POST['payment_method'] : null;
+        
+        // Update the form payment status
+        $update_stmt = $conn->prepare("
+            UPDATE forms 
+            SET form_paid_bool = ?, 
+                form_datetime_resolved = ?
+            WHERE form_id = ?
+        ");
+        $update_stmt->bind_param("isi", $paid_bool, $datetime_resolved, $form_id);
+        
+        if ($update_stmt->execute()) {
+            // If you have a payment_method field in your database, update it here
+            // This would require adding the field to your forms table or a related table
+            
+            $payment_success = "Payment status updated successfully!";
+        } else {
+            $payment_error = "Failed to update payment status.";
+        }
+        $update_stmt->close();
+        
+    } catch (Exception $e) {
+        error_log("Error updating payment status: " . $e->getMessage());
+        $payment_error = "An error occurred while updating payment status.";
+    }
+}
+
 // Get basic form information using the summary view
 $stmt = $conn->prepare("SELECT * FROM vw_form_summary_with_client WHERE form_id = ?");
 $stmt->bind_param("i", $form_id);
@@ -288,6 +322,15 @@ function isLongText($value) {
             border-left: 4px solid #dc3545;
             font-weight: 500;
         }
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #28a745;
+            font-weight: 500;
+        }
         .card {
             background: white;
             padding: 30px;
@@ -430,6 +473,12 @@ function isLongText($value) {
         .btn-secondary:hover {
             background: #5a6268;
         }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
         .action-buttons {
             display: flex;
             gap: 10px;
@@ -446,6 +495,57 @@ function isLongText($value) {
             color: #1976D2;
             margin: 0;
         }
+        .payment-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 2px solid #dee2e6;
+        }
+        .payment-form h3 {
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+            font-size: 14px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-check input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .form-check label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .payment-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -461,6 +561,18 @@ function isLongText($value) {
         <?php if ($error): ?>
             <div class="error-message">
                 <?php echo htmlspecialchars($error); ?>
+            </div>
+        <?php endif; ?>
+        
+        <?php if ($payment_success): ?>
+            <div class="success-message">
+                <?php echo htmlspecialchars($payment_success); ?>
+            </div>
+        <?php endif; ?>
+        
+        <?php if ($payment_error): ?>
+            <div class="error-message">
+                <?php echo htmlspecialchars($payment_error); ?>
             </div>
         <?php endif; ?>
         
@@ -514,6 +626,50 @@ function isLongText($value) {
                         <span class="metric-badge"><?php echo htmlspecialchars($form['client_type']); ?></span>
                     </div>
                 <?php endif; ?>
+            </div>
+            
+            <!-- Payment Update Form -->
+            <div class="payment-form">
+                <h3>💳 Update Payment Status</h3>
+                <form method="POST" action="">
+                    <input type="hidden" name="action" value="update_payment">
+                    
+                    <div class="payment-grid">
+                        <div class="form-group">
+                            <label for="payment_method">Payment Method:</label>
+                            <select class="form-control" name="payment_method" id="payment_method">
+                                <option value="">Select payment method...</option>
+                                <option value="cash">Cash</option>
+                                <option value="check">Check</option>
+                                <option value="credit_card">Credit Card</option>
+                                <option value="money_order">Money Order</option>
+                                <option value="online">Online Payment</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="form_datetime_resolved">Date Payment Received:</label>
+                            <input type="datetime-local" 
+                                   class="form-control" 
+                                   name="form_datetime_resolved" 
+                                   id="form_datetime_resolved"
+                                   value="<?php echo $form['form_datetime_resolved'] ? date('Y-m-d\TH:i', strtotime($form['form_datetime_resolved'])) : ''; ?>">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" 
+                                   name="form_paid_bool" 
+                                   id="form_paid_bool" 
+                                   value="1"
+                                   <?php echo $form['form_paid_bool'] ? 'checked' : ''; ?>>
+                            <label for="form_paid_bool">Mark as Paid</label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">💾 Update Payment Status</button>
+                </form>
             </div>
         </div>
         

@@ -17,7 +17,7 @@ if (getUserType() != 'department') {
 }
 
 $conn = getDBConnection();
-$department_id = getUserId();
+$client_id = getUserId();
 $form_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
 // Validate form_id
@@ -34,10 +34,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_interaction'])) {
         try {
             $stmt = $conn->prepare("
                 INSERT INTO department_form_interactions 
-                (department_id, form_id, department_form_interaction_description, client_id) 
-                VALUES (?, ?, ?, NULL)
+                (client_id, form_id, department_form_interaction_description) 
+                VALUES (?, ?, ?)
             ");
-            $stmt->bind_param("iis", $department_id, $form_id, $description);
+            $stmt->bind_param("iis", $client_id, $form_id, $description);
             $stmt->execute();
             $stmt->close();
             $success = "Interaction added successfully!";
@@ -159,15 +159,15 @@ try {
             dfi.*,
             d.department_name,
             CASE 
-                WHEN dfi.department_id = ? THEN 1 
+                WHEN dfi.client_id = ? THEN 1 
                 ELSE 0 
             END as is_my_department
         FROM vw_department_interactions dfi
-        LEFT JOIN departments d ON dfi.department_id = d.department_id
+        LEFT JOIN departments d ON dfi.client_id = d.client_id
         WHERE dfi.form_id = ? 
-        ORDER BY dfi.department_form_interaction_id DESC
+        ORDER BY dfi.interaction_started DESC
     ");
-    $stmt->bind_param("ii", $department_id, $form_id);
+    $stmt->bind_param("ii", $client_id, $form_id);
     $stmt->execute();
     $result = $stmt->get_result();
     while ($row = $result->fetch_assoc()) {
