@@ -14,9 +14,9 @@ if (getUserType() !== 'department') {
 $conn = getDBConnection();
 $department_id = getUserId();
 
-// Get department name
+// Get department name - FIXED: using client_id instead of department_id
 $dept_name = 'Department';
-$stmt = $conn->prepare("SELECT department_name FROM departments WHERE department_id = ?");
+$stmt = $conn->prepare("SELECT department_name FROM departments WHERE client_id = ?");
 $stmt->bind_param("i", $department_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -51,11 +51,12 @@ $stmt->close();
 
 // ------------------------------------------------------------
 // 2) Recent interactions by this department using view
+// FIXED: Removed department_form_interaction_id reference and using interaction_started
 $recent_interactions = [];
 $stmt = $conn->prepare("
     SELECT * FROM vw_department_recent_interactions 
     WHERE department_id = ?
-    ORDER BY department_form_interaction_id DESC
+    ORDER BY interaction_started DESC
     LIMIT 50
 ");
 $stmt->bind_param("i", $department_id);
@@ -80,19 +81,22 @@ $stmt->close();
 
 // ------------------------------------------------------------
 // 4) Forms pending your department's attention
-// Using the view and joining with department-specific interaction counts
+// FIXED: Using composite key from department_form_interactions
 $pending_forms = [];
 $stmt = $conn->prepare("
     SELECT 
         p.*,
-        COUNT(DISTINCT CASE WHEN dfi.department_id = ? THEN dfi.department_form_interaction_id END) as my_interaction_count
+        COUNT(CASE WHEN dfi.client_id = ? THEN 1 END) as my_interaction_count
     FROM vw_pending_forms_with_dept_interactions p
     LEFT JOIN department_form_interactions dfi ON p.form_id = dfi.form_id
-    GROUP BY p.form_id
+    WHERE dfi.client_id = ? OR dfi.client_id IS NULL
+    GROUP BY p.form_id, p.form_type, p.form_datetime_submitted, p.days_pending, 
+             p.clients, p.total_interaction_count, p.form_paid_bool, p.correction_form_id
+    HAVING my_interaction_count > 0 OR my_interaction_count = 0
     ORDER BY p.days_pending DESC
     LIMIT 100
 ");
-$stmt->bind_param("i", $department_id);
+$stmt->bind_param("ii", $department_id, $department_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $pending_forms = $result->fetch_all(MYSQLI_ASSOC);
@@ -274,6 +278,7 @@ $conn->close();
                 <tr>
                     <th>Form ID</th>
                     <th>Form Type</th>
+                    <th>Started</th>
                     <th>Interaction</th>
                     <th>Status</th>
                     <th>Action</th>
@@ -284,10 +289,11 @@ $conn->close();
                     <tr>
                         <td><?= htmlspecialchars($row['form_id']); ?></td>
                         <td><?= htmlspecialchars($row['form_type']); ?></td>
+                        <td><?= htmlspecialchars($row['interaction_started']); ?></td>
                         <td>
                             <div class="interaction-preview">
-                                <?= htmlspecialchars(substr($row['department_form_interaction_description'], 0, 100)); ?>
-                                <?= strlen($row['department_form_interaction_description']) > 100 ? '...' : ''; ?>
+                                <?= htmlspecialchars(substr($row['department_form_interaction_description'] ?? '', 0, 100)); ?>
+                                <?= strlen($row['department_form_interaction_description'] ?? '') > 100 ? '...' : ''; ?>
                             </div>
                         </td>
                         <td>
@@ -301,7 +307,7 @@ $conn->close();
                     </tr>
                 <?php endforeach; ?>
                 <?php if (empty($recent_interactions)): ?>
-                    <tr><td colspan="5" class="empty-state">No interactions recorded yet</td></tr>
+                    <tr><td colspan="6" class="empty-state">No interactions recorded yet</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

@@ -582,20 +582,21 @@ GROUP BY f.form_id, flum.future_land_use_map_amendment_prop, flum.required_findi
          att.attorney_first_name, att.attorney_last_name, att.attorney_law_firm,
          att.attorney_phone, att.attorney_email;
 
--- 12. Department Interactions View
+-- 12. Department Interactions View (CORRECTED)
 CREATE OR REPLACE VIEW vw_department_interactions AS
 SELECT 
-    dfi.department_form_interaction_id,
-    dfi.form_id,
     dfi.client_id,
+    dfi.form_id,
+    dfi.interaction_started,
+    dfi.interaction_status,
+    dfi.interaction_resolved,
     d.department_name,
-    dfi.department_form_interaction_description,
-    dfi.client_id
+    dfi.department_form_interaction_description
 FROM department_form_interactions dfi
-LEFT JOIN departments d ON dfi.client_id_id = d.client_id
-ORDER BY dfi.form_id, dfi.department_form_interaction_id DESC;
+LEFT JOIN departments d ON dfi.client_id = d.client_id
+ORDER BY dfi.form_id, dfi.interaction_started DESC;
 
--- 13. Adjacent Property Owners Form - Complete View
+-- 13. Adjacent Property Owners Form - Complete View (CORRECTED)
 CREATE OR REPLACE VIEW vw_adjacent_property_owners_complete AS
 SELECT 
     f.form_id,
@@ -606,26 +607,28 @@ SELECT
     -- Neighbor information
     n.PVA_map_code,
     n.apof_neighbor_property_location,
-    n.apof_neighbor_property_street,
-    n.apof_neighbor_property_city,
-    n.state_code AS neighbor_state_code,
-    n.apof_neighbor_property_zip,
+    n_addr.address_street AS apof_neighbor_property_street,
+    n_addr.address_city AS apof_neighbor_property_city,
+    n_addr.state_code AS neighbor_state_code,
+    n_addr.address_zip_code AS apof_neighbor_property_zip,
     n.apof_neighbor_property_deed_book,
     n.apof_property_street_pg_number,
     -- Adjacent property owner
-    apo.adjacent_property_owner_street,
-    apo.adjacent_property_owner_city,
-    apo.state_code AS owner_state_code,
-    apo.adjacent_property_owner_zip
+    apo_addr.address_street AS adjacent_property_owner_street,
+    apo_addr.address_city AS adjacent_property_owner_city,
+    apo_addr.state_code AS owner_state_code,
+    apo_addr.address_zip_code AS adjacent_property_owner_zip
 FROM forms f
 LEFT JOIN adjacent_property_owner_forms apof ON f.form_id = apof.form_id
 LEFT JOIN adjacent_neighbors an ON f.form_id = an.form_id
 LEFT JOIN apof_neighbors n ON an.neighbor_id = n.neighbor_id
+LEFT JOIN addresses n_addr ON n.address_id = n_addr.address_id
 LEFT JOIN adjacent_neighbor_owners ano ON f.form_id = ano.form_id
 LEFT JOIN adjacent_property_owners apo ON ano.adjacent_property_owner_id = apo.adjacent_property_owner_id
+LEFT JOIN addresses apo_addr ON apo.address_id = apo_addr.address_id
 WHERE f.form_type = 'Adjacent Property Owners Form';
 
--- 14. Open Records Request - Complete View
+-- 14. Open Records Request - Complete View (CORRECTED)
 CREATE OR REPLACE VIEW vw_open_records_request_complete AS
 SELECT 
     f.form_id,
@@ -643,24 +646,26 @@ SELECT
     app.orr_applicant_first_name,
     app.orr_applicant_last_name,
     app.orr_applicant_telephone,
-    app.orr_applicant_street,
-    app.orr_applicant_city,
-    app.state_code AS applicant_state,
-    app.orr_applicant_zip_code,
+    app_addr.address_street AS orr_applicant_street,
+    app_addr.address_city AS orr_applicant_city,
+    app_addr.state_code AS applicant_state,
+    app_addr.address_zip_code AS orr_applicant_zip_code,
     -- Public records (concatenated)
     GROUP_CONCAT(DISTINCT pr.public_record_description SEPARATOR '; ') AS requested_records
 FROM forms f
 LEFT JOIN open_record_requests orr ON f.form_id = orr.form_id
 LEFT JOIN orr_applicants app ON orr.orr_applicant_id = app.orr_applicant_id
+LEFT JOIN addresses app_addr ON app.address_id = app_addr.address_id
 LEFT JOIN orr_public_record_names oprn ON f.form_id = oprn.form_id
 LEFT JOIN public_records pr ON oprn.public_record_id = pr.public_record_id
 WHERE f.form_type = 'Open Records Request'
 GROUP BY f.form_id, orr.orr_commercial_purpose, orr.orr_request_for_copies,
          orr.orr_received_on_datetime, orr.orr_receivable_datetime, orr.orr_denied_reasons,
          app.orr_applicant_first_name, app.orr_applicant_last_name, app.orr_applicant_telephone,
-         app.orr_applicant_street, app.orr_applicant_city, app.state_code, app.orr_applicant_zip_code;
+         app_addr.address_street, app_addr.address_city, app_addr.state_code, app_addr.address_zip_code;
 
--- 15. Sign Permit Application - Complete View
+
+-- 15. Sign Permit Application - Complete View (CORRECTED)
 CREATE OR REPLACE VIEW vw_sign_permit_application_complete AS
 SELECT 
     f.form_id,
@@ -676,16 +681,16 @@ SELECT
     -- Property owner
     owner.sp_owner_first_name,
     owner.sp_owner_last_name,
-    owner.sp_owner_street,
-    owner.sp_owner_city,
-    owner.state_code AS owner_state,
-    owner.sp_owner_zip_code,
+    owner_addr.address_street AS sp_owner_street,
+    owner_addr.address_city AS sp_owner_city,
+    owner_addr.state_code AS owner_state,
+    owner_addr.address_zip_code AS sp_owner_zip_code,
     -- Business
     bus.sp_business_name,
-    bus.sp_business_street,
-    bus.sp_business_city,
-    bus.state_code AS business_state,
-    bus.sp_business_zip_code,
+    bus_addr.address_street AS sp_business_street,
+    bus_addr.address_city AS sp_business_city,
+    bus_addr.state_code AS business_state,
+    bus_addr.address_zip_code AS sp_business_zip_code,
     -- Contractor
     con.sp_contractor_first_name,
     con.sp_contractor_last_name,
@@ -694,17 +699,19 @@ SELECT
     GROUP_CONCAT(DISTINCT CONCAT(s.sign_type, ' (', s.sign_square_footage, ' sq ft, ', s.lettering_height, ' height)') SEPARATOR '; ') AS signs
 FROM forms f
 LEFT JOIN sign_permit_applications spa ON f.form_id = spa.form_id
-LEFT JOIN sp_property_owners owner ON spa.sp_owner_id = owner.sp_owner_id
-LEFT JOIN sp_businesses bus ON spa.sp_business_id = bus.sp_business_id
-LEFT JOIN sp_contractors con ON spa.contractor_id = con.contractor_id
+LEFT JOIN sp_property_owners owner ON spa.owner_id = owner.sp_owner_id
+LEFT JOIN addresses owner_addr ON owner.address_id = owner_addr.address_id
+LEFT JOIN sp_businesses bus ON spa.business_id = bus.sp_business_id
+LEFT JOIN addresses bus_addr ON bus.address_id = bus_addr.address_id
+LEFT JOIN sp_contractors con ON spa.sp_contractor_id = con.sp_contractor_id
 LEFT JOIN permits_link_signs pls ON f.form_id = pls.form_id
 LEFT JOIN signs s ON pls.sign_id = s.sign_id
 WHERE f.form_type = 'Sign Permit Appplication'
 GROUP BY f.form_id, spa.sp_date, spa.sp_permit_number, spa.sp_building_coverage_percent,
          spa.sp_permit_fee, owner.sp_owner_first_name, owner.sp_owner_last_name,
-         owner.sp_owner_street, owner.sp_owner_city, owner.state_code, owner.sp_owner_zip_code,
-         bus.sp_business_name, bus.sp_business_street, bus.sp_business_city, bus.state_code,
-         bus.sp_business_zip_code, con.sp_contractor_first_name, con.sp_contractor_last_name,
+         owner_addr.address_street, owner_addr.address_city, owner_addr.state_code, owner_addr.address_zip_code,
+         bus.sp_business_name, bus_addr.address_street, bus_addr.address_city, bus_addr.state_code,
+         bus_addr.address_zip_code, con.sp_contractor_first_name, con.sp_contractor_last_name,
          con.sp_contractor_phone_number;
 
 -- 16. Zoning Permit Application - Complete View
@@ -958,13 +965,13 @@ FROM forms f
 LEFT JOIN client_forms cf ON f.form_id = cf.form_id
 LEFT JOIN clients c ON cf.client_id = c.client_id;
 
--- 26. Department Workload Summary (Aggregated for Reports)
+-- 26. Department Workload Summary (CORRECTED)
 CREATE OR REPLACE VIEW vw_department_workload_summary AS
 SELECT 
     d.client_id,
     d.department_name,
     COUNT(DISTINCT dfi.form_id) AS total_forms_interacted_with,
-    COUNT(dfi.department_form_interaction_id) AS total_interactions,
+    COUNT(*) AS total_interactions,
     COUNT(DISTINCT CASE 
         WHEN f.form_datetime_resolved IS NULL 
         THEN dfi.form_id 
@@ -1090,16 +1097,15 @@ ORDER BY activity_datetime DESC
 LIMIT 100;
 
 -- ========================================
--- DEPARTMENT-SPECIFIC VIEWS
--- Add these to database_views.sql
+-- DEPARTMENT-SPECIFIC VIEWS (CORRECTED FOR SCHEMA)
 -- ========================================
 
--- 1. Department Activity Summary (for KPIs)
+-- 1. Department Activity Summary (for KPIs) - CORRECTED
 CREATE OR REPLACE VIEW vw_department_activity_summary AS
 SELECT 
-    dfi.client_id,
+    dfi.client_id as department_id,
     d.department_name,
-    COUNT(DISTINCT dfi.department_form_interaction_id) as total_interactions,
+    COUNT(*) as total_interactions,
     COUNT(DISTINCT dfi.form_id) as forms_interacted,
     COUNT(DISTINCT CASE WHEN f.form_datetime_resolved IS NULL THEN dfi.form_id END) as pending_forms,
     COUNT(DISTINCT CASE WHEN f.form_datetime_resolved IS NOT NULL THEN dfi.form_id END) as resolved_forms
@@ -1108,12 +1114,14 @@ LEFT JOIN departments d ON dfi.client_id = d.client_id
 LEFT JOIN forms f ON dfi.form_id = f.form_id
 GROUP BY dfi.client_id, d.department_name;
 
--- 2. Department Recent Interactions
+-- 2. Department Recent Interactions - CORRECTED
 CREATE OR REPLACE VIEW vw_department_recent_interactions AS
 SELECT 
-    dfi.client_id,
+    dfi.client_id as department_id,
     dfi.form_id,
-    dfi.department_form_interaction_id,
+    dfi.interaction_started,
+    dfi.interaction_status,
+    dfi.interaction_resolved,
     dfi.department_form_interaction_description,
     f.form_type,
     f.form_datetime_submitted,
@@ -1126,21 +1134,21 @@ SELECT
 FROM department_form_interactions dfi
 JOIN forms f ON dfi.form_id = f.form_id
 LEFT JOIN departments d ON dfi.client_id = d.client_id
-ORDER BY dfi.department_form_interaction_id DESC;
+ORDER BY dfi.interaction_started DESC;
 
--- 3. Department Form Type Breakdown
+-- 3. Department Form Type Breakdown - CORRECTED
 CREATE OR REPLACE VIEW vw_department_form_type_breakdown AS
 SELECT 
-    dfi.client_id,
+    dfi.client_id as department_id,
     d.department_name,
     f.form_type,
     COUNT(DISTINCT dfi.form_id) as forms_count,
-    COUNT(dfi.department_form_interaction_id) as interaction_count,
+    COUNT(*) as interaction_count,
     COUNT(DISTINCT CASE WHEN f.form_datetime_resolved IS NULL THEN dfi.form_id END) as pending_count,
     COUNT(DISTINCT CASE WHEN f.form_datetime_resolved IS NOT NULL THEN dfi.form_id END) as resolved_count,
     CASE 
         WHEN COUNT(DISTINCT dfi.form_id) > 0 
-        THEN ROUND(COUNT(dfi.department_form_interaction_id) / COUNT(DISTINCT dfi.form_id), 1)
+        THEN ROUND(COUNT(*) / COUNT(DISTINCT dfi.form_id), 1)
         ELSE 0 
     END as avg_interactions_per_form
 FROM department_form_interactions dfi
@@ -1148,7 +1156,7 @@ JOIN forms f ON dfi.form_id = f.form_id
 LEFT JOIN departments d ON dfi.client_id = d.client_id
 GROUP BY dfi.client_id, d.department_name, f.form_type;
 
--- 4. All Pending Forms with Department Interaction Counts
+-- 4. All Pending Forms with Department Interaction Counts - CORRECTED
 CREATE OR REPLACE VIEW vw_pending_forms_with_dept_interactions AS
 SELECT 
     f.form_id,
@@ -1156,9 +1164,7 @@ SELECT
     f.form_datetime_submitted,
     DATEDIFF(NOW(), f.form_datetime_submitted) as days_pending,
     GROUP_CONCAT(DISTINCT c.client_username SEPARATOR ', ') as clients,
-    -- Count interactions by each department
-    COUNT(DISTINCT dfi.department_form_interaction_id) as total_interaction_count,
-    -- This will be filtered in the query for specific department
+    COUNT(DISTINCT CONCAT(dfi.client_id, '-', dfi.form_id, '-', dfi.interaction_started)) as total_interaction_count,
     f.form_paid_bool,
     f.correction_form_id
 FROM forms f
@@ -1169,14 +1175,14 @@ WHERE f.form_datetime_resolved IS NULL
 GROUP BY f.form_id, f.form_type, f.form_datetime_submitted, f.form_paid_bool, f.correction_form_id
 ORDER BY days_pending DESC;
 
--- 5. Department Monthly Activity Trend
+-- 5. Department Monthly Activity Trend - CORRECTED
 CREATE OR REPLACE VIEW vw_department_monthly_activity AS
 SELECT 
-    dfi.client_id,
+    dfi.client_id as department_id,
     d.department_name,
     DATE_FORMAT(f.form_datetime_submitted, '%Y-%m') as month,
     COUNT(DISTINCT dfi.form_id) as forms_interacted,
-    COUNT(dfi.department_form_interaction_id) as total_interactions
+    COUNT(*) as total_interactions
 FROM department_form_interactions dfi
 JOIN forms f ON dfi.form_id = f.form_id
 LEFT JOIN departments d ON dfi.client_id = d.client_id
@@ -1184,16 +1190,16 @@ WHERE f.form_datetime_submitted >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
 GROUP BY dfi.client_id, d.department_name, month
 ORDER BY month ASC;
 
--- 6. Department Comparison (All Departments)
+-- 6. Department Comparison (All Departments) - CORRECTED
 CREATE OR REPLACE VIEW vw_department_comparison AS
 SELECT 
-    d.client_id,
+    d.client_id as department_id,
     d.department_name,
     COUNT(DISTINCT dfi.form_id) as forms_handled,
-    COUNT(dfi.department_form_interaction_id) as total_interactions,
+    COUNT(*) as total_interactions,
     CASE 
         WHEN COUNT(DISTINCT dfi.form_id) > 0 
-        THEN ROUND(COUNT(dfi.department_form_interaction_id) / COUNT(DISTINCT dfi.form_id), 1)
+        THEN ROUND(COUNT(*) / COUNT(DISTINCT dfi.form_id), 1)
         ELSE 0 
     END as avg_interactions_per_form
 FROM departments d
@@ -1201,7 +1207,7 @@ LEFT JOIN department_form_interactions dfi ON d.client_id = dfi.client_id
 GROUP BY d.client_id, d.department_name
 ORDER BY forms_handled DESC;
 
--- 7. Department Forms Needing Attention (forms with few/no interactions from specific dept)
+-- 7. Department Forms Needing Attention - CORRECTED
 CREATE OR REPLACE VIEW vw_forms_needing_dept_attention AS
 SELECT 
     f.form_id,
@@ -1209,7 +1215,7 @@ SELECT
     f.form_datetime_submitted,
     f.form_datetime_resolved,
     DATEDIFF(NOW(), f.form_datetime_submitted) as days_since_submission,
-    COUNT(DISTINCT dfi.department_form_interaction_id) as total_interactions,
+    COUNT(*) as total_interactions,
     GROUP_CONCAT(DISTINCT d.department_name SEPARATOR ', ') as departments_involved,
     GROUP_CONCAT(DISTINCT c.client_username SEPARATOR ', ') as clients,
     CASE 
@@ -1226,22 +1232,20 @@ GROUP BY f.form_id, f.form_type, f.form_datetime_submitted, f.form_datetime_reso
          f.correction_form_id
 ORDER BY f.form_datetime_submitted DESC;
 
--- 8. Department Performance Metrics (Enhanced)
+-- 8. Department Performance Metrics (Enhanced) - CORRECTED
 CREATE OR REPLACE VIEW vw_department_performance_metrics AS
 SELECT 
-    d.client_id,
+    d.client_id as department_id,
     d.department_name,
     COUNT(DISTINCT dfi.form_id) as total_forms_handled,
-    COUNT(dfi.department_form_interaction_id) as total_interactions,
+    COUNT(*) as total_interactions,
     COUNT(DISTINCT CASE WHEN f.form_datetime_resolved IS NOT NULL THEN dfi.form_id END) as resolved_forms_handled,
     COUNT(DISTINCT CASE WHEN f.form_datetime_resolved IS NULL THEN dfi.form_id END) as pending_forms_handled,
-    -- Average interactions per form
     CASE 
         WHEN COUNT(DISTINCT dfi.form_id) > 0 
-        THEN ROUND(COUNT(dfi.department_form_interaction_id) / COUNT(DISTINCT dfi.form_id), 1)
+        THEN ROUND(COUNT(*) / COUNT(DISTINCT dfi.form_id), 1)
         ELSE 0 
     END as avg_interactions_per_form,
-    -- Average days to resolution (for forms this dept interacted with)
     AVG(
         CASE 
             WHEN f.form_datetime_resolved IS NOT NULL 
@@ -1249,12 +1253,10 @@ SELECT
             ELSE NULL 
         END
     ) as avg_resolution_days,
-    -- Activity in last 30 days
     COUNT(DISTINCT CASE 
         WHEN f.form_datetime_submitted >= DATE_SUB(NOW(), INTERVAL 30 DAY) 
         THEN dfi.form_id 
     END) as forms_last_30_days,
-    -- Activity in last 7 days
     COUNT(DISTINCT CASE 
         WHEN f.form_datetime_submitted >= DATE_SUB(NOW(), INTERVAL 7 DAY) 
         THEN dfi.form_id 

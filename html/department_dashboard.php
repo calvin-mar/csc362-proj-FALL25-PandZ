@@ -56,6 +56,7 @@ $query = "
         f.form_datetime_submitted,
         f.form_datetime_resolved,
         f.form_paid_bool,
+        COUNT(dfi.form_id) as interaction_count
     FROM forms f
     LEFT JOIN department_form_interactions dfi ON f.form_id = dfi.form_id
     WHERE 1=1
