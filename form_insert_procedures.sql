@@ -205,7 +205,7 @@ BEGIN
   SELECT @new_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON sp_insert_administrative_appeal_request TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_insert_administrative_appeal_request TO 'webuser'@'localhost';
 
 
 /* ---------------------------
@@ -274,7 +274,7 @@ BEGIN
   COMMIT;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON sp_insert_adjacent_property_owners_form TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_insert_adjacent_property_owners_form TO 'webuser'@'localhost';
 
 
 /* ---------------------------
@@ -598,7 +598,7 @@ BEGIN
   SELECT @new_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON sp_insert_conditional_use_permit_application TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_insert_conditional_use_permit_application TO 'webuser'@'localhost';
 /* ---------------------------
    General Development Plan Application - Comprehensive Version
    Handles all form data including applicants, owners, property details, etc.
@@ -944,7 +944,7 @@ BEGIN
   SELECT @new_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON sp_insert_general_development_plan_application_comprehensive TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_insert_general_development_plan_application_comprehensive TO 'webuser'@'localhost';
 
 
 /* ---------------------------
@@ -1360,7 +1360,7 @@ BEGIN
   SELECT @new_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON sp_insert_site_development_plan_application_comprehensive TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_insert_site_development_plan_application_comprehensive TO 'webuser'@'localhost';
 
 
 /* ---------------------------
@@ -1708,7 +1708,7 @@ BEGIN
   SELECT @new_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON sp_insert_future_land_use_map_application_comprehensive TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_insert_future_land_use_map_application_comprehensive TO 'webuser'@'localhost';
 
 
 
@@ -1781,7 +1781,7 @@ DECLARE
   COMMIT;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON sp_insert_open_records_request TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_insert_open_records_request TO 'webuser'@'localhost';
 
 
 
@@ -1925,7 +1925,7 @@ BEGIN
     SELECT @new_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON sp_insert_sign_permit_application TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_insert_sign_permit_application TO 'webuser'@'localhost';
 
 
 
@@ -2360,7 +2360,7 @@ BEGIN
   SELECT @new_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON sp_insert_major_subdivision_plat_application TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_insert_major_subdivision_plat_application TO 'webuser'@'localhost';
 
 
 
@@ -2765,7 +2765,7 @@ BEGIN
   SELECT @new_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON sp_insert_minor_subdivision_plat_application TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_insert_minor_subdivision_plat_application TO 'webuser'@'localhost';
 
 
 
@@ -3158,7 +3158,7 @@ BEGIN
   SELECT @new_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON sp_insert_variance_application TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_insert_variance_application TO 'webuser'@'localhost';
 
 
 
@@ -3560,7 +3560,7 @@ BEGIN
   SELECT @new_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON sp_insert_zoning_map_amendment_application TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_insert_zoning_map_amendment_application TO 'webuser'@'localhost';
 
 /* ---------------------------
    14) Zoning Permit Application
@@ -3678,7 +3678,7 @@ BEGIN
   COMMIT;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON sp_insert_zoning_permit_application TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_insert_zoning_permit_application TO 'webuser'@'localhost';
 
 
 
@@ -3799,4 +3799,4 @@ BEGIN
   COMMIT;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON sp_insert_zoning_verification_application TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_insert_zoning_verification_application TO 'webuser'@'localhost';
