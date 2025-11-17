@@ -28,34 +28,78 @@ if ($form_id === false || $form_id === null || $form_id <= 0) {
 // Handle payment status update
 $payment_success = '';
 $payment_error = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_payment') {
-    try {
-        $paid_bool = isset($_POST['form_paid_bool']) && $_POST['form_paid_bool'] == '1' ? 1 : 0;
-        $datetime_resolved = !empty($_POST['form_datetime_resolved']) ? $_POST['form_datetime_resolved'] : null;
-        $payment_method = !empty($_POST['payment_method']) ? $_POST['payment_method'] : null;
-        
-        // Update the form payment status
-        $update_stmt = $conn->prepare("
-            UPDATE forms 
-            SET form_paid_bool = ?, 
-                form_datetime_resolved = ?
-            WHERE form_id = ?
-        ");
-        $update_stmt->bind_param("isi", $paid_bool, $datetime_resolved, $form_id);
-        
-        if ($update_stmt->execute()) {
-            // If you have a payment_method field in your database, update it here
-            // This would require adding the field to your forms table or a related table
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    if ($_POST['action'] === 'update_payment') {
+        try {
+            $paid_bool = isset($_POST['form_paid_bool']) && $_POST['form_paid_bool'] == '1' ? 1 : 0;
+            $payment_method = !empty($_POST['payment_method']) ? $_POST['payment_method'] : null;
             
-            $payment_success = "Payment status updated successfully!";
-        } else {
-            $payment_error = "Failed to update payment status.";
+            // Update the form payment status only
+            $update_stmt = $conn->prepare("
+                UPDATE forms 
+                SET form_paid_bool = ?
+                WHERE form_id = ?
+            ");
+            $update_stmt->bind_param("ii", $paid_bool, $form_id);
+            
+            if ($update_stmt->execute()) {
+                // If you have a payment_method field in your database, update it here
+                // This would require adding the field to your forms table or a related table
+                
+                $payment_success = "Payment status updated successfully!";
+            } else {
+                $payment_error = "Failed to update payment status.";
+            }
+            $update_stmt->close();
+            
+        } catch (Exception $e) {
+            error_log("Error updating payment status: " . $e->getMessage());
+            $payment_error = "An error occurred while updating payment status.";
         }
-        $update_stmt->close();
-        
-    } catch (Exception $e) {
-        error_log("Error updating payment status: " . $e->getMessage());
-        $payment_error = "An error occurred while updating payment status.";
+    } elseif ($_POST['action'] === 'mark_resolved') {
+        try {
+            $datetime_resolved = !empty($_POST['form_datetime_resolved']) ? $_POST['form_datetime_resolved'] : date('Y-m-d H:i:s');
+            
+            // Update the form resolved status
+            $update_stmt = $conn->prepare("
+                UPDATE forms 
+                SET form_datetime_resolved = ?
+                WHERE form_id = ?
+            ");
+            $update_stmt->bind_param("si", $datetime_resolved, $form_id);
+            
+            if ($update_stmt->execute()) {
+                $payment_success = "Form marked as resolved successfully!";
+            } else {
+                $payment_error = "Failed to mark form as resolved.";
+            }
+            $update_stmt->close();
+            
+        } catch (Exception $e) {
+            error_log("Error marking form as resolved: " . $e->getMessage());
+            $payment_error = "An error occurred while marking form as resolved.";
+        }
+    } elseif ($_POST['action'] === 'mark_unresolved') {
+        try {
+            // Set form_datetime_resolved to NULL to mark as unresolved
+            $update_stmt = $conn->prepare("
+                UPDATE forms 
+                SET form_datetime_resolved = NULL
+                WHERE form_id = ?
+            ");
+            $update_stmt->bind_param("i", $form_id);
+            
+            if ($update_stmt->execute()) {
+                $payment_success = "Form marked as unresolved successfully!";
+            } else {
+                $payment_error = "Failed to mark form as unresolved.";
+            }
+            $update_stmt->close();
+            
+        } catch (Exception $e) {
+            error_log("Error marking form as unresolved: " . $e->getMessage());
+            $payment_error = "An error occurred while marking form as unresolved.";
+        }
     }
 }
 
@@ -553,6 +597,7 @@ function isLongText($value) {
         <h1>Form Details - ID: <?php echo htmlspecialchars($form_id); ?></h1>
         <div class="navbar-links">
             <a href="add_correction.php?form_id=<?php echo $form_id; ?>">Add Correction</a>
+            <a href="generate_form_pdf.php?form_id=<?php echo $form_id; ?>">Download PDF</a>
             <a href="govt_worker_dashboard.php">← Back to Dashboard</a>
         </div>
     </div>
@@ -597,9 +642,6 @@ function isLongText($value) {
                     <span class="status-badge <?php echo $form['form_datetime_resolved'] ? 'status-resolved' : 'status-pending'; ?>">
                         <?php echo htmlspecialchars($form['form_status']); ?>
                     </span>
-                    <?php if ($form['has_corrections']): ?>
-                        <span class="status-badge status-correction">Needs Correction</span>
-                    <?php endif; ?>
                 </div>
                 
                 <div class="detail-label">Payment:</div>
@@ -630,31 +672,20 @@ function isLongText($value) {
             
             <!-- Payment Update Form -->
             <div class="payment-form">
-                <h3>💳 Update Payment Status</h3>
+                <h3>Update Payment Status</h3>
                 <form method="POST" action="">
                     <input type="hidden" name="action" value="update_payment">
                     
-                    <div class="payment-grid">
-                        <div class="form-group">
-                            <label for="payment_method">Payment Method:</label>
-                            <select class="form-control" name="payment_method" id="payment_method">
-                                <option value="">Select payment method...</option>
-                                <option value="cash">Cash</option>
-                                <option value="check">Check</option>
-                                <option value="credit_card">Credit Card</option>
-                                <option value="money_order">Money Order</option>
-                                <option value="online">Online Payment</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="form_datetime_resolved">Date Payment Received:</label>
-                            <input type="datetime-local" 
-                                   class="form-control" 
-                                   name="form_datetime_resolved" 
-                                   id="form_datetime_resolved"
-                                   value="<?php echo $form['form_datetime_resolved'] ? date('Y-m-d\TH:i', strtotime($form['form_datetime_resolved'])) : ''; ?>">
-                        </div>
+                    <div class="form-group">
+                        <label for="payment_method">Payment Method:</label>
+                        <select class="form-control" name="payment_method" id="payment_method">
+                            <option value="">Select payment method...</option>
+                            <option value="cash">Cash</option>
+                            <option value="check">Check</option>
+                            <option value="credit_card">Credit Card</option>
+                            <option value="money_order">Money Order</option>
+                            <option value="online">Online Payment</option>
+                        </select>
                     </div>
                     
                     <div class="form-group">
@@ -668,8 +699,62 @@ function isLongText($value) {
                         </div>
                     </div>
                     
-                    <button type="submit" class="btn btn-success">💾 Update Payment Status</button>
+                    <button type="submit" class="btn btn-success">Update Payment Status</button>
                 </form>
+            </div>
+            
+            <!-- Resolved Status Form -->
+            <div class="payment-form" style="margin-top: 20px; border-color: #28a745;">
+                <h3>Mark Form as Resolved</h3>
+                
+                <?php if ($form['form_datetime_resolved']): ?>
+                    <!-- Form is already resolved - show update and unresolve options -->
+                    <form method="POST" action="" style="margin-bottom: 15px;">
+                        <input type="hidden" name="action" value="mark_resolved">
+                        
+                        <div class="form-group">
+                            <label for="form_datetime_resolved">Resolved Date & Time:</label>
+                            <input type="datetime-local" 
+                                   class="form-control" 
+                                   name="form_datetime_resolved" 
+                                   id="form_datetime_resolved"
+                                   value="<?php echo date('Y-m-d\TH:i', strtotime($form['form_datetime_resolved'])); ?>">
+                        </div>
+                        
+                        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                            This form is currently marked as resolved. You can update the resolution date/time above.
+                        </p>
+                        
+                        <button type="submit" class="btn btn-success"> Update Resolution Date</button>
+                    </form>
+                    
+                    <!-- Add unresolve button -->
+                    <form method="POST" action="" onsubmit="return confirm('Are you sure you want to mark this form as unresolved? This will remove the resolution date.');">
+                        <input type="hidden" name="action" value="mark_unresolved">
+                        <button type="submit" class="btn btn-secondary">Mark as Unresolved</button>
+                    </form>
+                    
+                <?php else: ?>
+                    <!-- Form is not resolved - show resolve option -->
+                    <form method="POST" action="">
+                        <input type="hidden" name="action" value="mark_resolved">
+                        
+                        <div class="form-group">
+                            <label for="form_datetime_resolved">Resolved Date & Time:</label>
+                            <input type="datetime-local" 
+                                   class="form-control" 
+                                   name="form_datetime_resolved" 
+                                   id="form_datetime_resolved"
+                                   value="<?php echo date('Y-m-d\TH:i'); ?>">
+                        </div>
+                        
+                        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                            ℹ️ This will mark the form as complete and set the resolution date/time.
+                        </p>
+                        
+                        <button type="submit" class="btn btn-success">Mark as Resolved</button>
+                    </form>
+                <?php endif; ?>
             </div>
         </div>
         

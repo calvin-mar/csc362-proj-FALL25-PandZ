@@ -209,74 +209,241 @@ GRANT EXECUTE ON PROCEDURE sp_insert_administrative_appeal_request TO 'webuser'@
 
 
 /* ---------------------------
-   2) Adjacent Property Owners Form
-   Tables: forms, adjacent_property_owner_forms, apof_neighbors, adjacent_neighbors
-   Note: will insert one neighbor record if provided
+   Adjacent Property Owners Form with JSON Parsing
+   This procedure handles:
+   - Form metadata
+   - Multiple adjacent properties (neighbors)
+   - Multiple owners per property (parsed from JSON)
+   - Property location details
+   - Owner mailing addresses
    --------------------------- */
 
 DELIMITER $$
-CREATE PROCEDURE sp_insert_adjacent_property_owners_form(
-  IN p_form_datetime_resolved DATETIME,
-  IN p_form_paid_bool BOOLEAN,
-  -- adjacent_property_owner_forms has only form_id (auto from forms)
-  -- apof_neighbors fields (optional)
-  IN p_PVA_map_code VARCHAR(255),
-  IN p_apof_neighbor_property_location VARCHAR(255),
-  IN p_apof_neighbor_property_street VARCHAR(255),
-  IN p_apof_neighbor_property_city VARCHAR(255),
-  IN p_apof_state_code CHAR(2),
-  IN p_apof_neighbor_property_zip VARCHAR(50),
-  IN p_apof_neighbor_property_deed_book VARCHAR(50),
-  IN p_apof_property_street_pg_number VARCHAR(255),
-  -- adjacent_property_owners fields 
-  IN p_adjacent_property_owner_street VARCHAR(255),
-  IN p_adjacent_property_owner_city VARCHAR(255),
-  IN p_adjacent_state_code CHAR(2),
-  IN p_adjacent_property_owner_zip VARCHAR(50)
+DROP PROCEDURE IF EXISTS sp_insert_adjacent_property_owners_form_json$$
+CREATE PROCEDURE sp_insert_adjacent_property_owners_form_json(
+  -- JSON arrays for neighbor properties
+  IN p_pva_map_codes TEXT,                     -- JSON array of PVA map codes
+  IN p_neighbor_property_locations TEXT,        -- JSON array of property locations
+  IN p_neighbor_property_deed_books TEXT,       -- JSON array of deed books
+  IN p_property_street_pg_numbers TEXT,         -- JSON array of page numbers
+  -- JSON arrays for property owners (nested: array of arrays)
+  IN p_property_owner_names TEXT,               -- JSON: {"0": ["Owner1", "Owner2"], "1": ["Owner3"]}
+  IN p_property_owner_streets TEXT,             -- JSON: {"0": ["Street1", "Street2"], "1": ["Street3"]}
+  IN p_property_owner_cities TEXT,              -- JSON: {"0": ["City1", "City2"], "1": ["City3"]}
+  IN p_property_owner_state_codes TEXT,         -- JSON: {"0": ["KY", "KY"], "1": ["KY"]}
+  IN p_property_owner_zips TEXT                 -- JSON: {"0": ["40223", "40223"], "1": ["40223"]}
 )
 BEGIN
+  DECLARE v_neighbor_count INT DEFAULT 0;
+  DECLARE v_neighbor_idx INT DEFAULT 0;
+  DECLARE v_owner_count INT DEFAULT 0;
+  DECLARE v_owner_idx INT DEFAULT 0;
+  
+  -- Neighbor property variables
+  DECLARE v_pva_map_code VARCHAR(255);
+  DECLARE v_neighbor_location VARCHAR(500);
+  DECLARE v_deed_book VARCHAR(255);
+  DECLARE v_page_number VARCHAR(255);
+  
+  -- Owner variables
+  DECLARE v_owner_name VARCHAR(255);
+  DECLARE v_owner_street VARCHAR(255);
+  DECLARE v_owner_city VARCHAR(255);
+  DECLARE v_owner_state VARCHAR(2);
+  DECLARE v_owner_zip VARCHAR(50);
+  
+  -- Temp variables
+  DECLARE v_neighbor_id INT;
+  DECLARE v_owner_id INT;
+  DECLARE v_address_id INT;
+  DECLARE v_first_name VARCHAR(255);
+  DECLARE v_last_name VARCHAR(255);
+  DECLARE v_owner_array TEXT;
+  DECLARE v_neighbor_key VARCHAR(10);
+
   START TRANSACTION;
-  INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Adjacent Property Owners Form', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
+  
+  -- 1. Insert into forms table
+  INSERT INTO forms(
+    form_type, 
+    form_datetime_submitted
+  )
+  VALUES(
+    'Adjacent Property Owners Form', 
+    CURRENT_TIMESTAMP
+  );
   SET @new_form_id = LAST_INSERT_ID();
 
-  INSERT INTO adjacent_property_owner_forms(form_id) VALUES(@new_form_id);
+  -- 2. Insert into adjacent_property_owner_forms
+  INSERT INTO adjacent_property_owner_forms(form_id)
+    VALUES(@new_form_id);
 
-  IF p_PVA_map_code IS NOT NULL OR p_apof_neighbor_property_location IS NOT NULL THEN
+  -- 3. Validate and parse JSON arrays for neighbors
+  IF p_pva_map_codes IS NOT NULL AND JSON_VALID(p_pva_map_codes) THEN
+    SET v_neighbor_count = JSON_LENGTH(p_pva_map_codes);
+  ELSE
+    SET v_neighbor_count = 0;
+  END IF;
+
+  -- 4. Loop through each neighbor property
+  SET v_neighbor_idx = 0;
+  WHILE v_neighbor_idx < v_neighbor_count DO
+    -- Extract neighbor property data
+    SET v_pva_map_code = IF(JSON_VALID(p_pva_map_codes), 
+                           JSON_UNQUOTE(JSON_EXTRACT(p_pva_map_codes, CONCAT('$[', v_neighbor_idx, ']'))), 
+                           NULL);
+    SET v_neighbor_location = IF(JSON_VALID(p_neighbor_property_locations), 
+                                JSON_UNQUOTE(JSON_EXTRACT(p_neighbor_property_locations, CONCAT('$[', v_neighbor_idx, ']'))), 
+                                NULL);
+    SET v_deed_book = IF(JSON_VALID(p_neighbor_property_deed_books), 
+                        JSON_UNQUOTE(JSON_EXTRACT(p_neighbor_property_deed_books, CONCAT('$[', v_neighbor_idx, ']'))), 
+                        NULL);
+    SET v_page_number = IF(JSON_VALID(p_property_street_pg_numbers), 
+                          JSON_UNQUOTE(JSON_EXTRACT(p_property_street_pg_numbers, CONCAT('$[', v_neighbor_idx, ']'))), 
+                          NULL);
+
+    -- Create address for neighbor property (if location provided)
+    SET v_address_id = NULL;
+    IF v_neighbor_location IS NOT NULL AND v_neighbor_location != '' THEN
+      INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
+        VALUES(v_neighbor_location, NULL, NULL, NULL);
+      SET v_address_id = LAST_INSERT_ID();
+    END IF;
+
+    -- Insert neighbor property
     INSERT INTO apof_neighbors(
-      PVA_map_code, apof_neighbor_property_location, apof_neighbor_property_street,
-      apof_neighbor_property_city, state_code, apof_neighbor_property_zip,
-      apof_neighbor_property_deed_book, apof_property_street_pg_number
-    ) VALUES (
-      p_PVA_map_code, p_apof_neighbor_property_location, p_apof_neighbor_property_street,
-      p_apof_neighbor_property_city, p_apof_state_code, p_apof_neighbor_property_zip,
-      p_apof_neighbor_property_deed_book, p_apof_property_street_pg_number
-    );
-    SET @new_neighbor_id = LAST_INSERT_ID();
-    INSERT INTO adjacent_neighbors(form_id, neighbor_id) VALUES(@new_form_id, @new_neighbor_id);
-  END IF;
-
-  -- Insert into adjacent_property_owners if data provided
-  IF p_adjacent_property_owner_street IS NOT NULL OR p_adjacent_property_owner_city IS NOT NULL THEN
-    INSERT INTO adjacent_property_owners(
-      adjacent_property_owner_street, adjacent_property_owner_city, state_code, adjacent_property_owner_zip
+      PVA_map_code,
+      apof_neighbor_property_location,
+      address_id,
+      apof_neighbor_property_deed_book,
+      apof_property_street_pg_number
     )
-    VALUES (
-      p_adjacent_property_owner_street, p_adjacent_property_owner_city, p_adjacent_state_code, p_adjacent_property_owner_zip
+    VALUES(
+      v_pva_map_code,
+      v_neighbor_location,
+      v_address_id,
+      v_deed_book,
+      v_page_number
     );
-    SET @new_owner_id = LAST_INSERT_ID();
+    SET v_neighbor_id = LAST_INSERT_ID();
 
-    -- Link the property owner to the form
-    INSERT INTO adjacent_neighbor_owners(form_id, adjacent_property_owner_id)
-    VALUES(@new_form_id, @new_owner_id);
-  END IF;
+    -- Link neighbor to form
+    INSERT INTO adjacent_neighbors(form_id, neighbor_id)
+      VALUES(@new_form_id, v_neighbor_id);
+
+    -- 5. Process owners for this neighbor property
+    SET v_neighbor_key = CAST(v_neighbor_idx AS CHAR);
+    
+    -- Check if owner data exists for this neighbor
+    IF p_property_owner_names IS NOT NULL AND JSON_VALID(p_property_owner_names) THEN
+      IF JSON_CONTAINS_PATH(p_property_owner_names, 'one', CONCAT('$.', v_neighbor_key)) THEN
+        SET v_owner_array = JSON_EXTRACT(p_property_owner_names, CONCAT('$.', v_neighbor_key));
+        
+        IF JSON_VALID(v_owner_array) THEN
+          SET v_owner_count = JSON_LENGTH(v_owner_array);
+          SET v_owner_idx = 0;
+          
+          -- Loop through each owner for this neighbor
+          WHILE v_owner_idx < v_owner_count DO
+            -- Extract owner data
+            SET v_owner_name = JSON_UNQUOTE(JSON_EXTRACT(v_owner_array, CONCAT('$[', v_owner_idx, ']')));
+            
+            -- Extract owner address data
+            SET v_owner_street = NULL;
+            SET v_owner_city = NULL;
+            SET v_owner_state = NULL;
+            SET v_owner_zip = NULL;
+            
+            IF p_property_owner_streets IS NOT NULL AND JSON_VALID(p_property_owner_streets) THEN
+              IF JSON_CONTAINS_PATH(p_property_owner_streets, 'one', CONCAT('$.', v_neighbor_key)) THEN
+                SET @owner_street_array = JSON_EXTRACT(p_property_owner_streets, CONCAT('$.', v_neighbor_key));
+                IF JSON_VALID(@owner_street_array) THEN
+                  SET v_owner_street = JSON_UNQUOTE(JSON_EXTRACT(@owner_street_array, CONCAT('$[', v_owner_idx, ']')));
+                END IF;
+              END IF;
+            END IF;
+            
+            IF p_property_owner_cities IS NOT NULL AND JSON_VALID(p_property_owner_cities) THEN
+              IF JSON_CONTAINS_PATH(p_property_owner_cities, 'one', CONCAT('$.', v_neighbor_key)) THEN
+                SET @owner_city_array = JSON_EXTRACT(p_property_owner_cities, CONCAT('$.', v_neighbor_key));
+                IF JSON_VALID(@owner_city_array) THEN
+                  SET v_owner_city = JSON_UNQUOTE(JSON_EXTRACT(@owner_city_array, CONCAT('$[', v_owner_idx, ']')));
+                END IF;
+              END IF;
+            END IF;
+            
+            IF p_property_owner_state_codes IS NOT NULL AND JSON_VALID(p_property_owner_state_codes) THEN
+              IF JSON_CONTAINS_PATH(p_property_owner_state_codes, 'one', CONCAT('$.', v_neighbor_key)) THEN
+                SET @owner_state_array = JSON_EXTRACT(p_property_owner_state_codes, CONCAT('$.', v_neighbor_key));
+                IF JSON_VALID(@owner_state_array) THEN
+                  SET v_owner_state = JSON_UNQUOTE(JSON_EXTRACT(@owner_state_array, CONCAT('$[', v_owner_idx, ']')));
+                END IF;
+              END IF;
+            END IF;
+            
+            IF p_property_owner_zips IS NOT NULL AND JSON_VALID(p_property_owner_zips) THEN
+              IF JSON_CONTAINS_PATH(p_property_owner_zips, 'one', CONCAT('$.', v_neighbor_key)) THEN
+                SET @owner_zip_array = JSON_EXTRACT(p_property_owner_zips, CONCAT('$.', v_neighbor_key));
+                IF JSON_VALID(@owner_zip_array) THEN
+                  SET v_owner_zip = JSON_UNQUOTE(JSON_EXTRACT(@owner_zip_array, CONCAT('$[', v_owner_idx, ']')));
+                END IF;
+              END IF;
+            END IF;
+
+            -- Create owner address if any address data provided
+            SET v_address_id = NULL;
+            IF v_owner_street IS NOT NULL OR v_owner_city IS NOT NULL OR v_owner_state IS NOT NULL OR v_owner_zip IS NOT NULL THEN
+              INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
+                VALUES(v_owner_street, v_owner_city, v_owner_state, v_owner_zip);
+              SET v_address_id = LAST_INSERT_ID();
+            END IF;
+
+            -- Parse owner name (simple first/last split)
+            IF v_owner_name IS NOT NULL AND v_owner_name != '' THEN
+              SET v_first_name = SUBSTRING_INDEX(v_owner_name, ' ', 1);
+              SET v_last_name = SUBSTRING_INDEX(v_owner_name, ' ', -1);
+              IF v_first_name = v_last_name THEN
+                SET v_last_name = '';
+              END IF;
+            ELSE
+              SET v_first_name = NULL;
+              SET v_last_name = NULL;
+            END IF;
+
+            -- Insert property owner
+            INSERT INTO adjacent_property_owners(
+              adjacent_property_owner_first_name,
+              adjacent_property_owner_last_name,
+              address_id
+            )
+            VALUES(
+              v_first_name,
+              v_last_name,
+              v_address_id
+            );
+            SET v_owner_id = LAST_INSERT_ID();
+
+            -- Link owner to form
+            INSERT INTO adjacent_neighbor_owners(form_id, adjacent_property_owner_id)
+              VALUES(@new_form_id, v_owner_id);
+
+            SET v_owner_idx = v_owner_idx + 1;
+          END WHILE;
+        END IF;
+      END IF;
+    END IF;
+
+    SET v_neighbor_idx = v_neighbor_idx + 1;
+  END WHILE;
 
   COMMIT;
+  
+  -- Return the new form_id
+  SELECT @new_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON PROCEDURE sp_insert_adjacent_property_owners_form TO 'webuser'@'localhost';
 
-
+GRANT EXECUTE ON PROCEDURE sp_insert_adjacent_property_owners_form_json TO 'webuser'@'localhost';
 /* ---------------------------
    Conditional Use Permit Application with JSON Parsing
    Similar structure to Zoning Map Amendment Application

@@ -708,6 +708,8 @@ CREATE TABLE owners_link_forms (
 CREATE TABLE adjacent_property_owners (
     adjacent_property_owner_id INT NOT NULL AUTO_INCREMENT,
     address_id INT,
+    adjacent_property_owner_first_name VARCHAR(255),
+    adjacent_property_owner_last_name VARCHAR(255),
     PRIMARY KEY (adjacent_property_owner_id),
     FOREIGN KEY (address_id) REFERENCES addresses(address_id) ON DELETE RESTRICT
  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

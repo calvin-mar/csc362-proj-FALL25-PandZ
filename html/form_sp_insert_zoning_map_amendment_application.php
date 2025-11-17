@@ -261,7 +261,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <div class="col-md-1">
             <div class="form-group">
               <label>State:</label>
-              <input type="text" class="form-control" name="additional_applicant_states[]">
+              <select class="form-control" name="additional_applicant_states[]" required>
+                ${stateOptions}
+              </select>
             </div>
           </div>
           <div class="col-md-2">
@@ -332,7 +334,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <div class="col-md-1">
             <div class="form-group">
               <label>State:</label>
-              <input type="text" class="form-control" name="additional_owner_states[]">
+              <select class="form-control" name="additional_owner_states[]" required>
+                ${stateOptions}
+              </select>
             </div>
           </div>
           <div class="col-md-2">
@@ -449,7 +453,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="col-md-1">
         <div class="form-group">
           <label>State:</label>
-          <input type="text" class="form-control" name="applicant_state">
+          <select class="form-control" name="applicant_state" required>
+            <?php echo $stateOptionsHtml;?>
+          </select>
         </div>
       </div>
       <div class="col-md-2">
@@ -526,7 +532,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="col-md-1">
         <div class="form-group">
           <label>State:</label>
-          <input type="text" class="form-control" name="owner_state">
+          <select class="form-control" name="owner_state" required>
+            <?php echo $stateOptionsHtml;?>
+          </select>
         </div>
       </div>
       <div class="col-md-2">
@@ -616,7 +624,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="col-md-1">
         <div class="form-group">
           <label>State:</label>
-          <input type="text" class="form-control" name="property_state">
+          <select class="form-control" name="property_state" required>
+            <?php echo $stateOptionsHtml;?>
+          </select>
         </div>
       </div>
       <div class="col-md-2">
