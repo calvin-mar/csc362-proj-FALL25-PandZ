@@ -6,8 +6,9 @@ composer require dompdf/dompdf
 
 
 Actions for Sprint 3
-- [ ] Save Files in the SQL Database
 - [ ] Fix Headers and get-redirect for mark as paid
+- [ ] Functionalize the php for testing, and add the appropriate testing
+- [ ] Save Files in the SQL Database
 - [ ] Modify Views so that all details are shown for every form. (Especially match property owners with applicants.)
 - [ ] Professionalize html views to standard format
 - [ ] Make printable php versions
