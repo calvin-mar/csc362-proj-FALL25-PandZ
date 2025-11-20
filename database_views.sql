@@ -484,13 +484,13 @@ SELECT
     -- Architect
     arch.architect_first_name,
     arch.architect_last_name,
-    arch.architect_law_firm AS architect_firm,
+    arch.architect_firm AS architect_firm,
     arch.architect_email,
     arch.architect_phone,
     -- Land Architect
     la.land_architect_first_name,
     la.land_architect_last_name,
-    la.land_architect_law_firm AS land_architect_firm,
+    la.land_architect_firm AS land_architect_firm,
     la.land_architect_email,
     la.land_architect_phone,
     -- Applicants (concatenated)
@@ -516,9 +516,9 @@ GROUP BY f.form_id, sdpa.site_plan_request, hf.hearing_docket_number, hf.hearing
          att.attorney_phone, att.attorney_email, s.surveyor_first_name, s.surveyor_last_name,
          s.surveyor_firm, s.surveyor_email, s.surveyor_phone, e.engineer_first_name,
          e.engineer_last_name, e.engineer_firm, e.engineer_email, e.engineer_phone,
-         arch.architect_first_name, arch.architect_last_name, arch.architect_law_firm,
+         arch.architect_first_name, arch.architect_last_name, arch.architect_firm,
          arch.architect_email, arch.architect_phone, la.land_architect_first_name,
-         la.land_architect_last_name, la.land_architect_law_firm, la.land_architect_email,
+         la.land_architect_last_name, la.land_architect_firm, la.land_architect_email,
          la.land_architect_phone;
 
 -- 11. Future Land Use Map (FLUM) Application - Complete View
@@ -737,21 +737,21 @@ SELECT
     -- Architect
     arch.architect_first_name,
     arch.architect_last_name,
-    arch.architect_law_firm AS architect_firm,
+    arch.architect_firm AS architect_firm,
     arch.architect_email,
     arch.architect_phone,
     arch.architect_cell,
     -- Land Architect
     la.land_architect_first_name,
     la.land_architect_last_name,
-    la.land_architect_law_firm AS land_architect_firm,
+    la.land_architect_firm AS land_architect_firm,
     la.land_architect_email,
     la.land_architect_phone,
     la.land_architect_cell,
     -- Contractor
     c.contractor_first_name,
     c.contractor_last_name,
-    c.contractor_law_firm AS contractor_firm,
+    c.contractor_firm AS contractor_firm,
     c.contractor_email,
     c.contractor_phone,
     c.contractor_cell

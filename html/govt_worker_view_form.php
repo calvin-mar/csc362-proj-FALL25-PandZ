@@ -25,81 +25,132 @@ if ($form_id === false || $form_id === null || $form_id <= 0) {
     exit();
 }
 
-// Handle payment status update
-$payment_success = '';
-$payment_error = '';
+// ========================================
+// POST-REDIRECT-GET PATTERN IMPLEMENTATION
+// ========================================
+
+// Handle POST requests and redirect
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    if ($_POST['action'] === 'update_payment') {
-        try {
-            $paid_bool = isset($_POST['form_paid_bool']) && $_POST['form_paid_bool'] == '1' ? 1 : 0;
-            $payment_method = !empty($_POST['payment_method']) ? $_POST['payment_method'] : null;
-            
-            // Update the form payment status only
-            $update_stmt = $conn->prepare("
-                UPDATE forms 
-                SET form_paid_bool = ?
-                WHERE form_id = ?
-            ");
-            $update_stmt->bind_param("ii", $paid_bool, $form_id);
-            
-            if ($update_stmt->execute()) {
-                // If you have a payment_method field in your database, update it here
-                // This would require adding the field to your forms table or a related table
+    $redirect_url = "govt_worker_view_form.php?id={$form_id}";
+    
+    try {
+        switch ($_POST['action']) {
+            case 'update_payment':
+                $paid_bool = isset($_POST['form_paid_bool']) && $_POST['form_paid_bool'] == '1' ? 1 : 0;
+                $payment_method = !empty($_POST['payment_method']) ? $_POST['payment_method'] : null;
                 
-                $payment_success = "Payment status updated successfully!";
-            } else {
-                $payment_error = "Failed to update payment status.";
-            }
-            $update_stmt->close();
-            
-        } catch (Exception $e) {
-            error_log("Error updating payment status: " . $e->getMessage());
-            $payment_error = "An error occurred while updating payment status.";
+                // Update the form payment status
+                $update_stmt = $conn->prepare("
+                    UPDATE forms 
+                    SET form_paid_bool = ?
+                    WHERE form_id = ?
+                ");
+                $update_stmt->bind_param("ii", $paid_bool, $form_id);
+                
+                if ($update_stmt->execute()) {
+                    // If you have a payment_method field, you can add it here
+                    // For now, we'll just store it in session for display
+                    $_SESSION['last_payment_method'] = $payment_method;
+                    
+                    $redirect_url .= "&success=payment_updated";
+                } else {
+                    $redirect_url .= "&error=payment_update_failed";
+                }
+                $update_stmt->close();
+                break;
+                
+            case 'mark_resolved':
+                $datetime_resolved = !empty($_POST['form_datetime_resolved']) 
+                    ? $_POST['form_datetime_resolved'] 
+                    : date('Y-m-d H:i:s');
+                
+                // Update the form resolved status
+                $update_stmt = $conn->prepare("
+                    UPDATE forms 
+                    SET form_datetime_resolved = ?
+                    WHERE form_id = ?
+                ");
+                $update_stmt->bind_param("si", $datetime_resolved, $form_id);
+                
+                if ($update_stmt->execute()) {
+                    $redirect_url .= "&success=marked_resolved";
+                } else {
+                    $redirect_url .= "&error=mark_resolved_failed";
+                }
+                $update_stmt->close();
+                break;
+                
+            case 'mark_unresolved':
+                // Set form_datetime_resolved to NULL
+                $update_stmt = $conn->prepare("
+                    UPDATE forms 
+                    SET form_datetime_resolved = NULL
+                    WHERE form_id = ?
+                ");
+                $update_stmt->bind_param("i", $form_id);
+                
+                if ($update_stmt->execute()) {
+                    $redirect_url .= "&success=marked_unresolved";
+                } else {
+                    $redirect_url .= "&error=mark_unresolved_failed";
+                }
+                $update_stmt->close();
+                break;
+                
+            default:
+                $redirect_url .= "&error=invalid_action";
         }
-    } elseif ($_POST['action'] === 'mark_resolved') {
-        try {
-            $datetime_resolved = !empty($_POST['form_datetime_resolved']) ? $_POST['form_datetime_resolved'] : date('Y-m-d H:i:s');
-            
-            // Update the form resolved status
-            $update_stmt = $conn->prepare("
-                UPDATE forms 
-                SET form_datetime_resolved = ?
-                WHERE form_id = ?
-            ");
-            $update_stmt->bind_param("si", $datetime_resolved, $form_id);
-            
-            if ($update_stmt->execute()) {
-                $payment_success = "Form marked as resolved successfully!";
-            } else {
-                $payment_error = "Failed to mark form as resolved.";
-            }
-            $update_stmt->close();
-            
-        } catch (Exception $e) {
-            error_log("Error marking form as resolved: " . $e->getMessage());
-            $payment_error = "An error occurred while marking form as resolved.";
-        }
-    } elseif ($_POST['action'] === 'mark_unresolved') {
-        try {
-            // Set form_datetime_resolved to NULL to mark as unresolved
-            $update_stmt = $conn->prepare("
-                UPDATE forms 
-                SET form_datetime_resolved = NULL
-                WHERE form_id = ?
-            ");
-            $update_stmt->bind_param("i", $form_id);
-            
-            if ($update_stmt->execute()) {
-                $payment_success = "Form marked as unresolved successfully!";
-            } else {
-                $payment_error = "Failed to mark form as unresolved.";
-            }
-            $update_stmt->close();
-            
-        } catch (Exception $e) {
-            error_log("Error marking form as unresolved: " . $e->getMessage());
-            $payment_error = "An error occurred while marking form as unresolved.";
-        }
+    } catch (Exception $e) {
+        error_log("Error processing form action: " . $e->getMessage());
+        $redirect_url .= "&error=system_error";
+    }
+    
+    $conn->close();
+    
+    // Redirect to prevent form resubmission
+    header("Location: {$redirect_url}");
+    exit();
+}
+
+// ========================================
+// GET REQUEST - DISPLAY PAGE
+// ========================================
+
+// Handle success/error messages from redirect
+$success_message = '';
+$error_message = '';
+
+if (isset($_GET['success'])) {
+    switch ($_GET['success']) {
+        case 'payment_updated':
+            $success_message = "Payment status updated successfully!";
+            break;
+        case 'marked_resolved':
+            $success_message = "Form marked as resolved successfully!";
+            break;
+        case 'marked_unresolved':
+            $success_message = "Form marked as unresolved successfully!";
+            break;
+    }
+}
+
+if (isset($_GET['error'])) {
+    switch ($_GET['error']) {
+        case 'payment_update_failed':
+            $error_message = "Failed to update payment status.";
+            break;
+        case 'mark_resolved_failed':
+            $error_message = "Failed to mark form as resolved.";
+            break;
+        case 'mark_unresolved_failed':
+            $error_message = "Failed to mark form as unresolved.";
+            break;
+        case 'invalid_action':
+            $error_message = "Invalid action requested.";
+            break;
+        case 'system_error':
+            $error_message = "A system error occurred. Please try again.";
+            break;
     }
 }
 
@@ -440,10 +491,6 @@ function isLongText($value) {
             background: #fff3cd;
             color: #856404;
         }
-        .status-correction {
-            background: #f8d7da;
-            color: #721c24;
-        }
         .metric-badge {
             display: inline-block;
             background: #e9ecef;
@@ -467,11 +514,6 @@ function isLongText($value) {
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-        .interaction-date, .correction-date {
-            font-size: 12px;
-            color: #666;
-            font-weight: normal;
         }
         .interaction-text, .correction-text {
             color: #333;
@@ -584,12 +626,6 @@ function isLongText($value) {
             cursor: pointer;
             font-weight: 500;
         }
-        .payment-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
     </style>
 </head>
 <body>
@@ -609,15 +645,15 @@ function isLongText($value) {
             </div>
         <?php endif; ?>
         
-        <?php if ($payment_success): ?>
+        <?php if ($success_message): ?>
             <div class="success-message">
-                <?php echo htmlspecialchars($payment_success); ?>
+                <?php echo htmlspecialchars($success_message); ?>
             </div>
         <?php endif; ?>
         
-        <?php if ($payment_error): ?>
+        <?php if ($error_message): ?>
             <div class="error-message">
-                <?php echo htmlspecialchars($payment_error); ?>
+                <?php echo htmlspecialchars($error_message); ?>
             </div>
         <?php endif; ?>
         
@@ -725,7 +761,7 @@ function isLongText($value) {
                             This form is currently marked as resolved. You can update the resolution date/time above.
                         </p>
                         
-                        <button type="submit" class="btn btn-success"> Update Resolution Date</button>
+                        <button type="submit" class="btn btn-success">Update Resolution Date</button>
                     </form>
                     
                     <!-- Add unresolve button -->

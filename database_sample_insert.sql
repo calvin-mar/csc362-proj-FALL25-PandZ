@@ -85,7 +85,7 @@ INSERT INTO engineers (engineer_first_name, engineer_last_name, engineer_firm, e
 ('Engineer', 'Six', 'Eco Engineering', 'eng6@ecoeng.com', '555-2011', '555-2012');
 
 -- Sample Inserts for contractors
-INSERT INTO contractors (contractor_first_name, contractor_last_name, contractor_law_firm, contractor_email, contractor_phone, contractor_cell) VALUES
+INSERT INTO contractors (contractor_first_name, contractor_last_name, contractor_firm, contractor_email, contractor_phone, contractor_cell) VALUES
 ('Contractor', 'One', 'BuildRight', 'cont1@buildright.com', '555-3001', '555-3002'),
 ('Contractor', 'Two', 'Prime Builders', 'cont2@primebuilders.com', '555-3003', '555-3004'),
 ('Contractor', 'Three', 'Quality Builds', 'cont3@quality.com', '555-3005', '555-3006'),
@@ -94,7 +94,7 @@ INSERT INTO contractors (contractor_first_name, contractor_last_name, contractor
 ('Contractor', 'Six', 'Urban Renovations', 'cont6@urban.com', '555-3011', '555-3012');
 
 -- Sample Inserts for architects
-INSERT INTO architects (architect_first_name, architect_last_name, architect_law_firm, architect_email, architect_phone, architect_cell) VALUES
+INSERT INTO architects (architect_first_name, architect_last_name, architect_firm, architect_email, architect_phone, architect_cell) VALUES
 ('Architect', 'One', 'Design House', 'arch1@designhouse.com', '555-4001', '555-4002'),
 ('Architect', 'Two', 'Modern Spaces', 'arch2@modernspaces.com', '555-4003', '555-4004'),
 ('Architect', 'Three', 'Urban Vision', 'arch3@urbanvision.com', '555-4005', '555-4006'),
@@ -103,7 +103,7 @@ INSERT INTO architects (architect_first_name, architect_last_name, architect_law
 ('Architect', 'Six', 'Heritage Homes', 'arch6@heritage.com', '555-4011', '555-4012');
 
 -- Sample Inserts for land_architects
-INSERT INTO land_architects (land_architect_first_name, land_architect_last_name, land_architect_law_firm, land_architect_email, land_architect_phone, land_architect_cell) VALUES
+INSERT INTO land_architects (land_architect_first_name, land_architect_last_name, land_architect_firm, land_architect_email, land_architect_phone, land_architect_cell) VALUES
 ('LandArch', 'One', 'GreenScape', 'la1@greenscape.com', '555-5001', '555-5002'),
 ('LandArch', 'Two', 'Natural Designs', 'la2@naturaldesigns.com', '555-5003', '555-5004'),
 ('LandArch', 'Three', 'Park Planners', 'la3@parkplanners.com', '555-5005', '555-5006'),
