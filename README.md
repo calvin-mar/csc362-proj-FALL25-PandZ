@@ -18,6 +18,4 @@ Actions for Sprint 3
 - [ ] Admin needs to be able to add department accounts and govt_worker accounts (or promote clients to them)
 - [ ] Account management (add emails to clients, allow clients to change passwords, perhaps add password recovery????)
 - [ ] Consider changing password handling over to a password manager
-- [ ] Post Redirect Get on all pages
-- [ ] Functionize php and create tests for them.
 - [ ] Fix up inserts for Zoning Permit Application and make it look like the other php pages.
