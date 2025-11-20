@@ -58,9 +58,7 @@ LEFT JOIN aar_appellants ap ON aa.aar_appellant_id = ap.aar_appellant_id
 LEFT JOIN administrative_property_owners apo ON f.form_id = apo.form_id
 LEFT JOIN aar_property_owners po ON apo.aar_property_owner_id = po.aar_property_owner_id
 WHERE f.form_type = 'Administrative Appeal Request'
-GROUP BY f.form_id, aar.aar_hearing_date, aar.aar_submit_date, aar.aar_official_decision, 
-         aar.aar_relevant_provisions, a.address_street, a.address_city, a.state_code, a.address_zip_code;
-
+GROUP BY f.form_id;
 -- 3. Variance Application - Complete View
 CREATE OR REPLACE VIEW vw_variance_application_complete AS
 SELECT 
@@ -106,12 +104,7 @@ LEFT JOIN type_one_applicants t1a ON alf.t1_applicant_id = t1a.t1_applicant_id
 LEFT JOIN owners_link_forms olf ON f.form_id = olf.form_id
 LEFT JOIN type_one_owners t1o ON olf.t1_owner_id = t1o.t1_owner_id
 WHERE f.form_type = 'Variance Application'
-GROUP BY f.form_id, va.va_variance_request, va.va_proposed_conditions, p.PVA_parcel_number,
-         p.property_acreage, p.property_current_zoning, a.address_street, a.address_city, 
-         a.state_code, a.address_zip_code, hf.hearing_docket_number, hf.hearing_date,
-         hf.hearing_date_application_filed, hf.hearing_preapp_meeting_date,
-         att.attorney_first_name, att.attorney_last_name, att.attorney_law_firm,
-         att.attorney_phone, att.attorney_email;
+GROUP BY f.form_id;
 
 -- 4. Zoning Verification Letter - Complete View
 CREATE OR REPLACE VIEW vw_zoning_verification_complete AS
@@ -607,26 +600,23 @@ SELECT
     -- Neighbor information
     n.PVA_map_code,
     n.apof_neighbor_property_location,
-    neighboradds.address_street AS apof_neighbor_property_street,
-    neighboradds.address_city AS apof_neighbor_property_city,
-    neighboradds.state_code AS neighbor_state_code,
-    neighboradds.address_zip_code AS apof_neighbor_property_zip,
     n.apof_neighbor_property_deed_book,
-    n.apof_property_street_pg_number,
     -- Adjacent property owner
-    apo_addr.address_street AS adjacent_property_owner_street,
-    apo_addr.address_city AS adjacent_property_owner_city,
-    apo_addr.state_code AS owner_state_code,
-    apo_addr.address_zip_code AS adjacent_property_owner_zip
+    GROUP_CONCAT(apo.adjacent_property_owner_first_name) AS "Property Owner First Names",
+    GROUP_CONCAT(apo.adjacent_property_owner_last_name) AS "Property Owner Last Names",
+    GROUP_CONCAT(apo_addr.address_street) AS adjacent_property_owner_streets,
+    GROUP_CONCAT(apo_addr.address_city) AS adjacent_property_owner_cities,
+    GROUP_CONCAT(apo_addr.state_code) AS owner_state_codes,
+    GROUP_CONCAT(apo_addr.address_zip_code) AS adjacent_property_owner_zips
 FROM forms f
 LEFT JOIN adjacent_property_owner_forms apof ON f.form_id = apof.form_id
 LEFT JOIN adjacent_neighbors an ON f.form_id = an.form_id
 LEFT JOIN apof_neighbors n ON an.neighbor_id = n.neighbor_id
-LEFT JOIN addresses neighboradds ON n.address_id = neighboradds.address_id
 LEFT JOIN adjacent_neighbor_owners ano ON f.form_id = ano.form_id
 LEFT JOIN adjacent_property_owners apo ON ano.adjacent_property_owner_id = apo.adjacent_property_owner_id
 LEFT JOIN addresses apo_addr ON apo.address_id = apo_addr.address_id
-WHERE f.form_type = 'Adjacent Property Owners Form';
+WHERE f.form_type = 'Adjacent Property Owners Form'
+GROUP BY f.form_id;
 
 -- 14. Open Records Request - Complete View (CORRECTED)
 CREATE OR REPLACE VIEW vw_open_records_request_complete AS
@@ -722,6 +712,9 @@ SELECT
     f.form_datetime_submitted,
     f.form_datetime_resolved,
     f.form_paid_bool,
+    -- Applicants
+    GROUP_CONCAT(toa.t1_applicant_first_name) AS applicant_first_names,
+    GROUP_CONCAT(toa.t1_applicant_last_name) AS applicant_last_names,
     -- Permit details
     zpa.project_type,
     zpa.zpa_project_plans,
@@ -770,6 +763,8 @@ LEFT JOIN surveyors s ON zpa.surveyor_id = s.surveyor_id
 LEFT JOIN architects arch ON zpa.architect_id = arch.architect_id
 LEFT JOIN land_architects la ON zpa.land_architect_id = la.land_architect_id
 LEFT JOIN contractors c ON zpa.contractor_id = c.contractor_id
+LEFT JOIN applicants_link_forms alf ON alf.form_id = f.form_id
+LEFT JOIN type_one_applicants toa ON toa.t1_applicant_id = alf.t1_applicant_id
 WHERE f.form_type = 'Zoning Permit Application';
 
 -- 17. Master View - All Forms Summary with Client Information

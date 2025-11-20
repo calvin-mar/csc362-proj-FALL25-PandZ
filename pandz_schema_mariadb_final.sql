@@ -222,11 +222,9 @@ CREATE TABLE apof_neighbors (
     neighbor_id INT NOT NULL AUTO_INCREMENT,
     PVA_map_code VARCHAR(255),
     apof_neighbor_property_location VARCHAR(255),
-    address_id INT,
     apof_neighbor_property_deed_book VARCHAR(255),
     apof_property_street_pg_number VARCHAR(255),
-    PRIMARY KEY (neighbor_id),
-    FOREIGN KEY (address_id) REFERENCES addresses(address_id) ON DELETE RESTRICT
+    PRIMARY KEY (neighbor_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE adjacent_neighbors (

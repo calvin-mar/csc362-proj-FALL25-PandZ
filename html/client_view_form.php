@@ -443,7 +443,7 @@ if ($form_details) {
     
     <?php if (count($interactions) > 0): ?>
     <div class="interactions-section">
-        <h2>📋 Department Interactions</h2>
+        <h2>Department Interactions</h2>
         <?php foreach ($interactions as $interaction): ?>
             <div class="interaction-item">
                 <div class="interaction-header">

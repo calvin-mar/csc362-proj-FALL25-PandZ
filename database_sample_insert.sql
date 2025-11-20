@@ -161,13 +161,13 @@ INSERT INTO zva_applicants (zva_applicant_first_name, zva_applicant_last_name, a
 ('ZVAApplicant', 'Six', 12, '555-7011', '555-7012');
 
 -- Sample Inserts for apof_neighbors
-INSERT INTO apof_neighbors (PVA_map_code, apof_neighbor_property_location, address_id, apof_neighbor_property_deed_book, apof_property_street_pg_number) VALUES
-('MAP100-A', 'North Side', 13, 'DB1234', 'PG56'),
-('MAP100-B', 'South Side', 14, 'DB1235', 'PG57'),
-('MAP101-A', 'East Side', 15, 'DB1236', 'PG58'),
-('MAP101-B', 'West Side', 16, 'DB1237', 'PG59'),
-('MAP102-A', 'North Side', 17, 'DB1238', 'PG60'),
-('MAP102-B', 'South Side', 18, 'DB1239', 'PG61');
+INSERT INTO apof_neighbors (PVA_map_code, apof_neighbor_property_location, apof_neighbor_property_deed_book, apof_property_street_pg_number) VALUES
+('MAP100-A', 'North Side', 'DB1234', 'PG56'),
+('MAP100-B', 'South Side', 'DB1235', 'PG57'),
+('MAP101-A', 'East Side', 'DB1236', 'PG58'),
+('MAP101-B', 'West Side', 'DB1237', 'PG59'),
+('MAP102-A', 'North Side', 'DB1238', 'PG60'),
+('MAP102-B', 'South Side', 'DB1239', 'PG61');
 
 -- Sample Inserts for type_one_applicants
 INSERT INTO type_one_applicants (t1_applicant_first_name, t1_applicant_last_name, address_id, t1_applicant_phone_number, t1_applicant_cell_phone, t1_applicant_email) VALUES

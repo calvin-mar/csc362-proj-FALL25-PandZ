@@ -3,7 +3,7 @@
 // PDF GENERATION FUNCTIONS FOR ALL FORM TYPES
 // ========================================
 
-// 1. VARIANCE APPLICATION
+
 function generateVarianceApplicationHtml($form_id, $form_details) {
     ob_start(); ?>
     <!DOCTYPE html>
@@ -12,133 +12,108 @@ function generateVarianceApplicationHtml($form_id, $form_details) {
         <meta charset="UTF-8">
         <title>Variance Application - ID: <?php echo htmlspecialchars($form_id); ?></title>
         <style>
-            <?php echo getCommonStyles(); ?>
+            body { font-family: 'DejaVu Sans', sans-serif; font-size: 10pt; margin: 15mm; }
+            h1 { text-align: center; font-size: 16pt; font-weight: bold; margin-bottom: 10px; }
+            h2 { font-size: 12pt; margin-top: 15px; border-bottom: 1px solid #000; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+            td, th { padding: 5px; border: 1px solid #000; }
+            .input-box { border: 1px solid #000; min-height: 18px; padding: 3px; margin-bottom: 5px; }
+            ul { margin: 0; padding-left: 20px; }
         </style>
     </head>
     <body>
         <h1>DANVILLE-BOYLE COUNTY BOARD of ADJUSTMENTS<br>APPLICATION FOR VARIANCE</h1>
 
-        <div class="section-container">
-            <table class="header-grid">
-                <tr>
-                    <td class="label">Docket Number:</td>
-                    <td class="value"><?php echo htmlspecialchars($form_details['hearing_docket_number'] ?? ''); ?></td>
-                    <td class="label">Public Hearing Date:</td>
-                    <td class="value"><?php echo htmlspecialchars($form_details['hearing_date'] ?? ''); ?></td>
-                </tr>
-                <tr>
-                    <td class="label">Date Application Filed:</td>
-                    <td class="value"><?php echo htmlspecialchars($form_details['hearing_date_application_filed'] ?? ''); ?></td>
-                    <td class="label">Pre-Application Meeting Date:</td>
-                    <td class="value"><?php echo htmlspecialchars($form_details['hearing_preapp_meeting_date'] ?? ''); ?></td>
-                </tr>
-            </table>
-        </div>
+        <!-- Top Section -->
+        <table>
+            <tr>
+                <td>Docket Number:</td>
+                <td><div class="input-box"><?php echo htmlspecialchars($form_details['hearing_docket_number'] ?? ''); ?></div></td>
+                <td>Public Hearing Date:</td>
+                <td><div class="input-box"><?php echo htmlspecialchars($form_details['hearing_date'] ?? ''); ?></div></td>
+            </tr>
+            <tr>
+                <td>Date Application Filed:</td>
+                <td><div class="input-box"><?php echo htmlspecialchars($form_details['hearing_date_application_filed'] ?? ''); ?></div></td>
+                <td>Pre-Application Meeting Date:</td>
+                <td><div class="input-box"><?php echo htmlspecialchars($form_details['hearing_preapp_meeting_date'] ?? ''); ?></div></td>
+            </tr>
+        </table>
 
+        <!-- Applicant(s) Information -->
         <h2>APPLICANT(S) INFORMATION</h2>
-        <div class="section-container">
-            <div class="field-label">Applicant(s) Name(s):</div>
-            <div class="input-box"><?php echo htmlspecialchars($form_details['applicants'] ?? ''); ?></div>
-            
-            <table class="info-table">
-                <tr>
-                    <th style="width: 50%;">Mailing Address:</th>
-                    <th style="width: 25%;">Phone Number:</th>
-                    <th style="width: 25%;">Cell Number:</th>
-                </tr>
-                <tr>
-                    <td><?php echo formatAddress($form_details, 'applicant'); ?></td>
-                    <td><?php echo htmlspecialchars($form_details['applicant_phone'] ?? ''); ?></td>
-                    <td><?php echo htmlspecialchars($form_details['applicant_cell'] ?? ''); ?></td>
-                </tr>
-            </table>
-            
-            <table class="info-table">
-                <tr><th>E-Mail Address:</th></tr>
-                <tr><td><?php echo htmlspecialchars($form_details['applicant_email'] ?? ''); ?></td></tr>
-            </table>
-        </div>
+        <?php
+        // Display main applicant name
+        echo '<div class="input-box">' . htmlspecialchars($form_details['applicant_name'] ?? '') . '</div>';
 
+        // Display officers list
+        $officers = json_decode($form_details['officers_names'] ?? '[]', true);
+        if (!empty($officers)) {
+            echo '<h3>Officers / Directors:</h3><ul>';
+            foreach ($officers as $officer) {
+                echo '<li>' . htmlspecialchars($officer) . '</li>';
+            }
+            echo '</ul>';
+        }
+
+        // Display additional applicants
+        $additionalApplicants = json_decode($form_details['additional_applicant_names'] ?? '[]', true);
+        if (!empty($additionalApplicants)) {
+            echo '<h3>Additional Applicants:</h3><ul>';
+            foreach ($additionalApplicants as $applicant) {
+                echo '<li>' . htmlspecialchars($applicant) . '</li>';
+            }
+            echo '</ul>';
+        }
+        ?>
+
+        <!-- Property Owner(s) Information -->
         <h2>PROPERTY OWNER(S) INFORMATION</h2>
-        <div class="section-container">
-            <div class="field-label">Property Owner(s) Name(s):</div>
-            <div class="input-box"><?php echo htmlspecialchars($form_details['property_owners'] ?? ''); ?></div>
-            
-            <table class="info-table">
-                <tr>
-                    <th style="width: 50%;">Mailing Address:</th>
-                    <th style="width: 25%;">Phone Number:</th>
-                    <th style="width: 25%;">Cell Number:</th>
-                </tr>
-                <tr>
-                    <td><?php echo formatAddress($form_details, 'owner'); ?></td>
-                    <td><?php echo htmlspecialchars($form_details['owner_phone'] ?? ''); ?></td>
-                    <td><?php echo htmlspecialchars($form_details['owner_cell'] ?? ''); ?></td>
-                </tr>
-            </table>
-        </div>
+        <?php
+        echo '<div class="input-box">' . htmlspecialchars($form_details['owner_first_name'] ?? '') . ' ' . htmlspecialchars($form_details['owner_last_name'] ?? '') . '</div>';
 
-        <h2>APPLICANT(S) ATTORNEY</h2>
-        <div class="section-container">
-            <div class="field-label">Name of Law Firm:</div>
-            <div class="input-box"><?php echo htmlspecialchars($form_details['attorney_law_firm'] ?? ''); ?></div>
-            
-            <table class="info-table">
-                <tr>
-                    <th style="width: 50%;">Phone Number:</th>
-                    <th style="width: 50%;">Cell Number:</th>
-                </tr>
-                <tr>
-                    <td><?php echo htmlspecialchars($form_details['attorney_phone'] ?? ''); ?></td>
-                    <td><?php echo htmlspecialchars($form_details['attorney_cell'] ?? ''); ?></td>
-                </tr>
-            </table>
-            
-            <div class="field-label">E-Mail Address:</div>
-            <div class="input-box"><?php echo htmlspecialchars($form_details['attorney_email'] ?? ''); ?></div>
-        </div>
+        // Display additional owners
+        $additionalOwners = json_decode($form_details['additional_owner_names'] ?? '[]', true);
+        if (!empty($additionalOwners)) {
+            echo '<h3>Additional Owners:</h3><ul>';
+            foreach ($additionalOwners as $owner) {
+                echo '<li>' . htmlspecialchars($owner) . '</li>';
+            }
+            echo '</ul>';
+        }
+        ?>
 
-        <h2>PROPERTY INFORMATION</h2>
-        <div class="section-container">
-            <div class="field-label">Property Address:</div>
-            <div class="input-box"><?php echo formatAddress($form_details, 'property'); ?></div>
-            
-            <div class="field-label">PVA Parcel Number:</div>
-            <div class="input-box"><?php echo htmlspecialchars($form_details['pva_parcel_number'] ?? ''); ?></div>
-            
-            <div class="field-label">Acreage:</div>
-            <div class="input-box"><?php echo htmlspecialchars($form_details['property_acreage'] ?? ''); ?></div>
-            
-            <div class="field-label">Current Zoning:</div>
-            <div class="input-box"><?php echo htmlspecialchars($form_details['property_current_zoning'] ?? ''); ?></div>
-        </div>
-
+        <!-- Variance Request -->
         <h2>VARIANCE REQUEST</h2>
-        <div class="section-container">
-            <p class="note">Please describe the variance(s) being requested and list the section of the Zoning Ordinance from which the variance(s) is referenced:</p>
-            <div class="input-box large-input"><?php echo nl2br(htmlspecialchars($form_details['va_variance_request'] ?? '')); ?></div>
-        </div>
+        <div class="input-box" style="height:80px;"><?php echo nl2br(htmlspecialchars($form_details['va_variance_request'] ?? '')); ?></div>
 
+        <!-- Proposed Site Conditions -->
         <h2>PROPOSED SITE CONDITIONS</h2>
-        <div class="section-container">
-            <p class="note">Please provide a list of all proposed conditions for the subject property:</p>
-            <div class="input-box large-input"><?php echo nl2br(htmlspecialchars($form_details['va_proposed_conditions'] ?? '')); ?></div>
-        </div>
+        <div class="input-box" style="height:80px;"><?php echo nl2br(htmlspecialchars($form_details['va_proposed_conditions'] ?? '')); ?></div>
 
+        <!-- Findings Explanation -->
+        <h2>FINDINGS REQUIRED FOR VARIANCE REQUEST</h2>
+        <div class="input-box" style="height:100px;"><?php echo nl2br(htmlspecialchars($form_details['findings_explanation'] ?? '')); ?></div>
+
+        <!-- Checklist -->
         <h2>APPLICATION CHECKLIST</h2>
-        <div class="section-container">
-            <div class="checkbox-item">A completed and signed Application</div>
-            <div class="checkbox-item">A surveyed exhibit depicting the various portion(s) of the property</div>
-            <div class="checkbox-item">Adjacent Property Owners Form</div>
-            <div class="checkbox-item">Filing and Recording Fees</div>
-        </div>
+        <ul>
+            <li>☐ A completed and signed Application</li>
+            <li>☐ A surveyed exhibit depicting the property and proposed variance areas</li>
+            <li>☐ Adjacent Property Owners Form</li>
+            <li>☐ Filing and Recording Fees</li>
+        </ul>
 
-        <?php echo getFooter($form_details); ?>
+        <!-- Certification -->
+        <h2>APPLICANT’S CERTIFICATION</h2>
+        <p>I do hereby certify that, to the best of my knowledge and belief, all application materials have been submitted and that the information they contain is true and correct.</p>
+        <p>Signature of Applicant(s) and Property Owner(s): __________________________ Date: __________________________</p>
     </body>
     </html>
     <?php
     return ob_get_clean();
 }
+
 
 // 2. CONDITIONAL USE PERMIT APPLICATION
 function generateConditionalUsePermitHtml($form_id, $form_details) {

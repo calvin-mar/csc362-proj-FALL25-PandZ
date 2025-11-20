@@ -302,26 +302,16 @@ BEGIN
                           JSON_UNQUOTE(JSON_EXTRACT(p_property_street_pg_numbers, CONCAT('$[', v_neighbor_idx, ']'))), 
                           NULL);
 
-    -- Create address for neighbor property (if location provided)
-    SET v_address_id = NULL;
-    IF v_neighbor_location IS NOT NULL AND v_neighbor_location != '' THEN
-      INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
-        VALUES(v_neighbor_location, NULL, NULL, NULL);
-      SET v_address_id = LAST_INSERT_ID();
-    END IF;
-
     -- Insert neighbor property
     INSERT INTO apof_neighbors(
       PVA_map_code,
       apof_neighbor_property_location,
-      address_id,
       apof_neighbor_property_deed_book,
       apof_property_street_pg_number
     )
     VALUES(
       v_pva_map_code,
       v_neighbor_location,
-      v_address_id,
       v_deed_book,
       v_page_number
     );
