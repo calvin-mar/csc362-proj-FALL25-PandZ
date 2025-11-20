@@ -350,7 +350,7 @@ if ($form_details) {
     <div class="top-navbar">
         <h1>View Form: <?php echo htmlspecialchars($form['form_type']); ?></h1>
         <div class="top-navbar-links">
-            <button class="print-button" onclick="window.print()">🖨️ Print Form</button>
+            <button class="print-button" onclick="window.print()">Print Form</button>
             <a href="client_dashboard.php">← Back to Dashboard</a>
         </div>
     </div>
