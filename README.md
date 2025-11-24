@@ -9,6 +9,7 @@ Most Important Actions for a gopd grade on Sprint 3
 - [ ] Functionalize the php for testing, and add the appropriate testing
 - [ ] Function when inserting surveyor/contractor/etc.. to use and duplicate instead of making a new one.
 - [ ] Make saveable/editable forms
+
 Actions for Sprint 3
 - [X] Fix Headers and get-redirect for mark as paid
 - [ ] Functionalize the php for testing, and add the appropriate testing
