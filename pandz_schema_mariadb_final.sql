@@ -695,13 +695,15 @@ CREATE TABLE type_one_owners (
     PRIMARY KEY (t1_owner_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE owners_link_forms (
-    t1_owner_id INT NOT NULL,
+CREATE TABLE applicant_owner_link (
     form_id INT NOT NULL,
-    PRIMARY KEY (t1_owner_id, form_id),
-    FOREIGN KEY (t1_owner_id) REFERENCES type_one_owners(t1_owner_id) ON DELETE RESTRICT,
-    FOREIGN KEY (form_id) REFERENCES forms(form_id) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    t1_applicant_id INT NOT NULL,
+    t1_owner_id INT NOT NULL,
+    PRIMARY KEY(form_id, t1_applicant_id, t1_owner_id),
+    FOREIGN KEY(form_id) REFERENCES forms(form_id),
+    FOREIGN KEY(t1_applicant_id) REFERENCES type_one_applicants(t1_applicant_id),
+    FOREIGN KEY(t1_owner_id) REFERENCES type_one_owners(t1_owner_id)
+);
 
 CREATE TABLE adjacent_property_owners (
     adjacent_property_owner_id INT NOT NULL AUTO_INCREMENT,

@@ -1,8 +1,3 @@
--- ========================================
--- COMPREHENSIVE DATABASE VIEWS
--- Aligned with stored procedures
--- ========================================
-
 -- 1. Basic Form Summary View
 CREATE OR REPLACE VIEW vw_form_summary AS
 SELECT 
@@ -101,7 +96,7 @@ LEFT JOIN hearing_forms hf ON f.form_id = hf.form_id
 LEFT JOIN attorneys att ON hf.attorney_id = att.attorney_id
 LEFT JOIN applicants_link_forms alf ON f.form_id = alf.form_id
 LEFT JOIN type_one_applicants t1a ON alf.t1_applicant_id = t1a.t1_applicant_id
-LEFT JOIN owners_link_forms olf ON f.form_id = olf.form_id
+LEFT JOIN applicant_owner_link olf ON f.form_id = olf.form_id
 LEFT JOIN type_one_owners t1o ON olf.t1_owner_id = t1o.t1_owner_id
 WHERE f.form_type = 'Variance Application'
 GROUP BY f.form_id;
@@ -194,7 +189,7 @@ LEFT JOIN hearing_forms hf ON f.form_id = hf.form_id
 LEFT JOIN attorneys att ON hf.attorney_id = att.attorney_id
 LEFT JOIN applicants_link_forms alf ON f.form_id = alf.form_id
 LEFT JOIN type_one_applicants t1a ON alf.t1_applicant_id = t1a.t1_applicant_id
-LEFT JOIN owners_link_forms olf ON f.form_id = olf.form_id
+LEFT JOIN applicant_owner_link olf ON f.form_id = olf.form_id
 LEFT JOIN type_one_owners t1o ON olf.t1_owner_id = t1o.t1_owner_id
 WHERE f.form_type = 'Conditional Use Permit Application'
 GROUP BY f.form_id, cupa.cupa_permit_request, cupa.cupa_proposed_conditions, p.PVA_parcel_number,
@@ -246,7 +241,7 @@ LEFT JOIN hearing_forms hf ON f.form_id = hf.form_id
 LEFT JOIN attorneys att ON hf.attorney_id = att.attorney_id
 LEFT JOIN applicants_link_forms alf ON f.form_id = alf.form_id
 LEFT JOIN type_one_applicants t1a ON alf.t1_applicant_id = t1a.t1_applicant_id
-LEFT JOIN owners_link_forms olf ON f.form_id = olf.form_id
+LEFT JOIN applicant_owner_link olf ON f.form_id = olf.form_id
 LEFT JOIN type_one_owners t1o ON olf.t1_owner_id = t1o.t1_owner_id
 WHERE f.form_type = 'Zoning Map Amendment Application'
 GROUP BY f.form_id, zmaa.zoning_map_amendment_request, zmaa.zmaa_proposed_conditions, 
@@ -318,7 +313,7 @@ LEFT JOIN properties p ON mspa.PVA_parcel_number = p.PVA_parcel_number
 LEFT JOIN addresses a ON p.address_id = a.address_id
 LEFT JOIN applicants_link_forms alf ON f.form_id = alf.form_id
 LEFT JOIN type_one_applicants t1a ON alf.t1_applicant_id = t1a.t1_applicant_id
-LEFT JOIN owners_link_forms olf ON f.form_id = olf.form_id
+LEFT JOIN applicant_owner_link olf ON f.form_id = olf.form_id
 LEFT JOIN type_one_owners t1o ON olf.t1_owner_id = t1o.t1_owner_id
 WHERE f.form_type = 'Major Subdivision Plat Application'
 GROUP BY f.form_id, mspa.mspa_topographic_survey, mspa.mspa_proposed_plot_layout,
@@ -391,7 +386,7 @@ LEFT JOIN properties p ON minspa.PVA_parcel_number = p.PVA_parcel_number
 LEFT JOIN addresses a ON p.address_id = a.address_id
 LEFT JOIN applicants_link_forms alf ON f.form_id = alf.form_id
 LEFT JOIN type_one_applicants t1a ON alf.t1_applicant_id = t1a.t1_applicant_id
-LEFT JOIN owners_link_forms olf ON f.form_id = olf.form_id
+LEFT JOIN applicant_owner_link olf ON f.form_id = olf.form_id
 LEFT JOIN type_one_owners t1o ON olf.t1_owner_id = t1o.t1_owner_id
 WHERE f.form_type = 'Minor Subdivision Plat Application'
 GROUP BY f.form_id, minspa.minspa_topographic_survey, minspa.minspa_proposed_plot_layout,
@@ -439,7 +434,7 @@ LEFT JOIN hearing_forms hf ON f.form_id = hf.form_id
 LEFT JOIN attorneys att ON hf.attorney_id = att.attorney_id
 LEFT JOIN applicants_link_forms alf ON f.form_id = alf.form_id
 LEFT JOIN type_one_applicants t1a ON alf.t1_applicant_id = t1a.t1_applicant_id
-LEFT JOIN owners_link_forms olf ON f.form_id = olf.form_id
+LEFT JOIN applicant_owner_link olf ON f.form_id = olf.form_id
 LEFT JOIN type_one_owners t1o ON olf.t1_owner_id = t1o.t1_owner_id
 WHERE f.form_type = 'Development Plan Application (General)'
 GROUP BY f.form_id, gdpa.gdpa_plan_amendment_request, gdpa.gdpa_proposed_conditions,
@@ -507,7 +502,7 @@ LEFT JOIN architects arch ON sdpa.architect_id = arch.architect_id
 LEFT JOIN land_architects la ON sdpa.land_architect_id = la.land_architect_id
 LEFT JOIN applicants_link_forms alf ON f.form_id = alf.form_id
 LEFT JOIN type_one_applicants t1a ON alf.t1_applicant_id = t1a.t1_applicant_id
-LEFT JOIN owners_link_forms olf ON f.form_id = olf.form_id
+LEFT JOIN applicant_owner_link olf ON f.form_id = olf.form_id
 LEFT JOIN type_one_owners t1o ON olf.t1_owner_id = t1o.t1_owner_id
 WHERE f.form_type = 'Development Plan Application (Site)'
 GROUP BY f.form_id, sdpa.site_plan_request, hf.hearing_docket_number, hf.hearing_date,
@@ -564,7 +559,7 @@ LEFT JOIN hearing_forms hf ON f.form_id = hf.form_id
 LEFT JOIN attorneys att ON hf.attorney_id = att.attorney_id
 LEFT JOIN applicants_link_forms alf ON f.form_id = alf.form_id
 LEFT JOIN type_one_applicants t1a ON alf.t1_applicant_id = t1a.t1_applicant_id
-LEFT JOIN owners_link_forms olf ON f.form_id = olf.form_id
+LEFT JOIN applicant_owner_link olf ON f.form_id = olf.form_id
 LEFT JOIN type_one_owners t1o ON olf.t1_owner_id = t1o.t1_owner_id
 WHERE f.form_type = 'Future Land Use Map (FLUM) Application'
 GROUP BY f.form_id, flum.future_land_use_map_amendment_prop, flum.required_findings_type,
@@ -833,7 +828,7 @@ SELECT
     t1o.t1_owner_id,
     t1o.t1o_owner_first_name,
     t1o.t1o_owner_last_name
-FROM owners_link_forms olf
+FROM applicant_owner_link olf
 JOIN type_one_owners t1o ON olf.t1_owner_id = t1o.t1_owner_id;
 
 -- 20. Helper View - Hearing Forms with Attorney Details
