@@ -81,7 +81,8 @@ BEGIN
   SET @new_form_id = LAST_INSERT_ID();
 
   -- 2. Create address for the appeal
-  IF p_aar_street_address IS NOT NULL OR p_aar_city_address IS NOT NULL THEN
+  SET v_address_id = find_duplicate_address_id(p_aar_street_address, p_aar_city_address, p_state_code, p_aar_zip_code);
+  IF v_address_id IS NULL AND (p_aar_street_address IS NOT NULL OR p_aar_city_address IS NOT NULL) THEN
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
       VALUES(p_aar_street_address, p_aar_city_address, p_state_code, p_aar_zip_code);
     SET v_address_id = LAST_INSERT_ID();
@@ -166,6 +167,7 @@ BEGIN
   END IF;
 
   -- 7. Insert adjacent property owner if provided
+  SET v_adjacent_address_id = find_duplicate_address_id(p_adjacent_property_owner_street, p_adjacent_property_owner_city, p_adjacent_property_owner_state_code, p_adjacent_property_owner_zip);
   IF p_adjacent_property_owner_street IS NOT NULL OR p_adjacent_property_owner_city IS NOT NULL THEN
     -- Create address for adjacent property owner
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
@@ -381,8 +383,8 @@ BEGIN
             END IF;
 
             -- Create owner address if any address data provided
-            SET v_address_id = NULL;
-            IF v_owner_street IS NOT NULL OR v_owner_city IS NOT NULL OR v_owner_state IS NOT NULL OR v_owner_zip IS NOT NULL THEN
+            SET v_address_id = find_duplicate_address_id(v_owner_street, v_owner_city, v_owner_state, v_owner_zip);
+            IF v_address_id IS NULL AND (v_owner_street IS NOT NULL OR v_owner_city IS NOT NULL OR v_owner_state IS NOT NULL OR v_owner_zip IS NOT NULL) THEN
               INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
                 VALUES(v_owner_street, v_owner_city, v_owner_state, v_owner_zip);
               SET v_address_id = LAST_INSERT_ID();
@@ -543,7 +545,11 @@ BEGIN
   -- 2. Insert hearing information if provided
   IF p_docket_number IS NOT NULL OR p_public_hearing_date IS NOT NULL THEN
     -- Create/get attorney first if provided
-    IF p_attorney_first_name IS NOT NULL OR p_attorney_last_name IS NOT NULL THEN
+    SET v_attorney_id = find_duplicate_attorney_id(
+        p_attorney_first_name, p_attorney_last_name, p_law_firm,
+        p_attorney_email, p_attorney_phone, p_attorney_cell
+      );
+    IF v_attorney_id IS NULL AND (p_attorney_first_name IS NOT NULL OR p_attorney_last_name IS NOT NULL) THEN
       INSERT INTO attorneys(
         attorney_first_name, attorney_last_name, attorney_law_firm,
         attorney_email, attorney_phone, attorney_cell
@@ -886,7 +892,11 @@ BEGIN
   -- 2. Insert hearing information if provided
   IF p_docket_number IS NOT NULL OR p_public_hearing_date IS NOT NULL THEN
     -- Create attorney first if provided
-    IF p_attorney_first_name IS NOT NULL OR p_attorney_last_name IS NOT NULL THEN
+    SET v_attorney_id = find_duplicate_attorney_id(
+        p_attorney_first_name, p_attorney_last_name, p_law_firm,
+        p_attorney_email, p_attorney_phone, p_attorney_cell
+      );
+    IF v_attorney_id IS NULL AND (p_attorney_first_name IS NOT NULL OR p_attorney_last_name IS NOT NULL) THEN
       INSERT INTO attorneys(
         attorney_first_name, attorney_last_name, attorney_law_firm,
         attorney_email, attorney_phone, attorney_cell
@@ -907,7 +917,8 @@ BEGIN
   END IF;
 
   -- 3. Create property address if provided
-  IF p_property_street IS NOT NULL OR p_property_city IS NOT NULL THEN
+  SET v_property_address_id = find_duplicate_address_id(p_property_street, p_property_city, p_property_state, p_property_zip_code);
+  IF v_property_address_id IS NULL AND (p_property_street IS NOT NULL OR p_property_city IS NOT NULL) THEN
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
       VALUES(p_property_street, p_property_city, p_property_state, p_property_zip_code);
     SET v_property_address_id = LAST_INSERT_ID();
@@ -926,7 +937,8 @@ BEGIN
   -- 5. Insert primary applicant
   IF p_applicant_name IS NOT NULL THEN
     -- Create applicant address
-    IF p_applicant_street IS NOT NULL OR p_applicant_city IS NOT NULL THEN
+    SET v_primary_applicant_address_id = find_duplicate_address_id(p_applicant_street, p_applicant_city, p_applicant_state, p_applicant_zip_code);
+    IF v_primary_applicant_address_id IS NULL AND (p_applicant_street IS NOT NULL OR p_applicant_city IS NOT NULL) THEN
       INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
         VALUES(p_applicant_street, p_applicant_city, p_applicant_state, p_applicant_zip_code);
       SET v_primary_applicant_address_id = LAST_INSERT_ID();
@@ -993,8 +1005,8 @@ BEGIN
         SET v_temp_cell = IF(JSON_VALID(p_additional_applicant_cells), JSON_UNQUOTE(JSON_EXTRACT(p_additional_applicant_cells, CONCAT('$[', v_idx, ']'))), NULL);
         SET v_temp_email = IF(JSON_VALID(p_additional_applicant_emails), JSON_UNQUOTE(JSON_EXTRACT(p_additional_applicant_emails, CONCAT('$[', v_idx, ']'))), NULL);
         
-        SET v_temp_address_id = NULL;
-        IF v_temp_street IS NOT NULL OR v_temp_city IS NOT NULL THEN
+        SET v_temp_address_id = find_duplicate_address_id(v_temp_street, v_temp_city, v_temp_state, v_temp_zip);
+        IF v_temp_address_id IS NULL AND (v_temp_street IS NOT NULL OR v_temp_city IS NOT NULL) THEN
           INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
             VALUES(v_temp_street, v_temp_city, v_temp_state, v_temp_zip);
           SET v_temp_address_id = LAST_INSERT_ID();
@@ -1272,7 +1284,11 @@ BEGIN
   -- 2. Insert hearing information if provided
   IF p_docket_number IS NOT NULL OR p_public_hearing_date IS NOT NULL THEN
     -- Create attorney first if provided
-    IF p_attorney_first_name IS NOT NULL OR p_attorney_last_name IS NOT NULL THEN
+    SET v_attorney_id = find_duplicate_attorney_id(
+        p_attorney_first_name, p_attorney_last_name, p_law_firm,
+        p_attorney_email, p_attorney_phone, p_attorney_cell
+      );
+    IF v_attorney_id IS NULL AND (p_attorney_first_name IS NOT NULL OR p_attorney_last_name IS NOT NULL) THEN
       INSERT INTO attorneys(
         attorney_first_name, attorney_last_name, attorney_law_firm,
         attorney_email, attorney_phone, attorney_cell
@@ -1293,7 +1309,8 @@ BEGIN
   END IF;
 
   -- 3. Create surveyor if provided
-  IF p_surveyor_first_name IS NOT NULL OR p_surveyor_last_name IS NOT NULL THEN
+  SET v_surveyor_id = find_duplicate_surveyor_id(p_surveyor_first_name, p_surveyor_last_name, p_surveyor_firm, p_surveyor_email, p_surveyor_phone, p_surveyor_cell);
+  IF v_surveyor_id IS NULL AND (p_surveyor_first_name IS NOT NULL OR p_surveyor_last_name IS NOT NULL) THEN
     INSERT INTO surveyors(
       surveyor_first_name, surveyor_last_name, surveyor_firm,
       surveyor_email, surveyor_phone, surveyor_cell
@@ -1305,7 +1322,9 @@ BEGIN
   END IF;
 
   -- 4. Create engineer if provided
-  IF p_engineer_first_name IS NOT NULL OR p_engineer_last_name IS NOT NULL THEN
+  SET v_engineer_id = find_duplicate_engineer_id(p_engineer_first_name, p_engineer_last_name, p_engineer_firm, p_engineer_email, p_engineer_phone, p_engineer_cell);
+
+  IF v_engineer_id IS NULL AND (p_engineer_first_name IS NOT NULL OR p_engineer_last_name IS NOT NULL) THEN
     INSERT INTO engineers(
       engineer_first_name, engineer_last_name, engineer_firm,
       engineer_email, engineer_phone, engineer_cell
@@ -1317,7 +1336,8 @@ BEGIN
   END IF;
 
   -- 5. Create architect if provided
-  IF p_architect_first_name IS NOT NULL OR p_architect_last_name IS NOT NULL THEN
+  SET v_architect_id = find_duplicate_architect_id(p_architect_first_name, p_architect_last_name, p_architect_firm, p_architect_email, p_architect_phone, p_architect_cell);
+  IF v_architect_id IS NULL AND (p_architect_first_name IS NOT NULL OR p_architect_last_name IS NOT NULL) THEN
     INSERT INTO architects(
       architect_first_name, architect_last_name, architect_law_firm,
       architect_email, architect_phone, architect_cell
@@ -1329,7 +1349,8 @@ BEGIN
   END IF;
 
   -- 6. Create land architect if provided
-  IF p_land_architect_first_name IS NOT NULL OR p_land_architect_last_name IS NOT NULL THEN
+  SET v_land_architect_id = find_duplicate_land_architect_id(p_land_architect_first_name, p_land_architect_last_name, p_land_architect_firm, p_land_architect_email, p_land_architect_phone, p_land_architect_cell);
+  IF v_land_architect_id IS NULL AND (p_land_architect_first_name IS NOT NULL OR p_land_architect_last_name IS NOT NULL) THEN
     INSERT INTO land_architects(
       land_architect_first_name, land_architect_last_name, land_architect_law_firm,
       land_architect_email, land_architect_phone, land_architect_cell
@@ -1343,6 +1364,7 @@ BEGIN
   -- 7. Insert primary applicant
   IF p_applicant_name IS NOT NULL THEN
     -- Create applicant address
+    SET v_primary_applicant_address_id = find_duplicate_address_id(p_applicant_street, p_applicant_city, p_applicant_state, p_applicant_zip_code);
     IF p_applicant_street IS NOT NULL OR p_applicant_city IS NOT NULL THEN
       INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
         VALUES(p_applicant_street, p_applicant_city, p_applicant_state, p_applicant_zip_code);
@@ -1410,8 +1432,8 @@ BEGIN
         SET v_temp_cell = IF(JSON_VALID(p_additional_applicant_cells), JSON_UNQUOTE(JSON_EXTRACT(p_additional_applicant_cells, CONCAT('$[', v_idx, ']'))), NULL);
         SET v_temp_email = IF(JSON_VALID(p_additional_applicant_emails), JSON_UNQUOTE(JSON_EXTRACT(p_additional_applicant_emails, CONCAT('$[', v_idx, ']'))), NULL);
         
-        SET v_temp_address_id = NULL;
-        IF v_temp_street IS NOT NULL OR v_temp_city IS NOT NULL THEN
+        SET v_temp_address_id = find_duplicate_address_id(v_temp_street, v_temp_city, v_temp_state, v_temp_zip);
+        IF v_temp_address_id IS NULL AND (v_temp_street IS NOT NULL OR v_temp_city IS NOT NULL) THEN
           INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
             VALUES(v_temp_street, v_temp_city, v_temp_state, v_temp_zip);
           SET v_temp_address_id = LAST_INSERT_ID();
@@ -1643,7 +1665,11 @@ BEGIN
   -- 2. Insert hearing information if provided
   IF p_docket_number IS NOT NULL OR p_public_hearing_date IS NOT NULL THEN
     -- Create/get attorney first if provided
-    IF p_attorney_first_name IS NOT NULL OR p_attorney_last_name IS NOT NULL THEN
+    SET v_attorney_id = find_duplicate_attorney_id(
+        p_attorney_first_name, p_attorney_last_name, p_law_firm,
+        p_attorney_email, p_attorney_phone, p_attorney_cell
+      );
+    IF v_attorney_id IS NULL AND (p_attorney_first_name IS NOT NULL OR p_attorney_last_name IS NOT NULL) THEN
       INSERT INTO attorneys(
         attorney_first_name, attorney_last_name, attorney_law_firm,
         attorney_email, attorney_phone, attorney_cell
@@ -1664,7 +1690,8 @@ BEGIN
   END IF;
 
   -- 3. Create property address if provided
-  IF p_property_street IS NOT NULL OR p_property_city IS NOT NULL THEN
+  SET v_property_address_id = find_duplicate_address_id(p_property_street, p_property_city, p_property_state, p_property_zip_code);
+  IF v_property_address_id IS NULL AND (p_property_street IS NOT NULL OR p_property_city IS NOT NULL) THEN
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
       VALUES(p_property_street, p_property_city, p_property_state, p_property_zip_code);
     SET v_property_address_id = LAST_INSERT_ID();
@@ -1683,7 +1710,8 @@ BEGIN
   -- 5. Insert primary applicant
   IF p_applicant_name IS NOT NULL THEN
     -- Create applicant address
-    IF p_applicant_street IS NOT NULL OR p_applicant_city IS NOT NULL THEN
+    SET v_primary_applicant_address_id = find_duplicate_address_id(p_applicant_street, p_applicant_city, p_applicant_state, p_applicant_zip_code);
+    IF v_primary_applicant_address_id IS NULL AND (p_applicant_street IS NOT NULL OR p_applicant_city IS NOT NULL) THEN
       INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
         VALUES(p_applicant_street, p_applicant_city, p_applicant_state, p_applicant_zip_code);
       SET v_primary_applicant_address_id = LAST_INSERT_ID();
@@ -1750,8 +1778,8 @@ BEGIN
         SET v_temp_cell = IF(JSON_VALID(p_additional_applicant_cells), JSON_UNQUOTE(JSON_EXTRACT(p_additional_applicant_cells, CONCAT('$[', v_idx, ']'))), NULL);
         SET v_temp_email = IF(JSON_VALID(p_additional_applicant_emails), JSON_UNQUOTE(JSON_EXTRACT(p_additional_applicant_emails, CONCAT('$[', v_idx, ']'))), NULL);
         
-        SET v_temp_address_id = NULL;
-        IF v_temp_street IS NOT NULL OR v_temp_city IS NOT NULL THEN
+        SET v_temp_address_id = find_duplicate_address_id(v_temp_street, v_temp_city, v_temp_state, v_temp_zip);
+        IF v_temp_address_id IS NULL AND (v_temp_street IS NOT NULL OR v_temp_city IS NOT NULL) THEN
           INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
             VALUES(v_temp_street, v_temp_city, v_temp_state, v_temp_zip);
           SET v_temp_address_id = LAST_INSERT_ID();
@@ -1901,6 +1929,7 @@ DECLARE
     VALUES('Open Records Request', CURRENT_TIMESTAMP);
   SET @new_form_id = LAST_INSERT_ID();
 
+  SET orr_property_address_id = find_duplicate_address_id(p_orr_applicant_street, p_orr_applicant_city, p_orr_state_code, p_orr_applicant_zip_code);
   IF p_orr_applicant_street IS NOT NULL OR p_orr_applicant_city IS NOT NULL THEN
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
       VALUES(p_orr_applicant_street, p_orr_applicant_city, p_orr_state_code, p_orr_applicant_zip_code);
@@ -1998,7 +2027,8 @@ BEGIN
 
 
  -- owner
-  IF p_sp_owner_street IS NOT NULL OR p_sp_owner_city IS NOT NULL THEN
+  SET owner_address_id = find_duplicate_address_id(p_sp_owner_street, p_sp_owner_city, p_sp_owner_state_code, p_sp_owner_zip_code);
+  IF owner_address_id IS NULL AND (p_sp_owner_street IS NOT NULL OR p_sp_owner_city IS NOT NULL) THEN
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
       VALUES(p_sp_owner_street, p_sp_owner_city, p_sp_owner_state_code, p_sp_owner_zip_code);
     SET owner_address_id = LAST_INSERT_ID();
@@ -2017,7 +2047,8 @@ BEGIN
   END IF;
 
   -- business
-  IF p_sp_business_street IS NOT NULL OR p_sp_business_city IS NOT NULL THEN
+  SET business_address_id = find_duplicate_address_id(p_sp_business_street, p_sp_business_city, p_sp_business_state_code, p_sp_business_zip_code);
+  IF business_address_id IS NULL AND (p_sp_business_street IS NOT NULL OR p_sp_business_city IS NOT NULL) THEN
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
       VALUES(p_sp_business_street, p_sp_business_city, p_sp_business_state_code, p_sp_business_zip_code);
     SET business_address_id = LAST_INSERT_ID();
@@ -2036,7 +2067,8 @@ BEGIN
   END IF;
 
   -- applicant
-  IF p_sp_applicant_street IS NOT NULL OR p_sp_applicant_city IS NOT NULL THEN
+  SET applicant_address_id = find_duplicate_address_id(p_sp_applicant_street, p_sp_applicant_city, p_sp_applicant_state_code, p_sp_applicant_zip_code);
+  IF applicant_address_id IS NULL AND (p_sp_applicant_street IS NOT NULL OR p_sp_applicant_city IS NOT NULL) THEN
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
       VALUES(p_sp_applicant_street, p_sp_applicant_city, p_sp_applicant_state_code, p_sp_applicant_zip_code);
     SET applicant_address_id = LAST_INSERT_ID();
@@ -2150,7 +2182,6 @@ CREATE PROCEDURE sp_insert_major_subdivision_plat_application(
   IN p_additional_owner_emails TEXT,
   
   -- Surveyor (can be new or existing)
-  IN p_surveyor_id INT,
   IN p_surveyor_first_name VARCHAR(255),
   IN p_surveyor_last_name VARCHAR(255),
   IN p_surveyor_firm VARCHAR(255),
@@ -2159,7 +2190,6 @@ CREATE PROCEDURE sp_insert_major_subdivision_plat_application(
   IN p_surveyor_cell VARCHAR(255),
   
   -- Engineer (can be new or existing)
-  IN p_engineer_id INT,
   IN p_engineer_first_name VARCHAR(255),
   IN p_engineer_last_name VARCHAR(255),
   IN p_engineer_firm VARCHAR(255),
@@ -2275,6 +2305,7 @@ BEGIN
   END IF;
 
   -- 3. Create property address if provided
+  SET v_property_address_id = find_duplicate_address_id(p_property_street, p_property_city, p_property_state, p_property_zip_code);
   IF p_property_street IS NOT NULL OR p_property_city IS NOT NULL THEN
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
       VALUES(p_property_street, p_property_city, p_property_state, p_property_zip_code);
@@ -2294,7 +2325,8 @@ BEGIN
   -- 5. Insert primary applicant
   IF p_applicant_name IS NOT NULL THEN
     -- Create applicant address
-    IF p_applicant_street IS NOT NULL OR p_applicant_city IS NOT NULL THEN
+    SET v_primary_applicant_address_id = find_duplicate_address_id(p_applicant_street, p_applicant_city, p_applicant_state, p_applicant_zip_code);
+    IF v_primary_applicant_address_id IS NULL AND (p_applicant_street IS NOT NULL OR p_applicant_city IS NOT NULL) THEN
       INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
         VALUES(p_applicant_street, p_applicant_city, p_applicant_state, p_applicant_zip_code);
       SET v_primary_applicant_address_id = LAST_INSERT_ID();
@@ -2365,8 +2397,8 @@ BEGIN
         SET v_temp_email = IF(JSON_VALID(p_additional_applicant_emails), JSON_UNQUOTE(JSON_EXTRACT(p_additional_applicant_emails, CONCAT('$[', v_idx, ']'))), NULL);
         
         -- Create address if provided
-        SET v_temp_address_id = NULL;
-        IF v_temp_street IS NOT NULL OR v_temp_city IS NOT NULL THEN
+        SET v_temp_address_id = find_duplicate_address_id(v_temp_street, v_temp_city, v_temp_state, v_temp_zip);
+        IF v_temp_address_id IS NULL AND (v_temp_street IS NOT NULL OR v_temp_city IS NOT NULL) THEN
           INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
             VALUES(v_temp_street, v_temp_city, v_temp_state, v_temp_zip);
           SET v_temp_address_id = LAST_INSERT_ID();
@@ -2467,7 +2499,8 @@ BEGIN
   END IF;
 
   -- 9. Handle surveyor
-  IF p_surveyor_id IS NULL THEN
+  SET v_insert_surveyor_id = find_duplicate_surveyor_id(p_surveyor_first_name, p_surveyor_last_name, p_surveyor_firm, p_surveyor_email, p_surveyor_phone, p_surveyor_cell);
+  IF v_insert_surveyor_id IS NULL THEN
     IF p_surveyor_first_name IS NOT NULL OR p_surveyor_last_name IS NOT NULL THEN
       INSERT INTO surveyors(surveyor_first_name, surveyor_last_name, surveyor_firm, surveyor_email, surveyor_phone, surveyor_cell)
         VALUES(p_surveyor_first_name, p_surveyor_last_name, p_surveyor_firm, p_surveyor_email, p_surveyor_phone, p_surveyor_cell);
@@ -2475,12 +2508,11 @@ BEGIN
     ELSE
       SET v_insert_surveyor_id = NULL;
     END IF;
-  ELSE
-    SET v_insert_surveyor_id = p_surveyor_id;
   END IF;
 
   -- 10. Handle engineer
-  IF p_engineer_id IS NULL THEN
+  SET v_insert_engineer_id = find_duplicate_engineer_id(p_engineer_first_name, p_engineer_last_name, p_engineer_firm, p_engineer_email, p_engineer_phone, p_engineer_cell);
+  IF v_insert_engineer_id IS NULL THEN
     IF p_engineer_first_name IS NOT NULL OR p_engineer_last_name IS NOT NULL THEN
       INSERT INTO engineers(engineer_first_name, engineer_last_name, engineer_firm, engineer_email, engineer_phone, engineer_cell)
         VALUES(p_engineer_first_name, p_engineer_last_name, p_engineer_firm, p_engineer_email, p_engineer_phone, p_engineer_cell);
@@ -2488,8 +2520,6 @@ BEGIN
     ELSE
       SET v_insert_engineer_id = NULL;
     END IF;
-  ELSE
-    SET v_insert_engineer_id = p_engineer_id;
   END IF;
 
   -- 11. Insert into major_subdivision_plat_applications
@@ -2585,7 +2615,6 @@ CREATE PROCEDURE sp_insert_minor_subdivision_plat_application(
   IN p_additional_owner_emails TEXT,
   
   -- Surveyor (can be new or existing)
-  IN p_surveyor_id INT,
   IN p_surveyor_first_name VARCHAR(255),
   IN p_surveyor_last_name VARCHAR(255),
   IN p_surveyor_firm VARCHAR(255),
@@ -2594,7 +2623,6 @@ CREATE PROCEDURE sp_insert_minor_subdivision_plat_application(
   IN p_surveyor_cell VARCHAR(255),
   
   -- Engineer (can be new or existing)
-  IN p_engineer_id INT,
   IN p_engineer_first_name VARCHAR(255),
   IN p_engineer_last_name VARCHAR(255),
   IN p_engineer_firm VARCHAR(255),
@@ -2686,7 +2714,8 @@ BEGIN
   END IF;
 
   -- 3. Create property address if provided
-  IF p_property_street IS NOT NULL OR p_property_city IS NOT NULL THEN
+  SET v_property_address_id = find_duplicate_address_id(p_property_street, p_property_city, p_property_state, p_property_zip_code);
+  IF v_property_address_id IS NULL AND (p_property_street IS NOT NULL OR p_property_city IS NOT NULL) THEN
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
       VALUES(p_property_street, p_property_city, p_property_state, p_property_zip_code);
     SET v_property_address_id = LAST_INSERT_ID();
@@ -2705,7 +2734,8 @@ BEGIN
   -- 5. Insert primary applicant
   IF p_applicant_name IS NOT NULL THEN
     -- Create applicant address
-    IF p_applicant_street IS NOT NULL OR p_applicant_city IS NOT NULL THEN
+    SET v_primary_applicant_address_id = find_duplicate_address_id(p_applicant_street, p_applicant_city, p_applicant_state, p_applicant_zip_code);
+    IF v_primary_applicant_address_id IS NULL AND (p_applicant_street IS NOT NULL OR p_applicant_city IS NOT NULL) THEN
       INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
         VALUES(p_applicant_street, p_applicant_city, p_applicant_state, p_applicant_zip_code);
       SET v_primary_applicant_address_id = LAST_INSERT_ID();
@@ -2776,8 +2806,8 @@ BEGIN
         SET v_temp_email = IF(JSON_VALID(p_additional_applicant_emails), JSON_UNQUOTE(JSON_EXTRACT(p_additional_applicant_emails, CONCAT('$[', v_idx, ']'))), NULL);
         
         -- Create address if provided
-        SET v_temp_address_id = NULL;
-        IF v_temp_street IS NOT NULL OR v_temp_city IS NOT NULL THEN
+        SET v_temp_address_id = find_duplicate_address_id(v_temp_street, v_temp_city, v_temp_state, v_temp_zip);
+        IF v_temp_address_id IS NULL AND (v_temp_street IS NOT NULL OR v_temp_city IS NOT NULL) THEN
           INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
             VALUES(v_temp_street, v_temp_city, v_temp_state, v_temp_zip);
           SET v_temp_address_id = LAST_INSERT_ID();
@@ -2878,7 +2908,8 @@ BEGIN
   END IF;
 
   -- 9. Handle surveyor
-  IF p_surveyor_id IS NULL THEN
+  SET v_insert_surveyor_id = find_duplicate_surveyor_id(p_surveyor_first_name, p_surveyor_last_name, p_surveyor_firm, p_surveyor_email, p_surveyor_phone, p_surveyor_cell);
+  IF v_insert_surveyor_id IS NULL THEN
     IF p_surveyor_first_name IS NOT NULL OR p_surveyor_last_name IS NOT NULL THEN
       INSERT INTO surveyors(surveyor_first_name, surveyor_last_name, surveyor_firm, surveyor_email, surveyor_phone, surveyor_cell)
         VALUES(p_surveyor_first_name, p_surveyor_last_name, p_surveyor_firm, p_surveyor_email, p_surveyor_phone, p_surveyor_cell);
@@ -2886,12 +2917,11 @@ BEGIN
     ELSE
       SET v_insert_surveyor_id = NULL;
     END IF;
-  ELSE
-    SET v_insert_surveyor_id = p_surveyor_id;
   END IF;
 
   -- 10. Handle engineer
-  IF p_engineer_id IS NULL THEN
+  SET v_insert_engineer_id = find_duplicate_engineer_id(p_engineer_first_name, p_engineer_last_name, p_engineer_firm, p_engineer_email, p_engineer_phone, p_engineer_cell);
+  IF v_insert_engineer_id IS NULL THEN
     IF p_engineer_first_name IS NOT NULL OR p_engineer_last_name IS NOT NULL THEN
       INSERT INTO engineers(engineer_first_name, engineer_last_name, engineer_firm, engineer_email, engineer_phone, engineer_cell)
         VALUES(p_engineer_first_name, p_engineer_last_name, p_engineer_firm, p_engineer_email, p_engineer_phone, p_engineer_cell);
@@ -2899,8 +2929,6 @@ BEGIN
     ELSE
       SET v_insert_engineer_id = NULL;
     END IF;
-  ELSE
-    SET v_insert_engineer_id = p_engineer_id;
   END IF;
 
   -- 11. Insert into minor_subdivision_plat_applications
@@ -3084,7 +3112,11 @@ BEGIN
   -- 2. Insert hearing information if provided
   IF p_docket_number IS NOT NULL OR p_public_hearing_date IS NOT NULL THEN
     -- Create/get attorney first if provided
-    IF p_attorney_first_name IS NOT NULL OR p_attorney_last_name IS NOT NULL THEN
+    SET v_attorney_id = find_duplicate_attorney_id(
+        p_attorney_first_name, p_attorney_last_name, p_law_firm,
+        p_attorney_email, p_attorney_phone, p_attorney_cell
+      );
+    IF v_attorney_id IS NULL AND (p_attorney_first_name IS NOT NULL OR p_attorney_last_name IS NOT NULL) THEN
       INSERT INTO attorneys(
         attorney_first_name, attorney_last_name, attorney_law_firm,
         attorney_email, attorney_phone, attorney_cell
@@ -3105,7 +3137,8 @@ BEGIN
   END IF;
 
   -- 3. Create property address if provided
-  IF p_property_street IS NOT NULL OR p_property_city IS NOT NULL THEN
+  SET v_property_address_id = find_duplicate_address_id(p_property_street, p_property_city, p_property_state, p_property_zip_code);
+  IF v_property_address_id IS NULL AND (p_property_street IS NOT NULL OR p_property_city IS NOT NULL) THEN
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
       VALUES(p_property_street, p_property_city, p_property_state, p_property_zip_code);
     SET v_property_address_id = LAST_INSERT_ID();
@@ -3124,6 +3157,7 @@ BEGIN
   -- 5. Insert primary applicant
   IF p_applicant_name IS NOT NULL THEN
     -- Create applicant address
+    SET v_primary_applicant_address_id = find_duplicate_address_id(p_applicant_street, p_applicant_city, p_applicant_state, p_applicant_zip_code);
     IF p_applicant_street IS NOT NULL OR p_applicant_city IS NOT NULL THEN
       INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
         VALUES(p_applicant_street, p_applicant_city, p_applicant_state, p_applicant_zip_code);
@@ -3195,8 +3229,8 @@ BEGIN
         SET v_temp_email = IF(JSON_VALID(p_additional_applicant_emails), JSON_UNQUOTE(JSON_EXTRACT(p_additional_applicant_emails, CONCAT('$[', v_idx, ']'))), NULL);
         
         -- Create address if provided
-        SET v_temp_address_id = NULL;
-        IF v_temp_street IS NOT NULL OR v_temp_city IS NOT NULL THEN
+        SET v_temp_address_id = find_duplicate_address_id(v_temp_street, v_temp_city, v_temp_state, v_temp_zip);
+        IF v_temp_address_id IS NULL AND (v_temp_street IS NOT NULL OR v_temp_city IS NOT NULL) THEN
           INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
             VALUES(v_temp_street, v_temp_city, v_temp_state, v_temp_zip);
           SET v_temp_address_id = LAST_INSERT_ID();
@@ -3485,7 +3519,11 @@ BEGIN
   -- 2. Insert hearing information if provided
   IF p_docket_number IS NOT NULL OR p_public_hearing_date IS NOT NULL THEN
     -- Create/get attorney first if provided
-    IF p_attorney_first_name IS NOT NULL OR p_attorney_last_name IS NOT NULL THEN
+    SET v_attorney_id = find_duplicate_attorney_id(
+        p_attorney_first_name, p_attorney_last_name, p_law_firm,
+        p_attorney_email, p_attorney_phone, p_attorney_cell
+      );
+    IF v_attorney_id IS NULL AND (p_attorney_first_name IS NOT NULL OR p_attorney_last_name IS NOT NULL) THEN
       INSERT INTO attorneys(
         attorney_first_name, attorney_last_name, attorney_law_firm,
         attorney_email, attorney_phone, attorney_cell
@@ -3506,7 +3544,8 @@ BEGIN
   END IF;
 
   -- 3. Create property address if provided
-  IF p_property_street IS NOT NULL OR p_property_city IS NOT NULL THEN
+  SET v_property_address_id = find_duplicate_address_id(p_property_street, p_property_city, p_property_state, p_property_zip_code);
+  IF v_property_address_id IS NULL AND (p_property_street IS NOT NULL OR p_property_city IS NOT NULL) THEN
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
       VALUES(p_property_street, p_property_city, p_property_state, p_property_zip_code);
     SET v_property_address_id = LAST_INSERT_ID();
@@ -3525,7 +3564,8 @@ BEGIN
   -- 5. Insert primary applicant
   IF p_applicant_name IS NOT NULL THEN
     -- Create applicant address
-    IF p_applicant_street IS NOT NULL OR p_applicant_city IS NOT NULL THEN
+    SET v_primary_applicant_address_id = find_duplicate_address_id(p_applicant_street, p_applicant_city, p_applicant_state, p_applicant_zip_code);
+    IF v_primary_applicant_address_id IS NULL AND (p_applicant_street IS NOT NULL OR p_applicant_city IS NOT NULL) THEN
       INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
         VALUES(p_applicant_street, p_applicant_city, p_applicant_state, p_applicant_zip_code);
       SET v_primary_applicant_address_id = LAST_INSERT_ID();
@@ -3596,8 +3636,8 @@ BEGIN
         SET v_temp_email = IF(JSON_VALID(p_additional_applicant_emails), JSON_UNQUOTE(JSON_EXTRACT(p_additional_applicant_emails, CONCAT('$[', v_idx, ']'))), NULL);
         
         -- Create address if provided
-        SET v_temp_address_id = NULL;
-        IF v_temp_street IS NOT NULL OR v_temp_city IS NOT NULL THEN
+        SET v_temp_address_id = find_duplicate_address_id(v_temp_street, v_temp_city, v_temp_state, v_temp_zip);
+        IF v_temp_address_id IS NULL AND (v_temp_street IS NOT NULL OR v_temp_city IS NOT NULL) THEN
           INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
             VALUES(v_temp_street, v_temp_city, v_temp_state, v_temp_zip);
           SET v_temp_address_id = LAST_INSERT_ID();
@@ -3729,7 +3769,6 @@ CREATE PROCEDURE sp_insert_zoning_permit_application(
   IN p_form_datetime_resolved DATETIME,
   IN p_form_paid_bool BOOLEAN,
   -- surveyor parameters
-  IN p_surveyor_id INT,
   IN p_surveyor_first_name VARCHAR(255),
   IN p_surveyor_last_name VARCHAR(255),
   IN p_surveyor_firm VARCHAR(255),
@@ -3737,7 +3776,6 @@ CREATE PROCEDURE sp_insert_zoning_permit_application(
   IN p_surveyor_phone VARCHAR(50),
   IN p_surveyor_cell VARCHAR(255),
   -- architect parameters
-  IN p_architect_id INT,
   IN p_architect_first_name VARCHAR(255),
   IN p_architect_last_name VARCHAR(255),
   IN p_architect_law_firm VARCHAR(255),
@@ -3745,7 +3783,6 @@ CREATE PROCEDURE sp_insert_zoning_permit_application(
   IN p_architect_phone VARCHAR(50),
   IN p_architect_cell VARCHAR(255),
   -- land architect parameters
-  IN p_land_architect_id INT,
   IN p_land_architect_first_name VARCHAR(255),
   IN p_land_architect_last_name VARCHAR(255),
   IN p_land_architect_law_firm VARCHAR(255),
@@ -3753,7 +3790,6 @@ CREATE PROCEDURE sp_insert_zoning_permit_application(
   IN p_land_architect_phone VARCHAR(50),
   IN p_land_architect_cell VARCHAR(255),
   -- contractor parameters
-  IN p_contractor_id INT,
   IN p_contractor_first_name VARCHAR(255),
   IN p_contractor_last_name VARCHAR(255),
   IN p_contractor_law_firm VARCHAR(255),
@@ -3773,7 +3809,8 @@ BEGIN
   SET @new_form_id = LAST_INSERT_ID();
 
   -- Handle surveyor
-  IF p_surveyor_id IS NULL THEN
+  SET @insert_surveyor_id = find_duplicate_surveyor_id(p_surveyor_first_name, p_surveyor_last_name, p_surveyor_firm, p_surveyor_email, p_surveyor_phone, p_surveyor_cell);
+  IF @insert_surveyor_id IS NULL THEN
     IF p_surveyor_first_name IS NOT NULL OR p_surveyor_last_name IS NOT NULL THEN
       INSERT INTO surveyors(surveyor_first_name, surveyor_last_name, surveyor_firm, surveyor_email, surveyor_phone, surveyor_cell)
         VALUES(p_surveyor_first_name, p_surveyor_last_name, p_surveyor_firm, p_surveyor_email, p_surveyor_phone, p_surveyor_cell);
@@ -3781,12 +3818,11 @@ BEGIN
     ELSE
       SET @insert_surveyor_id = NULL;
     END IF;
-  ELSE
-    SET @insert_surveyor_id = p_surveyor_id;
   END IF;
 
   -- Handle architect
-  IF p_architect_id IS NULL THEN
+  SET @insert_architect_id = find_duplicate_architect_id(p_architect_first_name, p_architect_last_name, p_architect_firm, p_architect_email, p_architect_phone, p_architect_cell);
+  IF @insert_architect_id IS NULL THEN
     IF p_architect_first_name IS NOT NULL OR p_architect_last_name IS NOT NULL THEN
       INSERT INTO architects(architect_first_name, architect_last_name, architect_law_firm, architect_email, architect_phone, architect_cell)
         VALUES(p_architect_first_name, p_architect_last_name, p_architect_law_firm, p_architect_email, p_architect_phone, p_architect_cell);
@@ -3794,12 +3830,11 @@ BEGIN
     ELSE
       SET @insert_architect_id = NULL;
     END IF;
-  ELSE
-    SET @insert_architect_id = p_architect_id;
   END IF;
 
   -- Handle land architect
-  IF p_land_architect_id IS NULL THEN
+  SET @insert_land_architect_id = find_duplicate_land_architect_id(p_land_architect_first_name, p_land_architect_last_name, p_land_architect_firm, p_land_architect_email, p_land_architect_phone, p_land_architect_cell);
+  IF @insert_land_architect_id IS NULL THEN
     IF p_land_architect_first_name IS NOT NULL OR p_land_architect_last_name IS NOT NULL THEN
       INSERT INTO land_architects(land_architect_first_name, land_architect_last_name, land_architect_law_firm, land_architect_email, land_architect_phone, land_architect_cell)
         VALUES(p_land_architect_first_name, p_land_architect_last_name, p_land_architect_law_firm, p_land_architect_email, p_land_architect_phone, p_land_architect_cell);
@@ -3807,12 +3842,11 @@ BEGIN
     ELSE
       SET @insert_land_architect_id = NULL;
     END IF;
-  ELSE
-    SET @insert_land_architect_id = p_land_architect_id;
   END IF;
 
   -- Handle contractor
-  IF p_contractor_id IS NULL THEN
+  SET @insert_contractor_id = find_duplicate_contractor_id(p_contractor_first_name, p_contractor_last_name, p_contractor_firm, p_contractor_email, p_contractor_phone, p_contractor_cell);
+  IF @insert_contractor_id IS NULL THEN
     IF p_contractor_first_name IS NOT NULL OR p_contractor_last_name IS NOT NULL THEN
       INSERT INTO contractors(contractor_first_name, contractor_last_name, contractor_law_firm, contractor_email, contractor_phone, contractor_cell)
         VALUES(p_contractor_first_name, p_contractor_last_name, p_contractor_law_firm, p_contractor_email, p_contractor_phone, p_contractor_cell);
@@ -3820,8 +3854,6 @@ BEGIN
     ELSE
       SET @insert_contractor_id = NULL;
     END IF;
-  ELSE
-    SET @insert_contractor_id = p_contractor_id;
   END IF;
 
   INSERT INTO zoning_permit_applications(
@@ -3895,20 +3927,23 @@ BEGIN
   SET @new_form_id = LAST_INSERT_ID();
 
   -- Create zoning address if provided
-  IF p_zva_zoning_letter_street IS NOT NULL OR p_zva_zoning_letter_city IS NOT NULL THEN
+  SET v_zva_zoning_address_id = find_duplicate_address_id(p_zva_zoning_letter_street, p_zva_zoning_letter_city, p_zva_state_code, p_zva_zoning_letter_zip);
+  IF v_zva_zoning_address_id IS NULL AND (p_zva_zoning_letter_street IS NOT NULL OR p_zva_zoning_letter_city IS NOT NULL) THEN
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
       VALUES(p_zva_zoning_letter_street, p_zva_zoning_letter_city, p_zva_state_code, p_zva_zoning_letter_zip);
     SET v_zva_zoning_address_id = LAST_INSERT_ID();
   END IF;
 
   -- Create property address if provided
-  IF p_zva_property_street IS NOT NULL OR p_property_city IS NOT NULL THEN
+  SET v_zva_property_address_id = find_duplicate_address_id(p_zva_property_street, p_property_city, p_zva_property_state_code, p_zva_property_zip);
+  IF v_zva_property_address_id IS NULL AND (p_zva_property_street IS NOT NULL OR p_property_city IS NOT NULL) THEN
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
       VALUES(p_zva_property_street, p_property_city, p_zva_property_state_code, p_zva_property_zip);
     SET v_zva_property_address_id = LAST_INSERT_ID();
   END IF;
 
   -- Create applicant address if provided
+  SET v_zva_applicant_address_id = find_duplicate_address_id(p_zva_applicant_street, p_zva_applicant_city, p_zva_applicant_state_code, p_zva_applicant_zip_code);
   IF p_zva_applicant_street IS NOT NULL OR p_zva_applicant_city IS NOT NULL THEN
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
       VALUES(p_zva_applicant_street, p_zva_applicant_city, p_zva_applicant_state_code, p_zva_applicant_zip_code);
@@ -3928,7 +3963,8 @@ BEGIN
   END IF;
 
   -- Create owner address if provided
-  IF p_zva_owner_street IS NOT NULL OR p_zva_owner_city IS NOT NULL THEN
+  SET v_zva_owner_address_id = find_duplicate_address_id(p_zva_owner_street, p_zva_owner_city, p_zva_owner_state_code, p_zva_owner_zip_code);
+  IF v_zva_owner_address_id IS NULL AND (p_zva_owner_street IS NOT NULL OR p_zva_owner_city IS NOT NULL) THEN
     INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
       VALUES(p_zva_owner_street, p_zva_owner_city, p_zva_owner_state_code, p_zva_owner_zip_code);
     SET v_zva_owner_address_id = LAST_INSERT_ID();

@@ -239,7 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $correction_form_id = isset($_POST['correction_form_id']) && $_POST['correction_form_id'] !== '' ? (int)$_POST['correction_form_id'] : null;
         
         // Prepare the stored procedure call
-        $sql = "CALL sp_insert_minor_subdivision_plat_application(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "CALL sp_insert_minor_subdivision_plat_application(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $conn->prepare($sql);
         
@@ -249,7 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Bind parameters (81 total parameters)
         $stmt->bind_param(
-            "sssssssssssssssssssssssssssssssssssissssssssssssssssssssssissssssssssssssssssssss",
+            "sssssssssssssssssssssssssssssssssssissssssssssssssssssssissssssssssssssssssssss",
             // Technical dates (4)
             $application_filing_date, $technical_review_date, $preliminary_approval_date, $final_approval_date,
             // Primary applicant (10)
@@ -268,10 +268,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $additional_owner_cells, $additional_owner_cities, $additional_owner_states,
             $additional_owner_zip_codes, $additional_owner_other_addresses, $additional_owner_emails,
             // Surveyor (7)
-            $surveyor_id, $surveyor_first_name, $surveyor_last_name, $surveyor_firm, 
+            $surveyor_first_name, $surveyor_last_name, $surveyor_firm, 
             $surveyor_email, $surveyor_phone, $surveyor_cell,
             // Engineer (7)
-            $engineer_id, $engineer_first_name, $engineer_last_name, $engineer_firm,
+            $engineer_first_name, $engineer_last_name, $engineer_firm,
             $engineer_email, $engineer_phone, $engineer_cell,
             // Property info (8)
             $property_street, $property_city, $property_state, $property_zip_code, $property_other_address,
