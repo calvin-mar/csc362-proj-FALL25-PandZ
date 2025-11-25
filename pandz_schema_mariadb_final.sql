@@ -54,6 +54,7 @@ CREATE TABLE clients (
     client_id INT NOT NULL AUTO_INCREMENT,
     client_username VARCHAR(255) UNIQUE,
     client_password VARCHAR(255),
+    client_email VARCHAR(255),
     client_type VARCHAR(255),
     PRIMARY KEY (client_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

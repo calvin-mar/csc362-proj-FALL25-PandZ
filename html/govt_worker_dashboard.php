@@ -1,6 +1,5 @@
 <?php
-session_start(); // ADD THIS LINE FIRST
-
+session_start();
 require_once 'config.php';
 requireLogin();
 
@@ -10,6 +9,21 @@ if (getUserType() != 'govt_worker') {
 }
 
 $conn = getDBConnection(); // This should return a mysqli connection object
+
+// Get current user's role
+$current_user_id = $_SESSION['user_id'] ?? null;
+$is_admin = false;
+if ($current_user_id) {
+    $role_query = "SELECT govt_worker_role FROM govt_workers WHERE client_id = ?";
+    $role_stmt = $conn->prepare($role_query);
+    $role_stmt->bind_param("i", $current_user_id);
+    $role_stmt->execute();
+    $role_result = $role_stmt->get_result();
+    if ($role_row = $role_result->fetch_assoc()) {
+        $is_admin = ($role_row['govt_worker_role'] === 'Admin');
+    }
+    $role_stmt->close();
+}
 
 // Get filter parameters
 $form_type_filter = $_GET['form_type'] ?? '';
@@ -108,6 +122,18 @@ if ($stats_result) {
     error_log("Error fetching stats: " . $conn->error);
 }
 
+// --- Get departments for dropdown (if admin) ---
+$departments = [];
+if ($is_admin) {
+    $dept_result = $conn->query("SELECT client_id, department_name FROM departments ORDER BY department_name");
+    if ($dept_result) {
+        while ($row = $dept_result->fetch_assoc()) {
+            $departments[] = $row;
+        }
+        $dept_result->free();
+    }
+}
+
 $conn->close(); // Close connection at the end of the script
 ?>
 
@@ -131,6 +157,14 @@ $conn->close(); // Close connection at the end of the script
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+        .nav-links {
+            display: flex;
+            gap: 10px;
+            margin-left: auto; /* Push buttons to the right */
+        }
+        .manage-btn {
+            margin-right: 10px; /* Optional spacing before Logout */
         }
         .navbar h1 { font-size: 24px; }
         .navbar a {
@@ -222,6 +256,12 @@ $conn->close(); // Close connection at the end of the script
         .btn-secondary:hover {
             background: #5a6268;
         }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -242,17 +282,177 @@ $conn->close(); // Close connection at the end of the script
         .status-unpaid { color: #dc3545; font-weight: 600; }
         .status-resolved { color: #28a745; }
         .status-pending { color: #ffc107; }
+        
+        /* Admin Section Styles */
+        .admin-section {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px 30px;
+            margin-bottom: 20px;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        .admin-header h2 {
+            margin: 0;
+            padding: 0;
+            border: none;
+            color: #333;
+            font-size: 18px;
+        }
+        .admin-toggle {
+            font-size: 24px;
+            font-weight: bold;
+            color: #dc3545;
+            transition: transform 0.3s;
+        }
+        .admin-toggle.open {
+            transform: rotate(180deg);
+        }
+        .admin-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .admin-content.open {
+            max-height: 2000px;
+            transition: max-height 0.5s ease-in;
+        }
+        .admin-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+            padding-top: 20px;
+        }
+        .admin-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            transition: border-color 0.3s;
+        }
+        .admin-card:hover {
+            border-color: #dc3545;
+        }
+        .admin-card h3 {
+            color: #dc3545;
+            margin-bottom: 15px;
+        }
+        .admin-card p {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #ffc107;
+            color: #333;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="navbar">
-        <h1>Government Worker Dashboard - <?php echo htmlspecialchars($_SESSION['username']); ?></h1>
+        <h1>Government Worker Dashboard - <?php echo htmlspecialchars($_SESSION['username']); ?>
+            <?php if ($is_admin): ?>
+                <span class="badge">ADMIN</span>
+            <?php endif; ?>
+        </h1>
         <div>
             <a href="govt_worker_reports.php">Reports</a>
+            <a href="account_management.php" class="btn btn-success manage-btn">Manage Account</a>
             <a href="logout.php">Logout</a>
         </div>
     </div>
     <div class="container">
+        <?php if ($is_admin): ?>
+        <div class="card admin-section">
+            <div class="admin-header" onclick="toggleAdmin()">
+                <h2>⚙️ Admin Actions</h2>
+                <span class="admin-toggle" id="adminToggle">▼</span>
+            </div>
+            <div class="admin-content" id="adminContent">
+                <div class="admin-actions">
+                    <div class="admin-card">
+                        <h3>Create New Department</h3>
+                        <p>Add a new department to the system for organizational management.</p>
+                        <form method="POST" action="create_department.php">
+                            <div class="form-group">
+                                <label>Department Name</label>
+                                <input type="text" name="department_name" required placeholder="e.g., Human Resources">
+                            </div>
+                            <div class="form-group">
+                                <label>Department Description</label>
+                                <input type="text" name="department_description" placeholder="Optional description">
+                            </div>
+                            <button type="submit" class="btn btn-success">Create Department</button>
+                        </form>
+                    </div>
+                    
+                    <div class="admin-card">
+                        <h3>Create Government Worker Account</h3>
+                        <p>Create a new government worker account with admin or regular privileges.</p>
+                        <form method="POST" action="create_govt_worker.php">
+                            <div class="form-group">
+                                <label>Username</label>
+                                <input type="text" name="username" required placeholder="Enter username">
+                            </div>
+                            <div class="form-group">
+                                <label>Password</label>
+                                <input type="password" name="password" required placeholder="Enter password">
+                            </div>
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" name="full_name" required placeholder="Enter full name">
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" name="email" required placeholder="Enter email">
+                            </div>
+                            <div class="form-group">
+                                <label>Department</label>
+                                <select name="department_id" required>
+                                    <option value="">Select Department</option>
+                                    <?php foreach ($departments as $dept): ?>
+                                        <option value="<?php echo htmlspecialchars($dept['department_id']); ?>">
+                                            <?php echo htmlspecialchars($dept['department_name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Role</label>
+                                <select name="role" required>
+                                    <option value="Regular">Regular Privileges</option>
+                                    <option value="Admin">Admin Privileges</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-success">Create Worker Account</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+        
         <div class="stats">
             <div class="stat-card">
                 <h3>Total Forms</h3>
@@ -342,5 +542,20 @@ $conn->close(); // Close connection at the end of the script
             </table>
         </div>
     </div>
+    
+    <script>
+        function toggleAdmin() {
+            const content = document.getElementById('adminContent');
+            const toggle = document.getElementById('adminToggle');
+            
+            if (content.classList.contains('open')) {
+                content.classList.remove('open');
+                toggle.classList.remove('open');
+            } else {
+                content.classList.add('open');
+                toggle.classList.add('open');
+            }
+        }
+    </script>
 </body>
 </html>

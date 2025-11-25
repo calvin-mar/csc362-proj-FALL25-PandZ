@@ -1,13 +1,4 @@
 <?php
-    // Show all errors from the PHP interpreter.
-    ini_set('display_errors', 1);
-    ini_set('display_startup_errors', 1);
-    error_reporting(E_ALL);
-
-    // Show all errors from the MySQLi Extension.
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);  
-?>
-<?php
 require_once 'config.php';
 requireLogin();
 
@@ -135,6 +126,14 @@ $conn->close();
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+        .nav-links {
+            display: flex;
+            gap: 10px;
+            margin-left: auto; /* Push buttons to the right */
+        }
+        .manage-btn {
+            margin-right: 10px; /* Optional spacing before Logout */
         }
         .navbar h1 { font-size: 24px; }
         .navbar a {
@@ -284,6 +283,7 @@ $conn->close();
         <h1>Department Dashboard - <?php echo htmlspecialchars($_SESSION['username']); ?></h1>
         <div>
             <a href="department_reports.php">Reports</a>
+            <a href="account_management.php" class="btn btn-success manage-btn">Manage Account</a>
             <a href="logout.php">Logout</a>
         </div>
     </div>
