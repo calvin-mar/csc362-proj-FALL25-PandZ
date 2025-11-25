@@ -736,47 +736,552 @@ function generateZoningPermitHtml($form_id, $form_details) {
     <html>
     <head>
         <meta charset="UTF-8">
-        <title>Zoning Permit - ID: <?php echo htmlspecialchars($form_id); ?></title>
-        <style><?php echo getCommonStyles(); ?></style>
+        <title>Zoning Permit Application - ID: <?php echo htmlspecialchars($form_id); ?></title>
+        <style>
+            body { 
+                font-family: 'DejaVu Sans', sans-serif; 
+                font-size: 10pt; 
+                margin: 15mm;
+                line-height: 1.3;
+            }
+            .header {
+                text-align: center;
+                font-weight: bold;
+                font-size: 12pt;
+                margin-bottom: 5px;
+            }
+            .title {
+                text-align: center;
+                font-weight: bold;
+                font-size: 11pt;
+                margin-bottom: 15px;
+            }
+            .header-grid {
+                width: 100%;
+                margin-bottom: 15px;
+                border-collapse: collapse;
+            }
+            .header-grid td {
+                padding: 5px;
+                vertical-align: top;
+            }
+            .header-grid .label {
+                font-weight: bold;
+                width: 35%;
+            }
+            .header-grid .value {
+                border-bottom: 1px solid #000;
+                width: 65%;
+                min-height: 18px;
+            }
+            h2 {
+                background-color: #d9d9d9;
+                padding: 5px;
+                font-size: 10pt;
+                font-weight: bold;
+                margin-top: 15px;
+                margin-bottom: 8px;
+                text-transform: uppercase;
+            }
+            .field-row {
+                margin-bottom: 8px;
+            }
+            .field-label {
+                font-weight: bold;
+                margin-bottom: 2px;
+                font-size: 9pt;
+            }
+            .field-value {
+                border-bottom: 1px solid #000;
+                min-height: 18px;
+                padding: 2px 5px;
+            }
+            .two-column {
+                width: 100%;
+                margin-bottom: 8px;
+            }
+            .two-column::after {
+                content: "";
+                display: table;
+                clear: both;
+            }
+            .two-column .left {
+                float: left;
+                width: 58%;
+                padding-right: 2%;
+            }
+            .two-column .right {
+                float: left;
+                width: 38%;
+                padding-left: 2%;
+            }
+            .checklist-section {
+                margin: 15px 0;
+            }
+            .checkbox-item {
+                margin: 6px 0;
+                padding-left: 20px;
+                position: relative;
+            }
+            .checkbox-item:before {
+                content: '☐';
+                position: absolute;
+                left: 0;
+                font-size: 12pt;
+            }
+            .checkbox-item.checked:before {
+                content: '☑';
+            }
+            .checkbox-inline {
+                display: inline-block;
+                margin-right: 15px;
+            }
+            .construction-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 10px 0;
+            }
+            .construction-table th {
+                background-color: #d9d9d9;
+                padding: 5px;
+                border: 1px solid #000;
+                font-weight: bold;
+                font-size: 9pt;
+            }
+            .construction-table td {
+                padding: 8px 5px;
+                border: 1px solid #000;
+                min-height: 25px;
+            }
+            .certification-section {
+                margin-top: 20px;
+                border: 1px solid #000;
+                padding: 10px;
+            }
+            .signature-line {
+                border-bottom: 1px solid #000;
+                min-height: 20px;
+                margin: 8px 0;
+                padding: 2px 5px;
+            }
+            .note {
+                font-size: 8pt;
+                font-style: italic;
+                margin-top: 5px;
+            }
+            .fee-section {
+                margin-top: 20px;
+                padding: 10px;
+                border: 1px solid #000;
+            }
+            .fee-section .important {
+                font-weight: bold;
+                text-align: center;
+                margin-bottom: 10px;
+            }
+            .footer {
+                text-align: center;
+                font-size: 9pt;
+                margin-top: 20px;
+                border-top: 2px solid #000;
+                padding-top: 10px;
+            }
+        </style>
     </head>
     <body>
-        <h1>DANVILLE-BOYLE COUNTY PLANNING & ZONING COMMISSION<br>ZONING PERMIT APPLICATION</h1>
+        <div class="header">DANVILLE-BOYLE COUNTY PLANNING & ZONING COMMISSION</div>
+        <div class="title">APPLICATION FOR ZONING PERMIT</div>
 
-        <h2>PROJECT INFORMATION</h2>
-        <div class="field-label">Project Type:</div>
-        <div class="input-box"><?php echo htmlspecialchars($form_details['project_type'] ?? ''); ?></div>
+        <!-- Header Information -->
+        <table class="header-grid">
+            <tr>
+                <td class="label">Date Application Filed:</td>
+                <td class="value"><?php echo htmlspecialchars($form_details['form_datetime_submitted'] ?? ''); ?></td>
+                <td class="label">Zoning Permit Approval Date:</td>
+                <td class="value"><?php echo htmlspecialchars($form_details['form_datetime_resolved'] ?? ''); ?></td>
+            </tr>
+            <tr>
+                <td class="label">Construction Start Date:</td>
+                <td class="value"></td>
+                <td class="label">Zoning Permit Approval No:</td>
+                <td class="value"><?php echo htmlspecialchars($form_id ?? ''); ?></td>
+            </tr>
+        </table>
 
+        <!-- APPLICANT(S) INFORMATION -->
+        <h2>APPLICANT(S) INFORMATION</h2>
+
+        <div class="field-row">
+            <div class="field-label">1) APPLICANT(S) NAME(S):</div>
+            <div class="field-value">
+                <?php 
+                $applicant_names = [];
+                if (!empty($form_details['applicant_first_names'])) {
+                    $first_names = explode(',', $form_details['applicant_first_names']);
+                    $last_names = explode(',', $form_details['applicant_last_names'] ?? '');
+                    for ($i = 0; $i < count($first_names); $i++) {
+                        $applicant_names[] = trim($first_names[$i]) . ' ' . trim($last_names[$i] ?? '');
+                    }
+                }
+                echo htmlspecialchars(implode(', ', $applicant_names));
+                ?>
+            </div>
+        </div>
+
+        <div class="field-row">
+            <div class="field-label">Names of Officers, Directors, Shareholders or Members (If Applicable):</div>
+            <div class="field-value"><?php echo htmlspecialchars($form_details['officers'] ?? ''); ?></div>
+        </div>
+
+        <div class="two-column">
+            <div class="left">
+                <div class="field-label">Mailing Address:</div>
+                <div class="field-value">
+                    <?php 
+                    $applicant_address = array_filter([
+                        $form_details['address_street'] ?? '',
+                        $form_details['address_city'] ?? '',
+                        $form_details['state_code'] ?? '',
+                        $form_details['address_zip_code'] ?? ''
+                    ]);
+                    echo htmlspecialchars(implode(', ', $applicant_address));
+                    ?>
+                </div>
+            </div>
+            <div class="right">
+                <div class="field-label">Phone Number:</div>
+                <div class="field-value"><?php echo htmlspecialchars($form_details['t1_applicant_phone_number'] ?? ''); ?></div>
+            </div>
+        </div>
+
+        <div class="two-column">
+            <div class="left">
+                <div class="field-label">E-Mail Address:</div>
+                <div class="field-value"><?php echo htmlspecialchars($form_details['t1_applicant_email'] ?? ''); ?></div>
+            </div>
+            <div class="right">
+                <div class="field-label">Cell Number:</div>
+                <div class="field-value"><?php echo htmlspecialchars($form_details['t1_applicant_cell_phone'] ?? ''); ?></div>
+            </div>
+        </div>
+
+        <div class="field-row">
+            <div class="field-label">2) PROPERTY OWNER(S) NAME(S):</div>
+            <div class="field-value"><?php echo htmlspecialchars($form_details['property_owners'] ?? ''); ?></div>
+        </div>
+
+        <div class="two-column">
+            <div class="left">
+                <div class="field-label">Mailing Address:</div>
+                <div class="field-value"></div>
+            </div>
+            <div class="right">
+                <div class="field-label">Phone Number:</div>
+                <div class="field-value"></div>
+            </div>
+        </div>
+
+        <div class="two-column">
+            <div class="left">
+                <div class="field-label">E-Mail Address:</div>
+                <div class="field-value"></div>
+            </div>
+            <div class="right">
+                <div class="field-label">Cell Number:</div>
+                <div class="field-value"></div>
+            </div>
+        </div>
+
+        <div class="note">*PLEASE USE ADDITIONAL PAGES IF NEEDED*</div>
+
+        <!-- Professional Services -->
+        <div class="field-row" style="margin-top: 10px;">
+            <div class="field-label">3) SURVEYOR/ ENGINEER:</div>
+            <div class="two-column">
+                <div class="left">
+                    <div class="field-value">
+                        <?php echo htmlspecialchars(trim(($form_details['surveyor_first_name'] ?? '') . ' ' . ($form_details['surveyor_last_name'] ?? ''))); ?>
+                    </div>
+                </div>
+                <div class="right">
+                    <div class="field-label">Name of Firm:</div>
+                    <div class="field-value"><?php echo htmlspecialchars($form_details['surveyor_firm'] ?? ''); ?></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="two-column">
+            <div class="left">
+                <div class="field-label">Phone Number:</div>
+                <div class="field-value"><?php echo htmlspecialchars($form_details['surveyor_phone'] ?? ''); ?></div>
+            </div>
+            <div class="right">
+                <div class="field-label">Cell Number:</div>
+                <div class="field-value"><?php echo htmlspecialchars($form_details['surveyor_cell'] ?? ''); ?></div>
+            </div>
+        </div>
+
+        <div class="field-row">
+            <div class="field-label">E-Mail Address:</div>
+            <div class="field-value"><?php echo htmlspecialchars($form_details['surveyor_email'] ?? ''); ?></div>
+        </div>
+
+        <div class="field-row" style="margin-top: 10px;">
+            <div class="field-label">4) CONTRACTOR:</div>
+            <div class="two-column">
+                <div class="left">
+                    <div class="field-value">
+                        <?php echo htmlspecialchars(trim(($form_details['contractor_first_name'] ?? '') . ' ' . ($form_details['contractor_last_name'] ?? ''))); ?>
+                    </div>
+                </div>
+                <div class="right">
+                    <div class="field-label">Name of Firm:</div>
+                    <div class="field-value"><?php echo htmlspecialchars($form_details['contractor_firm'] ?? ''); ?></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="two-column">
+            <div class="left">
+                <div class="field-label">Phone Number:</div>
+                <div class="field-value"><?php echo htmlspecialchars($form_details['contractor_phone'] ?? ''); ?></div>
+            </div>
+            <div class="right">
+                <div class="field-label">Cell Number:</div>
+                <div class="field-value"><?php echo htmlspecialchars($form_details['contractor_cell'] ?? ''); ?></div>
+            </div>
+        </div>
+
+        <div class="field-row">
+            <div class="field-label">E-Mail Address:</div>
+            <div class="field-value"><?php echo htmlspecialchars($form_details['contractor_email'] ?? ''); ?></div>
+        </div>
+
+        <div class="field-row" style="margin-top: 10px;">
+            <div class="field-label">5) ARCHITECT:</div>
+            <div class="two-column">
+                <div class="left">
+                    <div class="field-value">
+                        <?php echo htmlspecialchars(trim(($form_details['architect_first_name'] ?? '') . ' ' . ($form_details['architect_last_name'] ?? ''))); ?>
+                    </div>
+                </div>
+                <div class="right">
+                    <div class="field-label">Name of Firm:</div>
+                    <div class="field-value"><?php echo htmlspecialchars($form_details['architect_firm'] ?? ''); ?></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="two-column">
+            <div class="left">
+                <div class="field-label">Phone Number:</div>
+                <div class="field-value"><?php echo htmlspecialchars($form_details['architect_phone'] ?? ''); ?></div>
+            </div>
+            <div class="right">
+                <div class="field-label">Cell Number:</div>
+                <div class="field-value"><?php echo htmlspecialchars($form_details['architect_cell'] ?? ''); ?></div>
+            </div>
+        </div>
+
+        <div class="field-row">
+            <div class="field-label">E-Mail Address:</div>
+            <div class="field-value"><?php echo htmlspecialchars($form_details['architect_email'] ?? ''); ?></div>
+        </div>
+
+        <div class="field-row" style="margin-top: 10px;">
+            <div class="field-label">6) LANDSCAPE ARCHITECT:</div>
+            <div class="two-column">
+                <div class="left">
+                    <div class="field-value">
+                        <?php echo htmlspecialchars(trim(($form_details['land_architect_first_name'] ?? '') . ' ' . ($form_details['land_architect_last_name'] ?? ''))); ?>
+                    </div>
+                </div>
+                <div class="right">
+                    <div class="field-label">Name of Firm:</div>
+                    <div class="field-value"><?php echo htmlspecialchars($form_details['land_architect_firm'] ?? ''); ?></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="two-column">
+            <div class="left">
+                <div class="field-label">Phone Number:</div>
+                <div class="field-value"><?php echo htmlspecialchars($form_details['land_architect_phone'] ?? ''); ?></div>
+            </div>
+            <div class="right">
+                <div class="field-label">Cell Number:</div>
+                <div class="field-value"><?php echo htmlspecialchars($form_details['land_architect_cell'] ?? ''); ?></div>
+            </div>
+        </div>
+
+        <div class="field-row">
+            <div class="field-label">E-Mail Address:</div>
+            <div class="field-value"><?php echo htmlspecialchars($form_details['land_architect_email'] ?? ''); ?></div>
+        </div>
+
+        <!-- PROPERTY INFORMATION -->
         <h2>PROPERTY INFORMATION</h2>
-        <div class="field-label">Property Address:</div>
-        <div class="input-box"><?php echo formatAddress($form_details, 'property'); ?></div>
-        
-        <div class="field-label">PVA Parcel Number:</div>
-        <div class="input-box"><?php echo htmlspecialchars($form_details['pva_parcel_number'] ?? ''); ?></div>
-        
-        <div class="field-label">Acreage:</div>
-        <div class="input-box"><?php echo htmlspecialchars($form_details['property_acreage'] ?? ''); ?></div>
-        
-        <div class="field-label">Current Zoning:</div>
-        <div class="input-box"><?php echo htmlspecialchars($form_details['property_current_zoning'] ?? ''); ?></div>
 
-        <h2>PROJECT PLANS</h2>
-        <div class="checkbox-item">Project Plans Submitted: <?php echo $form_details['zpa_project_plans'] ? 'Yes' : 'No'; ?></div>
-        <div class="checkbox-item">Preliminary Site Evaluation: <?php echo $form_details['zpa_preliminary_site_evaluation'] ? 'Yes' : 'No'; ?></div>
+        <div class="field-row">
+            <div class="field-label">Property Address:</div>
+            <div class="field-value">
+                <?php 
+                $property_address = array_filter([
+                    $form_details['property_street'] ?? '',
+                    $form_details['property_city'] ?? '',
+                    $form_details['property_state'] ?? '',
+                    $form_details['property_zip'] ?? ''
+                ]);
+                echo htmlspecialchars(implode(', ', $property_address));
+                ?>
+            </div>
+        </div>
 
-        <h2>PROFESSIONAL SERVICES</h2>
-        <div class="field-label">Surveyor:</div>
-        <div class="input-box"><?php echo htmlspecialchars(($form_details['surveyor_first_name'] ?? '') . ' ' . ($form_details['surveyor_last_name'] ?? '') . ' - ' . ($form_details['surveyor_firm'] ?? '')); ?></div>
-        
-        <div class="field-label">Architect:</div>
-        <div class="input-box"><?php echo htmlspecialchars(($form_details['architect_first_name'] ?? '') . ' ' . ($form_details['architect_last_name'] ?? '') . ' - ' . ($form_details['architect_firm'] ?? '')); ?></div>
-        
-        <div class="field-label">Landscape Architect:</div>
-        <div class="input-box"><?php echo htmlspecialchars(($form_details['land_architect_first_name'] ?? '') . ' ' . ($form_details['land_architect_last_name'] ?? '') . ' - ' . ($form_details['land_architect_firm'] ?? '')); ?></div>
-        
-        <div class="field-label">Contractor:</div>
-        <div class="input-box"><?php echo htmlspecialchars(($form_details['contractor_first_name'] ?? '') . ' ' . ($form_details['contractor_last_name'] ?? '') . ' - ' . ($form_details['contractor_firm'] ?? '')); ?></div>
+        <div class="two-column">
+            <div class="left">
+                <div class="field-label">PVA Parcel Number:</div>
+                <div class="field-value"><?php echo htmlspecialchars($form_details['PVA_parcel_number'] ?? ''); ?></div>
+            </div>
+            <div class="right">
+                <div class="field-label">Acreage:</div>
+                <div class="field-value"><?php echo htmlspecialchars($form_details['property_acreage'] ?? ''); ?></div>
+            </div>
+        </div>
 
-        <?php echo getFooter($form_details); ?>
+        <div class="field-row">
+            <div class="field-label">Current Zoning:</div>
+            <div class="field-value"><?php echo htmlspecialchars($form_details['property_current_zoning'] ?? ''); ?></div>
+        </div>
+
+        <!-- APPLICATION CHECKLIST -->
+        <h2>APPLICATION CHECKLIST</h2>
+
+        <div class="checklist-section">
+            <div class="checkbox-item">A completed and signed Application</div>
+            
+            <div class="field-row">
+                <strong>Type of Project:</strong>
+                <span class="checkbox-inline">_____ Multi-Family Use</span>
+                <span class="checkbox-inline">_____ Commercial Use</span>
+                <span class="checkbox-inline">_____ Industrial Use</span><br>
+                <span style="margin-left: 120px;" class="checkbox-inline">_____ Temporary Use</span>
+                <span class="checkbox-inline">_____ Parking/ Display</span>
+                <span class="checkbox-inline">_____ Use Change</span>
+                <?php if (!empty($form_details['project_type'])): ?>
+                <br><strong>Selected: <?php echo htmlspecialchars($form_details['project_type']); ?></strong>
+                <?php endif; ?>
+            </div>
+
+            <div class="checkbox-item <?php echo (!empty($form_details['zpa_project_plans']) && $form_details['zpa_project_plans']) ? 'checked' : ''; ?>">
+                Complete set of project plans depicting the various portion(s) of the property to be included in the proposed construction project (Please include: two (2) - 11" x 17" plan-sets)
+            </div>
+            
+            <div class="checkbox-item">Landscape, Drainage and/ or Stormwater Plan(s), if applicable</div>
+            
+            <div class="checkbox-item">Water/ Sewer/ Floodplain Verification Letter(s) or Signature(s), if applicable</div>
+            
+            <div class="checkbox-item <?php echo (!empty($form_details['zpa_preliminary_site_evaluation']) && $form_details['zpa_preliminary_site_evaluation']) ? 'checked' : ''; ?>">
+                Preliminary site evaluation information (if project is not required to be on public sewer)
+            </div>
+        </div>
+
+        <!-- CONSTRUCTION INFORMATION -->
+        <h2>CONSTRUCTION INFORMATION</h2>
+
+        <table class="construction-table">
+            <tr>
+                <th>Type of Structure or Use</th>
+                <th>Square Feet</th>
+                <th>Project Value</th>
+                <th>Notes</th>
+            </tr>
+            <tr>
+                <td></td>
+                <td>S.F.</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>S.F.</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>S.F.</td>
+                <td></td>
+                <td></td>
+            </tr>
+        </table>
+
+        <!-- APPLICANT'S CERTIFICATION -->
+        <div class="certification-section">
+            <h2 style="margin-top: 0;">APPLICANT'S CERTIFICATION</h2>
+            
+            <p style="font-size: 9pt; margin-bottom: 10px;">
+                I do hereby certify that, to the best of my knowledge and belief, all application materials have been submitted
+                and that the information they contain is true and correct. Please attach additional signature pages if needed.
+            </p>
+
+            <div class="field-label">Signature of Applicant(s) and Property Owner(s):</div>
+            
+            <div style="margin: 10px 0;">
+                1) <span class="signature-line" style="display: inline-block; width: 300px; margin-left: 10px;"></span>
+                <span style="margin-left: 20px;">Date: <span class="signature-line" style="display: inline-block; width: 150px; margin-left: 5px;"></span></span>
+                <div class="field-label" style="margin-left: 20px; font-weight: normal; font-size: 8pt;">(please print name and title)</div>
+            </div>
+
+            <div style="margin: 10px 0;">
+                2) <span class="signature-line" style="display: inline-block; width: 300px; margin-left: 10px;"></span>
+                <span style="margin-left: 20px;">Date: <span class="signature-line" style="display: inline-block; width: 150px; margin-left: 5px;"></span></span>
+                <div class="field-label" style="margin-left: 20px; font-weight: normal; font-size: 8pt;">(please print name and title)</div>
+            </div>
+
+            <p class="note" style="margin-top: 10px;">
+                The foregoing signatures constitute all of the owners of the affected property necessary to convey fee title, their attorney, or their legally constituted
+                attorney-in-fact. If the signature is of an attorney, then such signature is certification that the attorney represents each and every owner of the affected
+                property. Please use additional signature pages, if needed.
+            </p>
+        </div>
+
+        <!-- FEES SECTION -->
+        <div class="fee-section">
+            <div class="important">REQUIRED FILING FEES MUST BE PAID BEFORE ANY APPLICATION WILL BE ACCEPTED</div>
+            
+            <div class="two-column">
+                <div class="left">
+                    <div class="field-label">Application Fee:</div>
+                    <div class="field-value"><?php echo htmlspecialchars($form_details['application_fee'] ?? ''); ?></div>
+                </div>
+                <div class="right">
+                    <div class="field-label">Date Fees Received:</div>
+                    <div class="field-value">
+                        <?php 
+                        if (!empty($form_details['form_paid_bool']) && $form_details['form_paid_bool']) {
+                            echo htmlspecialchars($form_details['form_datetime_resolved'] ?? '');
+                        }
+                        ?>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field-row">
+                <div class="field-label">CO Approval Date:</div>
+                <div class="field-value"></div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            <strong>Submit Application to:</strong><br>
+            Danville-Boyle County Planning and Zoning Commission<br>
+            P.O. Box 670<br>
+            Danville, KY 40423-0670<br>
+            859.238.1235<br>
+            zoning@danvilleky.gov<br>
+            www.boyleplanning.org
+        </div>
     </body>
     </html>
     <?php
