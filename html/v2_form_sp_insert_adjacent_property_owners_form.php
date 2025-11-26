@@ -1,39 +1,196 @@
 <?php
-/**
- * Refactored Adjacent Property Owners Form Application Form Handler
- * Replace the existing POST handling in form_sp_insert_adjacent_property_owners_form.php
- * with this code block (lines 15-133 in original file)
- */
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+
+require_once 'config.php';
+require_once 'form_insert_functions.php';
+require_once 'form_update_functions.php';
+requireLogin();
+if (getUserType() != 'client') {
+    header('Location: login.php');
+    exit();
+}
+
+$conn = getDBConnection();
+$client_id = getUserId();
+// Get relevant data if starting from a draft already
+$draft_data = null;
+$draft_id = null;
+
+if (isset($_GET['draft_id'])) {
+    echo "Loading draft ID: " . htmlspecialchars($_GET['draft_id']);
+    $draft_id = (int)$_GET['draft_id'];
+    
+    // Fetch neighbor properties
+    $sql_neighbors = "
+        SELECT n.neighbor_id, n.PVA_map_code, n.apof_neighbor_property_location, 
+               n.apof_neighbor_property_deed_book, n.apof_property_street_pg_number
+        FROM adjacent_neighbors an
+        JOIN apof_neighbors n ON an.neighbor_id = n.neighbor_id
+        WHERE an.form_id = ?
+        ORDER BY an.neighbor_id ASC
+    ";
+    $stmt = $conn->prepare($sql_neighbors);
+    $stmt->bind_param('i', $draft_id);
+    $stmt->execute();
+    $neighbors_result = $stmt->get_result();
+    $stmt->close();
+    
+    $neighbors = [];
+    $neighbor_ids = [];
+    while ($neighbor_row = $neighbors_result->fetch_assoc()) {
+        $neighbors[] = $neighbor_row;
+        $neighbor_ids[] = $neighbor_row['neighbor_id'];
+    }
+    
+    if (!empty($neighbor_ids)) {
+        // Fetch owners for each neighbor
+        $placeholders = implode(',', array_fill(0, count($neighbor_ids), '?'));
+        $sql_owners = "
+            SELECT an.neighbor_id, apo.adjacent_property_owner_first_name, 
+                   apo.adjacent_property_owner_last_name, a.address_street, 
+                   a.address_city, a.state_code, a.address_zip_code,
+                   ROW_NUMBER() OVER (PARTITION BY an.neighbor_id ORDER BY ano.adjacent_neighbor_owner_id) as owner_index
+            FROM adjacent_neighbors an
+            JOIN adjacent_neighbor_owners ano ON an.neighbor_id = ano.neighbor_id
+            JOIN adjacent_property_owners apo ON ano.adjacent_property_owner_id = apo.adjacent_property_owner_id
+            LEFT JOIN addresses a ON apo.address_id = a.address_id
+            WHERE an.neighbor_id IN ({$placeholders})
+            ORDER BY an.neighbor_id ASC, ano.adjacent_neighbor_owner_id ASC
+        ";
+        $stmt = $conn->prepare($sql_owners);
+        $types = str_repeat('i', count($neighbor_ids));
+        $stmt->bind_param($types, ...$neighbor_ids);
+        $stmt->execute();
+        $owners_result = $stmt->get_result();
+        $stmt->close();
+        
+        // Build hierarchical data structure
+        $draft_data = [
+            'pva_map_codes' => [],
+            'neighbor_property_locations' => [],
+            'neighbor_property_deed_books' => [],
+            'property_street_pg_numbers' => [],
+            'property_owner_names' => new stdClass(),
+            'property_owner_streets' => new stdClass(),
+            'property_owner_cities' => new stdClass(),
+            'property_owner_state_codes' => new stdClass(),
+            'property_owner_zips' => new stdClass(),
+        ];
+        
+        // Add neighbor data
+        foreach ($neighbors as $idx => $neighbor) {
+            $draft_data['pva_map_codes'][] = $neighbor['PVA_map_code'] ?? '';
+            $draft_data['neighbor_property_locations'][] = $neighbor['apof_neighbor_property_location'] ?? '';
+            $draft_data['neighbor_property_deed_books'][] = $neighbor['apof_neighbor_property_deed_book'] ?? '';
+            $draft_data['property_street_pg_numbers'][] = $neighbor['apof_property_street_pg_number'] ?? '';
+            
+            // Initialize owner arrays for this neighbor index
+            $draft_data['property_owner_names']->{$idx} = [];
+            $draft_data['property_owner_streets']->{$idx} = [];
+            $draft_data['property_owner_cities']->{$idx} = [];
+            $draft_data['property_owner_state_codes']->{$idx} = [];
+            $draft_data['property_owner_zips']->{$idx} = [];
+        }
+        
+        // Add owner data
+        $owners_result->data_seek(0);
+        $current_neighbor_idx = -1;
+        $current_neighbor_id = null;
+        while ($owner_row = $owners_result->fetch_assoc()) {
+            // Find index of this neighbor
+            foreach ($neighbors as $idx => $n) {
+                if ($n['neighbor_id'] == $owner_row['neighbor_id']) {
+                    $current_neighbor_idx = $idx;
+                    break;
+                }
+            }
+            
+            if ($current_neighbor_idx >= 0) {
+                $owner_name = trim(($owner_row['adjacent_property_owner_first_name'] ?? '') . ' ' . ($owner_row['adjacent_property_owner_last_name'] ?? ''));
+                $draft_data['property_owner_names']->{$current_neighbor_idx}[] = $owner_name;
+                $draft_data['property_owner_streets']->{$current_neighbor_idx}[] = $owner_row['address_street'] ?? '';
+                $draft_data['property_owner_cities']->{$current_neighbor_idx}[] = $owner_row['address_city'] ?? '';
+                $draft_data['property_owner_state_codes']->{$current_neighbor_idx}[] = $owner_row['state_code'] ?? '';
+                $draft_data['property_owner_zips']->{$current_neighbor_idx}[] = $owner_row['address_zip_code'] ?? '';
+            }
+        }
+    } else {
+        $error = "Draft not found or you don't have permission to access it.";
+    }
+}
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Extract form data
         $formData = extractAdjacentPropertyOwnersFormData($_POST);
-        
-        // Validate form data
-        $errors = validateAdjacentPropertyOwnersFormData($formData);
-        
-        if (!empty($errors)) {
-            throw new Exception(implode(' ', $errors));
+
+        // Decide action (save draft should not require full validation)
+        $action = isset($_POST['action']) ? $_POST['action'] : '';
+
+        // Validate form data only for final submission
+        if ($action !== 'save_draft') {
+            $errors = validateAdjacentPropertyOwnersFormData($formData);
+            if (!empty($errors)) {
+                throw new Exception(implode(' ', $errors));
+            }
         }
         
         // Insert application
-        $result = insertAdjacentPropertyOwnersFormApplication($conn, $formData);
-        
-        if (!$result['success']) {
-            throw new Exception($result['message']);
+        if($_POST["action"] === "submit_final"){
+            if($draft_id){
+                $result = updateAdjacentPropertyOwnersFormApplication($conn, $draft_id, $formData);
+                $new_form_id = $draft_id;
+            }
+            else{
+                $result = insertAdjacentPropertyOwnersFormApplication($conn, $formData);
+                $new_form_id = $result['form_id'];
+            }
+            
+            if (!$result['success']) {
+                throw new Exception($result['message']);
+            }
+            
+            
+            
+            // Link form to client
+            $link_sql = "INSERT INTO client_forms (form_id, client_id) VALUES (?, ?)";
+            $link_stmt = $conn->prepare($link_sql);
+            $link_stmt->bind_param("ii", $new_form_id, $client_id);
+            $link_stmt->execute();
+            $link_stmt->close();
+            
+            $success = 'Form submitted successfully for all adjacent properties!';
+        } else{
+            $conn->query("Call submit_draft()");
+            if($draft_id){
+                $result = updateAdjacentPropertyOwnersFormApplication($conn, $draft_id, $formData);
+                $new_form_id = $draft_id;
+            }
+            else{
+                $result = insertAdjacentPropertyOwnersFormApplication($conn, $formData);
+                $new_form_id = $result['form_id'];
+            }
+            
+            if (!$result['success']) {
+                throw new Exception($result['message']);
+            }
+            
+            // Link form to client only if it's a new draft (not an update)
+            if (!$draft_id) {
+                $link_sql = "INSERT INTO incomplete_client_forms (form_id, client_id) VALUES (?, ?)";
+                $link_stmt = $conn->prepare($link_sql);
+                $link_stmt->bind_param("ii", $new_form_id, $client_id);
+                $link_stmt->execute();
+                $link_stmt->close();
+            }
+            $conn->query("Call draft_submitted()");
+            $success = 'Form submitted successfully for all adjacent properties!';
         }
-        
-        $new_form_id = $result['form_id'];
-        
-        // Link form to client
-        $link_sql = "INSERT INTO client_forms (form_id, client_id) VALUES (?, ?)";
-        $link_stmt = $conn->prepare($link_sql);
-        $link_stmt->bind_param("ii", $new_form_id, $client_id);
-        $link_stmt->execute();
-        $link_stmt->close();
-        
-        $success = 'Form submitted successfully for all adjacent properties!';
         
     } catch (Exception $e) {
         error_log("Error in adjacent property form submission: " . $e->getMessage());
@@ -167,6 +324,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <?php endif; ?>
 
   <div class="card p-4 shadow-sm">
+    <?php if ($draft_data): ?>
+        <div id="draft_data_json" style="display: none;">
+            <?php echo json_encode($draft_data); ?>
+        </div>
+    <?php endif; ?>
     <form method="post" id="adjacentPropertyForm">
         <input type="hidden" name="p_form_datetime_resolved" value="<?php echo date('Y-m-d H:i:s'); ?>">
         <input type="hidden" name="p_correction_form_id" value="">
@@ -250,8 +412,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <button type="button" class="add-neighbor-btn" id="add_neighbor_btn">+ Add Another Adjacent Property</button>
 
-        <div class="form-group mt-4">
-            <button class="btn btn-primary btn-lg btn-block" type="submit">Submit All Adjacent Properties</button>
+        <div class="text-center mt-4 button-group">
+            <button class="btn btn-warning btn-lg" type="submit" name="action" value="save_draft" formnovalidate>Save as Draft</button>
+            <button class="btn btn-primary btn-lg" type="submit" name="action"  value="submit_final">Submit All Adjacent Properties</button>
         </div>
     </form>
   </div>
@@ -264,53 +427,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const numNeighborsInput = document.getElementById('num_neighbors');
     let neighborCounter = 0;
 
-    // Add new neighbor property
-    addNeighborBtn.addEventListener('click', function() {
-        neighborCounter++;
-        const newNeighborCard = createNeighborCard(neighborCounter);
-        neighborsContainer.appendChild(newNeighborCard);
-        numNeighborsInput.value = parseInt(numNeighborsInput.value) + 1;
-        updateRemoveButtons();
-    });
-
-    // Delegate event for adding owners
-    neighborsContainer.addEventListener('click', function(e) {
-        if (e.target.classList.contains('add-owner-btn')) {
-            const neighborCard = e.target.closest('.neighbor-card');
-            const neighborIndex = neighborCard.dataset.neighborIndex;
-            const ownersContainer = neighborCard.querySelector('.owners-container');
-            const numOwnersInput = neighborCard.querySelector('.num-owners-input');
-            const currentOwnerCount = ownersContainer.querySelectorAll('.owner-entry').length;
-            
-            const newOwner = createOwnerEntry(neighborIndex, currentOwnerCount);
-            ownersContainer.appendChild(newOwner);
-            numOwnersInput.value = parseInt(numOwnersInput.value) + 1;
-            updateOwnerRemoveButtons(neighborCard);
-        }
-    });
-
-    // Delegate event for removing owners
-    neighborsContainer.addEventListener('click', function(e) {
-        if (e.target.classList.contains('remove-owner-btn')) {
-            const neighborCard = e.target.closest('.neighbor-card');
-            const numOwnersInput = neighborCard.querySelector('.num-owners-input');
-            e.target.closest('.owner-entry').remove();
-            numOwnersInput.value = parseInt(numOwnersInput.value) - 1;
-            updateOwnerRemoveButtons(neighborCard);
-            renumberOwners(neighborCard);
-        }
-    });
-
-    // Delegate event for removing neighbors
-    neighborsContainer.addEventListener('click', function(e) {
-        if (e.target.classList.contains('remove-neighbor-btn')) {
-            e.target.closest('.neighbor-card').remove();
-            numNeighborsInput.value = parseInt(numNeighborsInput.value) - 1;
-            updateRemoveButtons();
-            renumberNeighbors();
-        }
-    });
-
+    // Helper functions defined first
     function createNeighborCard(index) {
         const card = document.createElement('div');
         card.className = 'neighbor-card';
@@ -430,6 +547,152 @@ document.addEventListener('DOMContentLoaded', function() {
             entry.querySelector('.owner-entry-header span').textContent = `Owner #${index + 1}`;
         });
     }
+
+    function populateFormFromDraft(draftData) {
+        console.log('Populating form from draft:', draftData);
+        // Start with the initial neighbor card (index 0) that's already in HTML
+        const initialCard = neighborsContainer.querySelector('.neighbor-card[data-neighbor-index="0"]');
+        if (!initialCard) {
+            console.error('Initial card not found');
+            return;
+        }
+
+        const pvaMapCodes = draftData['pva_map_codes'] || [];
+        const locations = draftData['neighbor_property_locations'] || [];
+        const deedBooks = draftData['neighbor_property_deed_books'] || [];
+        const pageNumbers = draftData['property_street_pg_numbers'] || [];
+        const ownerNames = draftData['property_owner_names'] || {};
+        const ownerStreets = draftData['property_owner_streets'] || {};
+        const ownerCities = draftData['property_owner_cities'] || {};
+        const ownerStates = draftData['property_owner_state_codes'] || {};
+        const ownerZips = draftData['property_owner_zips'] || {};
+
+        console.log('PVA Codes:', pvaMapCodes);
+        console.log('Owner Names:', ownerNames);
+
+        // Fill in the first neighbor (index 0)
+        if (pvaMapCodes.length > 0) {
+            initialCard.querySelector('input[name="p_PVA_map_code[0]"]').value = pvaMapCodes[0] || '';
+            initialCard.querySelector('input[name="p_apof_neighbor_property_location[0]"]').value = locations[0] || '';
+            initialCard.querySelector('input[name="p_apof_neighbor_property_deed_book[0]"]').value = deedBooks[0] || '';
+            initialCard.querySelector('input[name="p_apof_property_street_pg_number[0]"]').value = pageNumbers[0] || '';
+
+            // Fill in owners for the first neighbor
+            const ownersContainer = initialCard.querySelector('.owners-container');
+            ownersContainer.innerHTML = ''; // Clear initial owner entry
+
+            const ownersList = ownerNames[0] || [];
+            console.log('Owners for neighbor 0:', ownersList);
+            
+            ownersList.forEach((ownerName, ownerIndex) => {
+                const ownerCard = createOwnerEntry(0, ownerIndex);
+                ownersContainer.appendChild(ownerCard);
+
+                ownerCard.querySelector(`input[name="p_adjacent_property_owner_name[0][${ownerIndex}]"]`).value = ownerName || '';
+                ownerCard.querySelector(`input[name="p_adjacent_property_owner_street[0][${ownerIndex}]"]`).value = (ownerStreets[0] && ownerStreets[0][ownerIndex]) || '';
+                ownerCard.querySelector(`input[name="p_adjacent_property_owner_city[0][${ownerIndex}]"]`).value = (ownerCities[0] && ownerCities[0][ownerIndex]) || '';
+                ownerCard.querySelector(`input[name="p_adjacent_state_code[0][${ownerIndex}]"]`).value = (ownerStates[0] && ownerStates[0][ownerIndex]) || '';
+                ownerCard.querySelector(`input[name="p_adjacent_property_owner_zip[0][${ownerIndex}]"]`).value = (ownerZips[0] && ownerZips[0][ownerIndex]) || '';
+            });
+
+            initialCard.querySelector('.num-owners-input').value = ownersList.length || 1;
+            updateOwnerRemoveButtons(initialCard);
+        }
+
+        // Add additional neighbor cards (starting from index 1)
+        for (let neighborIndex = 1; neighborIndex < pvaMapCodes.length; neighborIndex++) {
+            neighborCounter++;
+            const card = createNeighborCard(neighborCounter);
+            card.dataset.neighborIndex = neighborCounter;
+
+            card.querySelector(`input[name="p_PVA_map_code[${neighborCounter}]"]`).value = pvaMapCodes[neighborIndex] || '';
+            card.querySelector(`input[name="p_apof_neighbor_property_location[${neighborCounter}]"]`).value = locations[neighborIndex] || '';
+            card.querySelector(`input[name="p_apof_neighbor_property_deed_book[${neighborCounter}]"]`).value = deedBooks[neighborIndex] || '';
+            card.querySelector(`input[name="p_apof_property_street_pg_number[${neighborCounter}]"]`).value = pageNumbers[neighborIndex] || '';
+
+            const ownersContainer = card.querySelector('.owners-container');
+            ownersContainer.innerHTML = '';
+
+            const ownersList = ownerNames[neighborIndex] || [];
+            ownersList.forEach((ownerName, ownerIndex) => {
+                const ownerCard = createOwnerEntry(neighborCounter, ownerIndex);
+                ownersContainer.appendChild(ownerCard);
+
+                ownerCard.querySelector(`input[name="p_adjacent_property_owner_name[${neighborCounter}][${ownerIndex}]"]`).value = ownerName || '';
+                ownerCard.querySelector(`input[name="p_adjacent_property_owner_street[${neighborCounter}][${ownerIndex}]"]`).value = (ownerStreets[neighborIndex] && ownerStreets[neighborIndex][ownerIndex]) || '';
+                ownerCard.querySelector(`input[name="p_adjacent_property_owner_city[${neighborCounter}][${ownerIndex}]"]`).value = (ownerCities[neighborIndex] && ownerCities[neighborIndex][ownerIndex]) || '';
+                ownerCard.querySelector(`input[name="p_adjacent_state_code[${neighborCounter}][${ownerIndex}]"]`).value = (ownerStates[neighborIndex] && ownerStates[neighborIndex][ownerIndex]) || '';
+                ownerCard.querySelector(`input[name="p_adjacent_property_owner_zip[${neighborCounter}][${ownerIndex}]"]`).value = (ownerZips[neighborIndex] && ownerZips[neighborIndex][ownerIndex]) || '';
+            });
+
+            card.querySelector('.num-owners-input').value = ownersList.length || 1;
+            updateOwnerRemoveButtons(card);
+
+            neighborsContainer.appendChild(card);
+        }
+
+        // Update form state
+        numNeighborsInput.value = pvaMapCodes.length || 1;
+        updateRemoveButtons();
+    }
+
+    // Auto-fill form from saved draft data if available
+    const draftDataElement = document.getElementById('draft_data_json');
+    if (draftDataElement) {
+        try {
+            const draftData = JSON.parse(draftDataElement.textContent);
+            populateFormFromDraft(draftData);
+        } catch (e) {
+            console.error('Error parsing draft data:', e);
+        }
+    }
+
+    // Add new neighbor property
+    addNeighborBtn.addEventListener('click', function() {
+        neighborCounter++;
+        const newNeighborCard = createNeighborCard(neighborCounter);
+        neighborsContainer.appendChild(newNeighborCard);
+        numNeighborsInput.value = parseInt(numNeighborsInput.value) + 1;
+        updateRemoveButtons();
+    });
+
+    // Delegate event for adding owners
+    neighborsContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('add-owner-btn')) {
+            const neighborCard = e.target.closest('.neighbor-card');
+            const neighborIndex = neighborCard.dataset.neighborIndex;
+            const ownersContainer = neighborCard.querySelector('.owners-container');
+            const numOwnersInput = neighborCard.querySelector('.num-owners-input');
+            const currentOwnerCount = ownersContainer.querySelectorAll('.owner-entry').length;
+            
+            const newOwner = createOwnerEntry(neighborIndex, currentOwnerCount);
+            ownersContainer.appendChild(newOwner);
+            numOwnersInput.value = parseInt(numOwnersInput.value) + 1;
+            updateOwnerRemoveButtons(neighborCard);
+        }
+    });
+
+    // Delegate event for removing owners
+    neighborsContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-owner-btn')) {
+            const neighborCard = e.target.closest('.neighbor-card');
+            const numOwnersInput = neighborCard.querySelector('.num-owners-input');
+            e.target.closest('.owner-entry').remove();
+            numOwnersInput.value = parseInt(numOwnersInput.value) - 1;
+            updateOwnerRemoveButtons(neighborCard);
+            renumberOwners(neighborCard);
+        }
+    });
+
+    // Delegate event for removing neighbors
+    neighborsContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-neighbor-btn')) {
+            e.target.closest('.neighbor-card').remove();
+            numNeighborsInput.value = parseInt(numNeighborsInput.value) - 1;
+            updateRemoveButtons();
+            renumberNeighbors();
+        }
+    });
 });
 </script>
 </body>

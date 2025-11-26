@@ -607,7 +607,7 @@ FROM forms f
 LEFT JOIN adjacent_property_owner_forms apof ON f.form_id = apof.form_id
 LEFT JOIN adjacent_neighbors an ON f.form_id = an.form_id
 LEFT JOIN apof_neighbors n ON an.neighbor_id = n.neighbor_id
-LEFT JOIN adjacent_neighbor_owners ano ON f.form_id = ano.form_id
+LEFT JOIN adjacent_neighbor_owners ano ON an.neighbor_id = ano.neighbor_id
 LEFT JOIN adjacent_property_owners apo ON ano.adjacent_property_owner_id = apo.adjacent_property_owner_id
 LEFT JOIN addresses apo_addr ON apo.address_id = apo_addr.address_id
 WHERE f.form_type = 'Adjacent Property Owners Form'
