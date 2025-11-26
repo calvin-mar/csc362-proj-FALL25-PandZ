@@ -17,131 +17,417 @@ $conn = getDBConnection();
 $client_id = getUserId();
 $success = '';
 $error = '';
+$draft_data = null;
+$draft_id = null;
+
+// Check if editing existing draft
+if (isset($_GET['draft_id'])) {
+    $draft_id = (int)$_GET['draft_id'];
+    
+    // Fetch draft data using the view
+    $sql = "SELECT * FROM vw_administrative_appeal_complete 
+            WHERE form_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('i', $draft_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($row = $result->fetch_assoc()) {
+        // Build draft_data array from view columns
+        $draft_data = [
+            'p_aar_hearing_date' => $row['aar_hearing_date'] ?? null,
+            'p_aar_submit_date' => $row['aar_submit_date'] ?? null,
+            'p_aar_street_address' => $row['aar_street_address'] ?? '',
+            'p_aar_city_address' => $row['aar_city_address'] ?? '',
+            'p_state_code' => $row['state_code'] ?? '',
+            'p_aar_zip_code' => $row['aar_zip_code'] ?? '',
+            'p_aar_property_location' => $row['aar_property_location'] ?? '',
+            'p_aar_official_decision' => $row['aar_official_decision'] ?? '',
+            'p_aar_relevant_provisions' => $row['aar_relevant_provisions'] ?? '',
+            'p_aar_appellant_first_name' => $row['aar_appellant_first_name'] ?? '',
+            'p_aar_appellant_last_name' => $row['aar_appellant_last_name'] ?? '',
+            'appellants_names' => !empty($row['additional_appellants']) ? json_decode($row['additional_appellants'], true) : [],
+            'p_adjacent_property_owner_street' => $row['adjacent_property_owner_street'] ?? '',
+            'p_adjacent_property_owner_city' => $row['adjacent_property_owner_city'] ?? '',
+            'p_adjacent_property_owner_state_code' => $row['adjacent_property_owner_state_code'] ?? '',
+            'p_adjacent_property_owner_zip' => $row['adjacent_property_owner_zip'] ?? '',
+            'p_aar_property_owner_first_name' => $row['aar_property_owner_first_name'] ?? '',
+            'p_aar_property_owner_last_name' => $row['aar_property_owner_last_name'] ?? '',
+            'property_owners_names' => !empty($row['additional_property_owners']) ? json_decode($row['additional_property_owners'], true) : []
+        ];
+    } else {
+        $error = "Draft not found or you don't have permission to access it.";
+    }
+    $stmt->close();
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    try {
-        // Form metadata
-        $p_form_paid_bool = 0; // Default to unpaid on submission
-        $p_correction_form_id = isset($_POST['p_correction_form_id']) && $_POST['p_correction_form_id'] !== '' ? (int)$_POST['p_correction_form_id'] : null;
-        
-        // Dates
-        $p_aar_hearing_date = $_POST['p_aar_hearing_date'] ?? null;
-        $p_aar_submit_date = $_POST['p_aar_submit_date'] ?? date('Y-m-d');
-        
-        // Address information
-        $p_aar_street_address = trim($_POST['p_aar_street_address'] ?? '');
-        $p_aar_city_address = trim($_POST['p_aar_city_address'] ?? '');
-        $p_state_code = trim($_POST['p_state_code'] ?? '');
-        $p_aar_zip_code = trim($_POST['p_aar_zip_code'] ?? '');
-        
-        // Appeal details
-        $p_aar_property_location = trim($_POST['p_aar_property_location'] ?? '');
-        $p_aar_official_decision = trim($_POST['p_aar_official_decision'] ?? '');
-        $p_aar_relevant_provisions = trim($_POST['p_aar_relevant_provisions'] ?? '');
-        
-        // Primary appellant
-        $p_aar_appellant_first_name = trim($_POST['p_aar_appellant_first_name'] ?? '');
-        $p_aar_appellant_last_name = trim($_POST['p_aar_appellant_last_name'] ?? '');
-        
-        // Additional appellants - convert array to JSON
-        $p_additional_appellants = isset($_POST['appellants_names']) && is_array($_POST['appellants_names']) ? json_encode(array_filter($_POST['appellants_names'])) : null;
-        
-        // Adjacent property owner
-        $p_adjacent_property_owner_street = trim($_POST['p_adjacent_property_owner_street'] ?? '');
-        $p_adjacent_property_owner_city = trim($_POST['p_adjacent_property_owner_city'] ?? '');
-        $p_adjacent_property_owner_state_code = trim($_POST['p_adjacent_property_owner_state_code'] ?? '');
-        $p_adjacent_property_owner_zip = trim($_POST['p_adjacent_property_owner_zip'] ?? '');
-        
-        // Primary property owner
-        $p_aar_property_owner_first_name = trim($_POST['p_aar_property_owner_first_name'] ?? '');
-        $p_aar_property_owner_last_name = trim($_POST['p_aar_property_owner_last_name'] ?? '');
-        
-        // Additional property owners - convert array to JSON
-        $p_additional_property_owners = isset($_POST['property_owners_names']) && is_array($_POST['property_owners_names']) ? json_encode(array_filter($_POST['property_owners_names'])) : null;
-
-        // Basic validation
-        if (empty($p_aar_appellant_first_name) || empty($p_aar_appellant_last_name)) {
-            throw new Exception("Appellant's First and Last Name are required.");
+    $action = $_POST['action'] ?? 'submit';
+    
+    // Collect all form data
+    $form_data = [
+        'p_aar_hearing_date' => $_POST['p_aar_hearing_date'] ?? null,
+        'p_aar_submit_date' => $_POST['p_aar_submit_date'] ?? date('Y-m-d'),
+        'p_aar_street_address' => trim($_POST['p_aar_street_address'] ?? ''),
+        'p_aar_city_address' => trim($_POST['p_aar_city_address'] ?? ''),
+        'p_state_code' => trim($_POST['p_state_code'] ?? ''),
+        'p_aar_zip_code' => trim($_POST['p_aar_zip_code'] ?? ''),
+        'p_aar_property_location' => trim($_POST['p_aar_property_location'] ?? ''),
+        'p_aar_official_decision' => trim($_POST['p_aar_official_decision'] ?? ''),
+        'p_aar_relevant_provisions' => trim($_POST['p_aar_relevant_provisions'] ?? ''),
+        'p_aar_appellant_first_name' => trim($_POST['p_aar_appellant_first_name'] ?? ''),
+        'p_aar_appellant_last_name' => trim($_POST['p_aar_appellant_last_name'] ?? ''),
+        'appellants_names' => $_POST['appellants_names'] ?? [],
+        'p_adjacent_property_owner_street' => trim($_POST['p_adjacent_property_owner_street'] ?? ''),
+        'p_adjacent_property_owner_city' => trim($_POST['p_adjacent_property_owner_city'] ?? ''),
+        'p_adjacent_property_owner_state_code' => trim($_POST['p_adjacent_property_owner_state_code'] ?? ''),
+        'p_adjacent_property_owner_zip' => trim($_POST['p_adjacent_property_owner_zip'] ?? ''),
+        'p_aar_property_owner_first_name' => trim($_POST['p_aar_property_owner_first_name'] ?? ''),
+        'p_aar_property_owner_last_name' => trim($_POST['p_aar_property_owner_last_name'] ?? ''),
+        'property_owners_names' => $_POST['property_owners_names'] ?? []
+    ];
+    
+    if ($action === 'save_draft') {
+        // Save as draft - no validation required
+        try {
+            $conn->query("CALL submit_draft()");
+            $form_type = 'Administrative Appeal Request';
+            
+            // Prepare data for stored procedure - allow empty/null values
+            $p_form_paid_bool = 0;
+            $p_aar_hearing_date = !empty($form_data['p_aar_hearing_date']) ? $form_data['p_aar_hearing_date'] : null;
+            $p_aar_submit_date = !empty($form_data['p_aar_submit_date']) ? $form_data['p_aar_submit_date'] : date('Y-m-d');
+            $p_aar_street_address = $form_data['p_aar_street_address'];
+            $p_aar_city_address = $form_data['p_aar_city_address'];
+            $p_state_code = $form_data['p_state_code'];
+            $p_aar_zip_code = $form_data['p_aar_zip_code'];
+            $p_aar_property_location = $form_data['p_aar_property_location'];
+            $p_aar_official_decision = $form_data['p_aar_official_decision'];
+            $p_aar_relevant_provisions = $form_data['p_aar_relevant_provisions'];
+            $p_aar_appellant_first_name = $form_data['p_aar_appellant_first_name'];
+            $p_aar_appellant_last_name = $form_data['p_aar_appellant_last_name'];
+            $p_additional_appellants = !empty($form_data['appellants_names']) ? json_encode(array_filter($form_data['appellants_names'])) : null;
+            $p_adjacent_property_owner_street = $form_data['p_adjacent_property_owner_street'];
+            $p_adjacent_property_owner_city = $form_data['p_adjacent_property_owner_city'];
+            $p_adjacent_property_owner_state_code = $form_data['p_adjacent_property_owner_state_code'];
+            $p_adjacent_property_owner_zip = $form_data['p_adjacent_property_owner_zip'];
+            $p_aar_property_owner_first_name = $form_data['p_aar_property_owner_first_name'];
+            $p_aar_property_owner_last_name = $form_data['p_aar_property_owner_last_name'];
+            $p_additional_property_owners = !empty($form_data['property_owners_names']) ? json_encode(array_filter($form_data['property_owners_names'])) : null;
+            
+            if ($draft_id) {
+                // Update existing draft using stored procedure
+                $sql = "CALL sp_update_administrative_appeal_request(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $stmt = $conn->prepare($sql);
+                
+                if (!$stmt) {
+                    throw new Exception('Prepare failed: ' . $conn->error);
+                }
+                
+                $stmt->bind_param('iisssssssssssssssssss',
+                    $draft_id,
+                    $p_form_paid_bool,
+                    $p_aar_hearing_date,
+                    $p_aar_submit_date,
+                    $p_aar_street_address,
+                    $p_aar_city_address,
+                    $p_state_code,
+                    $p_aar_zip_code,
+                    $p_aar_property_location,
+                    $p_aar_official_decision,
+                    $p_aar_relevant_provisions,
+                    $p_aar_appellant_first_name,
+                    $p_aar_appellant_last_name,
+                    $p_additional_appellants,
+                    $p_adjacent_property_owner_street,
+                    $p_adjacent_property_owner_city,
+                    $p_adjacent_property_owner_state_code,
+                    $p_adjacent_property_owner_zip,
+                    $p_aar_property_owner_first_name,
+                    $p_aar_property_owner_last_name,
+                    $p_additional_property_owners
+                );
+                
+                if (!$stmt->execute()) {
+                    throw new Exception('Execute failed: ' . $stmt->error);
+                }
+                $stmt->close();
+                
+                // Close stored procedure result set
+                while($conn->more_results()) {
+                    $conn->next_result();
+                }
+                
+                // Update timestamp in incomplete_client_forms
+                $sql = "UPDATE forms SET form_datetime_submitted = NOW() WHERE form_id = ?";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param('i', $draft_id);
+                $stmt->execute();
+                $stmt->close();
+                $conn->query("CALL draft_submitted()");
+                $success = "Draft updated successfully! Draft ID: {$draft_id}";
+            } else {
+                // Create new draft using stored procedure
+                $conn->query("CALL submit_draft()");
+                $sql = "CALL sp_insert_administrative_appeal_request(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $stmt = $conn->prepare($sql);
+                
+                if (!$stmt) {
+                    throw new Exception('Prepare failed: ' . $conn->error);
+                }
+                
+                $stmt->bind_param('isssssssssssssssssss',
+                    $p_form_paid_bool,
+                    $p_aar_hearing_date,
+                    $p_aar_submit_date,
+                    $p_aar_street_address,
+                    $p_aar_city_address,
+                    $p_state_code,
+                    $p_aar_zip_code,
+                    $p_aar_property_location,
+                    $p_aar_official_decision,
+                    $p_aar_relevant_provisions,
+                    $p_aar_appellant_first_name,
+                    $p_aar_appellant_last_name,
+                    $p_additional_appellants,
+                    $p_adjacent_property_owner_street,
+                    $p_adjacent_property_owner_city,
+                    $p_adjacent_property_owner_state_code,
+                    $p_adjacent_property_owner_zip,
+                    $p_aar_property_owner_first_name,
+                    $p_aar_property_owner_last_name,
+                    $p_additional_property_owners
+                );
+                
+                if (!$stmt->execute()) {
+                    throw new Exception('Execute failed: ' . $stmt->error);
+                }
+                
+                // Get the result with form_id
+                $result = $stmt->get_result();
+                $row = $result->fetch_assoc();
+                $form_id = $row['form_id'];
+                $stmt->close();
+                
+                // Close stored procedure result set
+                while($conn->more_results()) {
+                    $conn->next_result();
+                }
+                
+                
+                // Add to incomplete forms
+                $sql = "INSERT INTO incomplete_client_forms (form_id, client_id) VALUES (?, ?)";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param('ii', $form_id, $client_id);
+                $stmt->execute();
+                $stmt->close();
+                
+                $draft_id = $form_id;
+                $success = "Draft saved successfully! Draft ID: {$draft_id}";
+                $conn->query("CALL draft_submitted()");
+            }
+            
+        } catch (Exception $e) {
+            $error = "Error saving draft: " . $e->getMessage();
         }
-        if (empty($p_aar_property_owner_first_name) || empty($p_aar_property_owner_last_name)) {
-            throw new Exception("Property Owner's First and Last Name are required.");
-        }
-        if (empty($p_aar_street_address) || empty($p_aar_city_address) || empty($p_state_code) || empty($p_aar_zip_code)) {
-            throw new Exception("Full address (Street, City, State, Zip) is required.");
-        }
-        if (empty($p_aar_property_location)) {
-            throw new Exception("Location of Property is required.");
-        }
-        if (empty($p_aar_official_decision)) {
-            throw new Exception("Decision of Official is required.");
-        }
-        if (empty($p_aar_relevant_provisions)) {
-            throw new Exception("Relevant Provisions of Zoning Ordinance are required.");
-        }
-
-        // Call the stored procedure with 23 parameters
-        $sql = "CALL sp_insert_administrative_appeal_request(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($sql);
         
-        if (!$stmt) {
-            throw new Exception('Prepare failed: ' . $conn->error);
-        }
+    } else {
+        // Submit form (original logic)
+        try {
+            // Form metadata
+            $p_form_paid_bool = 0;
+            $p_correction_form_id = isset($_POST['p_correction_form_id']) && $_POST['p_correction_form_id'] !== '' ? (int)$_POST['p_correction_form_id'] : null;
+            
+            // Extract data from form_data array
+            $p_aar_hearing_date = $form_data['p_aar_hearing_date'];
+            $p_aar_submit_date = $form_data['p_aar_submit_date'];
+            $p_aar_street_address = $form_data['p_aar_street_address'];
+            $p_aar_city_address = $form_data['p_aar_city_address'];
+            $p_state_code = $form_data['p_state_code'];
+            $p_aar_zip_code = $form_data['p_aar_zip_code'];
+            $p_aar_property_location = $form_data['p_aar_property_location'];
+            $p_aar_official_decision = $form_data['p_aar_official_decision'];
+            $p_aar_relevant_provisions = $form_data['p_aar_relevant_provisions'];
+            $p_aar_appellant_first_name = $form_data['p_aar_appellant_first_name'];
+            $p_aar_appellant_last_name = $form_data['p_aar_appellant_last_name'];
+            
+            // Additional appellants - convert array to JSON
+            $p_additional_appellants = !empty($form_data['appellants_names']) ? json_encode(array_filter($form_data['appellants_names'])) : null;
+            
+            // Adjacent property owner
+            $p_adjacent_property_owner_street = $form_data['p_adjacent_property_owner_street'];
+            $p_adjacent_property_owner_city = $form_data['p_adjacent_property_owner_city'];
+            $p_adjacent_property_owner_state_code = $form_data['p_adjacent_property_owner_state_code'];
+            $p_adjacent_property_owner_zip = $form_data['p_adjacent_property_owner_zip'];
+            
+            // Primary property owner
+            $p_aar_property_owner_first_name = $form_data['p_aar_property_owner_first_name'];
+            $p_aar_property_owner_last_name = $form_data['p_aar_property_owner_last_name'];
+            
+            // Additional property owners - convert array to JSON
+            $p_additional_property_owners = !empty($form_data['property_owners_names']) ? json_encode(array_filter($form_data['property_owners_names'])) : null;
 
-        // Bind all parameters
-        $stmt->bind_param('isssssssssssssssssss',
-            $p_form_paid_bool,
-            $p_aar_hearing_date,
-            $p_aar_submit_date,
-            $p_aar_street_address,
-            $p_aar_city_address,
-            $p_state_code,
-            $p_aar_zip_code,
-            $p_aar_property_location,
-            $p_aar_official_decision,
-            $p_aar_relevant_provisions,
-            $p_aar_appellant_first_name,
-            $p_aar_appellant_last_name,
-            $p_additional_appellants,
-            $p_adjacent_property_owner_street,
-            $p_adjacent_property_owner_city,
-            $p_adjacent_property_owner_state_code,
-            $p_adjacent_property_owner_zip,
-            $p_aar_property_owner_first_name,
-            $p_aar_property_owner_last_name,
-            $p_additional_property_owners
-        );
+            // Basic validation
+            if (empty($p_aar_appellant_first_name) || empty($p_aar_appellant_last_name)) {
+                throw new Exception("Appellant's First and Last Name are required.");
+            }
+            if (empty($p_aar_property_owner_first_name) || empty($p_aar_property_owner_last_name)) {
+                throw new Exception("Property Owner's First and Last Name are required.");
+            }
+            if (empty($p_aar_street_address) || empty($p_aar_city_address) || empty($p_state_code) || empty($p_aar_zip_code)) {
+                throw new Exception("Full address (Street, City, State, Zip) is required.");
+            }
+            if (empty($p_aar_property_location)) {
+                throw new Exception("Location of Property is required.");
+            }
+            if (empty($p_aar_official_decision)) {
+                throw new Exception("Decision of Official is required.");
+            }
+            if (empty($p_aar_relevant_provisions)) {
+                throw new Exception("Relevant Provisions of Zoning Ordinance are required.");
+            }
 
-        if (!$stmt->execute()) {
-            throw new Exception('Execute failed: ' . $stmt->error);
-        }
+            if ($draft_id) {
+                $form_type = 'Administrative Appeal Request';
+            
+            // Prepare data for stored procedure - allow empty/null values
+            $p_form_paid_bool = 0;
+            $p_aar_hearing_date = !empty($form_data['p_aar_hearing_date']) ? $form_data['p_aar_hearing_date'] : null;
+            $p_aar_submit_date = !empty($form_data['p_aar_submit_date']) ? $form_data['p_aar_submit_date'] : date('Y-m-d');
+            $p_aar_street_address = $form_data['p_aar_street_address'];
+            $p_aar_city_address = $form_data['p_aar_city_address'];
+            $p_state_code = $form_data['p_state_code'];
+            $p_aar_zip_code = $form_data['p_aar_zip_code'];
+            $p_aar_property_location = $form_data['p_aar_property_location'];
+            $p_aar_official_decision = $form_data['p_aar_official_decision'];
+            $p_aar_relevant_provisions = $form_data['p_aar_relevant_provisions'];
+            $p_aar_appellant_first_name = $form_data['p_aar_appellant_first_name'];
+            $p_aar_appellant_last_name = $form_data['p_aar_appellant_last_name'];
+            $p_additional_appellants = !empty($form_data['appellants_names']) ? json_encode(array_filter($form_data['appellants_names'])) : null;
+            $p_adjacent_property_owner_street = $form_data['p_adjacent_property_owner_street'];
+            $p_adjacent_property_owner_city = $form_data['p_adjacent_property_owner_city'];
+            $p_adjacent_property_owner_state_code = $form_data['p_adjacent_property_owner_state_code'];
+            $p_adjacent_property_owner_zip = $form_data['p_adjacent_property_owner_zip'];
+            $p_aar_property_owner_first_name = $form_data['p_aar_property_owner_first_name'];
+            $p_aar_property_owner_last_name = $form_data['p_aar_property_owner_last_name'];
+            $p_additional_property_owners = !empty($form_data['property_owners_names']) ? json_encode(array_filter($form_data['property_owners_names'])) : null;
+            
+            if ($draft_id) {
+                // Update existing draft using stored procedure
+                $sql = "CALL sp_update_administrative_appeal_request(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $stmt = $conn->prepare($sql);
+                
+                if (!$stmt) {
+                    throw new Exception('Prepare failed: ' . $conn->error);
+                }
+                
+                $stmt->bind_param('iisssssssssssssssssss',
+                    $draft_id,
+                    $p_form_paid_bool,
+                    $p_aar_hearing_date,
+                    $p_aar_submit_date,
+                    $p_aar_street_address,
+                    $p_aar_city_address,
+                    $p_state_code,
+                    $p_aar_zip_code,
+                    $p_aar_property_location,
+                    $p_aar_official_decision,
+                    $p_aar_relevant_provisions,
+                    $p_aar_appellant_first_name,
+                    $p_aar_appellant_last_name,
+                    $p_additional_appellants,
+                    $p_adjacent_property_owner_street,
+                    $p_adjacent_property_owner_city,
+                    $p_adjacent_property_owner_state_code,
+                    $p_adjacent_property_owner_zip,
+                    $p_aar_property_owner_first_name,
+                    $p_aar_property_owner_last_name,
+                    $p_additional_property_owners
+                );
+                
+                if (!$stmt->execute()) {
+                    throw new Exception('Execute failed: ' . $stmt->error);
+                }
+                $stmt->close();
+                
+                // Close stored procedure result set
+                while($conn->more_results()) {
+                    $conn->next_result();
+                }
 
-        // Get the result with form_id
-        $result = $stmt->get_result();
-        $row = $result->fetch_assoc();
-        $form_id = $row['form_id'];
-        $stmt->close();
+                $sql = "DELETE FROM incomplete_client_forms WHERE incomplete_form_id = ?";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param('i', $draft_id);
+                $stmt->execute();
+                $stmt->close();
+                $form_id = $draft_id;
+            }
+        } else {
+                // Call the stored procedure
+                $sql = "CALL sp_insert_administrative_appeal_request(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $stmt = $conn->prepare($sql);
+            
+                if (!$stmt) {
+                    throw new Exception('Prepare failed: ' . $conn->error);
+                }
 
-        // Close the stored procedure result set
-        while($conn->more_results()) {
-            $conn->next_result();
-        }
+                // Bind all parameters
+                $stmt->bind_param('isssssssssssssssssss',
+                    $p_form_paid_bool,
+                    $p_aar_hearing_date,
+                    $p_aar_submit_date,
+                    $p_aar_street_address,
+                    $p_aar_city_address,
+                    $p_state_code,
+                    $p_aar_zip_code,
+                    $p_aar_property_location,
+                    $p_aar_official_decision,
+                    $p_aar_relevant_provisions,
+                    $p_aar_appellant_first_name,
+                    $p_aar_appellant_last_name,
+                    $p_additional_appellants,
+                    $p_adjacent_property_owner_street,
+                    $p_adjacent_property_owner_city,
+                    $p_adjacent_property_owner_state_code,
+                    $p_adjacent_property_owner_zip,
+                    $p_aar_property_owner_first_name,
+                    $p_aar_property_owner_last_name,
+                    $p_additional_property_owners
+                );
 
-        // Link form to client
-        $sql = "INSERT INTO client_forms(form_id, client_id) VALUES(?, ?)";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param('ii', $form_id, $client_id);
-        $stmt->execute();
-        $stmt->close();
+                if (!$stmt->execute()) {
+                    throw new Exception('Execute failed: ' . $stmt->error);
+                }
 
-        $success = "Form submitted successfully! Form ID: {$form_id}";
+                // Get the result with form_id
+                $result = $stmt->get_result();
+                $row = $result->fetch_assoc();
+                $form_id = $row['form_id'];
+                $stmt->close();
 
-    } catch (Exception $e) {
-        $error = "Error: " . $e->getMessage();
-        if ($conn->errno) {
-            $conn->rollback();
+                // Close the stored procedure result set
+                while($conn->more_results()) {
+                    $conn->next_result();
+                }
+            }
+            // Link form to client
+            $sql = "INSERT INTO client_forms(form_id, client_id) VALUES(?, ?)";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('ii', $form_id, $client_id);
+            $stmt->execute();
+            $stmt->close();
+
+            $success = "Form submitted successfully! Form ID: {$form_id}";
+
+        } catch (Exception $e) {
+            $error = "Error: " . $e->getMessage();
+            if ($conn->errno) {
+                $conn->rollback();
+            }
         }
     }
 }
+
 
 // Fetch states for dropdown
 $states_result = $conn->query("SELECT state_code FROM states ORDER BY state_code");
@@ -150,6 +436,11 @@ if ($states_result) {
     while ($row = $states_result->fetch_assoc()) {
         $states[] = $row['state_code'];
     }
+}
+
+// Helper function to get value from draft or default
+function getFieldValue($field_name, $draft_data, $default = '') {
+    return $draft_data[$field_name] ?? $default;
 }
 ?>
 <!doctype html>
@@ -244,12 +535,28 @@ if ($states_result) {
             min-height: 40px;
             margin: 10px 0;
         }
+        .draft-badge {
+            display: inline-block;
+            background: #ffc107;
+            color: #333;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
     </style>
     <script>
         let appellantCount = 0;
         let ownerCount = 0;
 
-        function addAppellant() {
+        function addAppellant(name = '') {
             appellantCount++;
             const container = document.getElementById('appellants-container');
             const div = document.createElement('div');
@@ -259,13 +566,13 @@ if ($states_result) {
                 <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeElement('appellant-${appellantCount}')">Remove</button>
                 <div class="form-group mb-2">
                     <label>Full Name:</label>
-                    <input type="text" class="form-control" name="appellants_names[]" placeholder="Appellant Full Name">
+                    <input type="text" class="form-control" name="appellants_names[]" placeholder="Appellant Full Name" value="${name}">
                 </div>
             `;
             container.appendChild(div);
         }
 
-        function addOwner() {
+        function addOwner(name = '') {
             ownerCount++;
             const container = document.getElementById('owners-container');
             const div = document.createElement('div');
@@ -275,7 +582,7 @@ if ($states_result) {
                 <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeElement('owner-${ownerCount}')">Remove</button>
                 <div class="form-group mb-2">
                     <label>Full Name:</label>
-                    <input type="text" class="form-control" name="property_owners_names[]" placeholder="Property Owner Full Name">
+                    <input type="text" class="form-control" name="property_owners_names[]" placeholder="Property Owner Full Name" value="${name}">
                 </div>
             `;
             container.appendChild(div);
@@ -287,6 +594,32 @@ if ($states_result) {
                 element.remove();
             }
         }
+        
+        function submitForm(action) {
+            const form = document.getElementById('mainForm');
+            const actionInput = document.getElementById('actionInput');
+            actionInput.value = action;
+            form.submit();
+        }
+        
+        // Load draft data on page load
+        window.onload = function() {
+            <?php if ($draft_data && !empty($draft_data['appellants_names'])): ?>
+                <?php foreach ($draft_data['appellants_names'] as $name): ?>
+                    <?php if (!empty($name)): ?>
+                        addAppellant('<?php echo addslashes($name); ?>');
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            
+            <?php if ($draft_data && !empty($draft_data['property_owners_names'])): ?>
+                <?php foreach ($draft_data['property_owners_names'] as $name): ?>
+                    <?php if (!empty($name)): ?>
+                        addOwner('<?php echo addslashes($name); ?>');
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        };
     </script>
 </head>
 <body>
@@ -305,7 +638,12 @@ if ($states_result) {
         <p>Danville, Kentucky 40423</p>
     </div>
 
-    <h2 class="form-title">APPLICATION FOR ADMINISTRATIVE APPEAL</h2>
+    <h2 class="form-title">
+        APPLICATION FOR ADMINISTRATIVE APPEAL
+        <?php if ($draft_id): ?>
+            <span class="draft-badge">EDITING DRAFT #<?php echo $draft_id; ?></span>
+        <?php endif; ?>
+    </h2>
 
     <?php if ($error): ?>
         <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
@@ -314,7 +652,11 @@ if ($states_result) {
         <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
     <?php endif; ?>
 
-    <form method="post">
+    <form method="post" id="mainForm">
+        <input type="hidden" name="action" id="actionInput" value="submit">
+        <?php if ($draft_id): ?>
+            <input type="hidden" name="draft_id" value="<?php echo $draft_id; ?>">
+        <?php endif; ?>
         
         <div class="section-title">BOARD OF ADJUSTMENTS</div>
         
@@ -322,14 +664,16 @@ if ($states_result) {
             <div class="col-md-6">
                 <div class="form-group">
                     <label for="p_aar_hearing_date">Date of Hearing:</label>
-                    <input type="date" class="form-control" id="p_aar_hearing_date" name="p_aar_hearing_date">
+                    <input type="date" class="form-control" id="p_aar_hearing_date" name="p_aar_hearing_date" 
+                           value="<?php echo htmlspecialchars(getFieldValue('p_aar_hearing_date', $draft_data)); ?>">
                     <small class="form-text text-muted">Typically filled by government staff</small>
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="form-group">
-                    <label for="p_aar_submit_date">Date of Submission: *</label>
-                    <input type="date" class="form-control" id="p_aar_submit_date" name="p_aar_submit_date" value="<?php echo date('Y-m-d'); ?>" required>
+                    <label for="p_aar_submit_date">Date of Submission: <span class="text-muted">(Required for submission)</span></label>
+                    <input type="date" class="form-control" id="p_aar_submit_date" name="p_aar_submit_date" 
+                           value="<?php echo htmlspecialchars(getFieldValue('p_aar_submit_date', $draft_data, date('Y-m-d'))); ?>">
                 </div>
             </div>
         </div>
@@ -340,13 +684,15 @@ if ($states_result) {
             <div class="col-md-6">
                 <div class="form-group">
                     <label for="p_aar_appellant_first_name">Primary Appellant First Name: *</label>
-                    <input type="text" class="form-control" id="p_aar_appellant_first_name" name="p_aar_appellant_first_name" required>
+                    <input type="text" class="form-control" id="p_aar_appellant_first_name" name="p_aar_appellant_first_name" 
+                           value="<?php echo htmlspecialchars(getFieldValue('p_aar_appellant_first_name', $draft_data)); ?>">
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="form-group">
                     <label for="p_aar_appellant_last_name">Primary Appellant Last Name: *</label>
-                    <input type="text" class="form-control" id="p_aar_appellant_last_name" name="p_aar_appellant_last_name" required>
+                    <input type="text" class="form-control" id="p_aar_appellant_last_name" name="p_aar_appellant_last_name" 
+                           value="<?php echo htmlspecialchars(getFieldValue('p_aar_appellant_last_name', $draft_data)); ?>">
                 </div>
             </div>
         </div>
@@ -366,13 +712,15 @@ if ($states_result) {
             <div class="col-md-6">
                 <div class="form-group">
                     <label for="p_aar_property_owner_first_name">Primary Owner First Name: *</label>
-                    <input type="text" class="form-control" id="p_aar_property_owner_first_name" name="p_aar_property_owner_first_name" required>
+                    <input type="text" class="form-control" id="p_aar_property_owner_first_name" name="p_aar_property_owner_first_name" 
+                           value="<?php echo htmlspecialchars(getFieldValue('p_aar_property_owner_first_name', $draft_data)); ?>">
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="form-group">
                     <label for="p_aar_property_owner_last_name">Primary Owner Last Name: *</label>
-                    <input type="text" class="form-control" id="p_aar_property_owner_last_name" name="p_aar_property_owner_last_name" required>
+                    <input type="text" class="form-control" id="p_aar_property_owner_last_name" name="p_aar_property_owner_last_name" 
+                           value="<?php echo htmlspecialchars(getFieldValue('p_aar_property_owner_last_name', $draft_data)); ?>">
                 </div>
             </div>
         </div>
@@ -390,23 +738,31 @@ if ($states_result) {
         
         <div class="form-group">
             <label for="p_aar_street_address">Street Address: *</label>
-            <input type="text" class="form-control" id="p_aar_street_address" name="p_aar_street_address" required>
+            <input type="text" class="form-control" id="p_aar_street_address" name="p_aar_street_address" 
+                   value="<?php echo htmlspecialchars(getFieldValue('p_aar_street_address', $draft_data)); ?>">
         </div>
 
         <div class="row">
             <div class="col-md-5">
                 <div class="form-group">
                     <label for="p_aar_city_address">City: *</label>
-                    <input type="text" class="form-control" id="p_aar_city_address" name="p_aar_city_address" required>
+                    <input type="text" class="form-control" id="p_aar_city_address" name="p_aar_city_address" 
+                           value="<?php echo htmlspecialchars(getFieldValue('p_aar_city_address', $draft_data)); ?>">
                 </div>
             </div>
             <div class="col-md-2">
                 <div class="form-group">
                     <label for="p_state_code">State: *</label>
-                    <select class="form-control" id="p_state_code" name="p_state_code" required>
+                    <select class="form-control" id="p_state_code" name="p_state_code">
                         <option value="">Select</option>
-                        <?php foreach ($states as $state): ?>
-                            <option value="<?php echo htmlspecialchars($state); ?>" <?php echo $state === 'KY' ? 'selected' : ''; ?>><?php echo htmlspecialchars($state); ?></option>
+                        <?php 
+                        $selected_state = getFieldValue('p_state_code', $draft_data, 'KY');
+                        foreach ($states as $state): 
+                        ?>
+                            <option value="<?php echo htmlspecialchars($state); ?>" 
+                                <?php echo $state === $selected_state ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($state); ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -414,7 +770,8 @@ if ($states_result) {
             <div class="col-md-5">
                 <div class="form-group">
                     <label for="p_aar_zip_code">ZIP Code: *</label>
-                    <input type="text" class="form-control" id="p_aar_zip_code" name="p_aar_zip_code" required>
+                    <input type="text" class="form-control" id="p_aar_zip_code" name="p_aar_zip_code" 
+                           value="<?php echo htmlspecialchars(getFieldValue('p_aar_zip_code', $draft_data)); ?>">
                 </div>
             </div>
         </div>
@@ -423,31 +780,33 @@ if ($states_result) {
         
         <div class="form-group">
             <label for="p_aar_property_location">Location of Property: *</label>
-            <textarea class="form-control" id="p_aar_property_location" name="p_aar_property_location" rows="3" required></textarea>
+            <textarea class="form-control" id="p_aar_property_location" name="p_aar_property_location" rows="3"><?php echo htmlspecialchars(getFieldValue('p_aar_property_location', $draft_data)); ?></textarea>
         </div>
 
         <div class="form-group">
             <label for="p_aar_official_decision">Decision of Official from Which Appeal is Made: *</label>
-            <textarea class="form-control" id="p_aar_official_decision" name="p_aar_official_decision" rows="3" required></textarea>
+            <textarea class="form-control" id="p_aar_official_decision" name="p_aar_official_decision" rows="3"><?php echo htmlspecialchars(getFieldValue('p_aar_official_decision', $draft_data)); ?></textarea>
         </div>
 
         <div class="form-group">
             <label for="p_aar_relevant_provisions">Provisions of Zoning Ordinance in Relation to Appeal: *</label>
-            <textarea class="form-control" id="p_aar_relevant_provisions" name="p_aar_relevant_provisions" rows="3" required></textarea>
+            <textarea class="form-control" id="p_aar_relevant_provisions" name="p_aar_relevant_provisions" rows="3"><?php echo htmlspecialchars(getFieldValue('p_aar_relevant_provisions', $draft_data)); ?></textarea>
         </div>
 
         <div class="section-title">ADJACENT PROPERTY OWNER (OPTIONAL)</div>
         
         <div class="form-group">
             <label for="p_adjacent_property_owner_street">Street Address:</label>
-            <input type="text" class="form-control" id="p_adjacent_property_owner_street" name="p_adjacent_property_owner_street">
+            <input type="text" class="form-control" id="p_adjacent_property_owner_street" name="p_adjacent_property_owner_street"
+                   value="<?php echo htmlspecialchars(getFieldValue('p_adjacent_property_owner_street', $draft_data)); ?>">
         </div>
 
         <div class="row">
             <div class="col-md-5">
                 <div class="form-group">
                     <label for="p_adjacent_property_owner_city">City:</label>
-                    <input type="text" class="form-control" id="p_adjacent_property_owner_city" name="p_adjacent_property_owner_city">
+                    <input type="text" class="form-control" id="p_adjacent_property_owner_city" name="p_adjacent_property_owner_city"
+                           value="<?php echo htmlspecialchars(getFieldValue('p_adjacent_property_owner_city', $draft_data)); ?>">
                 </div>
             </div>
             <div class="col-md-2">
@@ -455,8 +814,14 @@ if ($states_result) {
                     <label for="p_adjacent_property_owner_state_code">State:</label>
                     <select class="form-control" id="p_adjacent_property_owner_state_code" name="p_adjacent_property_owner_state_code">
                         <option value="">Select</option>
-                        <?php foreach ($states as $state): ?>
-                            <option value="<?php echo htmlspecialchars($state); ?>"><?php echo htmlspecialchars($state); ?></option>
+                        <?php 
+                        $selected_adj_state = getFieldValue('p_adjacent_property_owner_state_code', $draft_data);
+                        foreach ($states as $state): 
+                        ?>
+                            <option value="<?php echo htmlspecialchars($state); ?>"
+                                <?php echo $state === $selected_adj_state ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($state); ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -464,7 +829,8 @@ if ($states_result) {
             <div class="col-md-5">
                 <div class="form-group">
                     <label for="p_adjacent_property_owner_zip">ZIP Code:</label>
-                    <input type="text" class="form-control" id="p_adjacent_property_owner_zip" name="p_adjacent_property_owner_zip">
+                    <input type="text" class="form-control" id="p_adjacent_property_owner_zip" name="p_adjacent_property_owner_zip"
+                           value="<?php echo htmlspecialchars(getFieldValue('p_adjacent_property_owner_zip', $draft_data)); ?>">
                 </div>
             </div>
         </div> 
@@ -472,14 +838,23 @@ if ($states_result) {
         <div class="signature-section">
             <p style="font-size: 13px;">I hereby certify that the information provided in this application is true and correct to the best of my knowledge.</p>
             <div class="form-group">
-                <label for="appellant_signature">Appellant Signature (Type full name to acknowledge): *</label>
-                <input type="text" class="form-control" id="appellant_signature" name="appellant_signature" placeholder="Type your full name" required>
+                <label for="appellant_signature">Appellant Signature (Type full name to acknowledge): <span class="text-muted">(Required for submission)</span></label>
+                <input type="text" class="form-control" id="appellant_signature" name="appellant_signature" placeholder="Type your full name">
             </div>
         </div>
 
-        <div class="text-center mt-4">
-            <button class="btn btn-danger btn-lg" type="submit">Submit Application</button>
+        <div class="text-center mt-4 button-group">
+            <button class="btn btn-warning btn-lg" type="button" onclick="submitForm('save_draft')">
+                Save as Draft
+            </button>
+            <button class="btn btn-danger btn-lg" type="button" onclick="submitForm('submit')">
+                Submit Application
+            </button>
         </div>
+        
+        <p class="text-center text-muted mt-3" style="font-size: 13px;">
+            * Required fields must be completed before submission. You can save a draft with incomplete information.
+        </p>
     </form>
 
     <div class="footer-info">

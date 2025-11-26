@@ -1,4 +1,13 @@
 <?php
+    // Show all errors from the PHP interpreter.
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+
+    // Show all errors from the MySQLi Extension.
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);  
+?>
+<?php
 session_start();
 require_once 'config.php';
 requireLogin();
@@ -23,6 +32,21 @@ $stmt->bind_param("s", $client_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $forms = $result->fetch_all(MYSQLI_ASSOC);
+
+
+// Fetch saved drafts
+$stmt = $conn->prepare("
+    SELECT icf.form_id AS draft_id, f.form_type, f.form_datetime_submitted
+    FROM incomplete_client_forms icf
+    JOIN forms f ON icf.form_id = f.form_id
+    WHERE icf.client_id = ?
+    ORDER BY f.form_datetime_submitted DESC
+");
+$stmt->bind_param("i", $client_id);
+$stmt->execute();
+$draft_result = $stmt->get_result();
+$drafts = $draft_result->fetch_all(MYSQLI_ASSOC);
+$stmt->close()
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -167,7 +191,36 @@ $forms = $result->fetch_all(MYSQLI_ASSOC);
             <?php else: ?>
                 <p>No forms submitted yet.</p>
             <?php endif; ?>
+                <!-- Saved Drafts -->
+            <h3 class="mt-5">My Saved Drafts</h3>
+            <?php if (!empty($drafts)): ?>
+                <table class="table table-bordered table-striped">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Draft ID</th>
+                            <th>Form Type</th>
+                            <th>Last Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($drafts as $draft): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($draft['draft_id']); ?></td>
+                            <td><?= htmlspecialchars($draft['form_type']); ?></td>
+                            <td><?= htmlspecialchars($draft['form_datetime_submitted']); ?></td>
+                            <td>
+                                <a href="form_sp_insert_administrative_appeal_request.php?draft_id=<?= urlencode($draft['draft_id']); ?>" class="btn btn-warning btn-sm">Edit Draft</a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php else: ?>
+                <p>No saved drafts yet.</p>
+            <?php endif; ?>
         </div>
     </div>
 </body>
 </html>
+

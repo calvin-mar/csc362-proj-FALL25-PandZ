@@ -1,4 +1,81 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+require_once 'config.php';
+requireLogin();
+if (getUserType() != 'client') {
+    header('Location: login.php');
+    exit();
+}
+
+$conn = getDBConnection();
+$client_id = getUserId();
+$success = '';
+$error = '';
+$draft_data = null;
+$draft_id = null;
+
+// Check if editing existing draft
+if (isset($_GET['draft_id'])) {
+    $draft_id = (int)$_GET['draft_id'];
+    $sql = "SELECT * FROM vw_future_land_use_map_application_complete WHERE form_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('i', $draft_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+        $draft_data = $row; // Use raw row for simplicity; map fields as needed in HTML
+    } else {
+        $error = "Draft not found or you don't have permission to access it.";
+    }
+    $stmt->close();
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? 'submit';
+    try {
+        if ($action === 'save_draft') {
+            $conn->query("CALL submit_draft()");
+            if ($draft_id) {
+                $sql = "CALL sp_update_future_land_use_map_application_draft(?)"; // Placeholder for actual params
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param('i', $draft_id);
+                $stmt->execute();
+                $stmt->close();
+                $success = "Draft updated successfully! Draft ID: {$draft_id}";
+            } else {
+                $sql = "CALL sp_insert_future_land_use_map_application_draft()"; // Placeholder for actual params
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $row = $result->fetch_assoc();
+                $form_id = $row['form_id'];
+                $stmt->close();
+                $sql = "INSERT INTO incomplete_client_forms (form_id, client_id) VALUES (?, ?)";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param('ii', $form_id, $client_id);
+                $stmt->execute();
+                $stmt->close();
+                $draft_id = $form_id;
+                $success = "Draft saved successfully! Draft ID: {$draft_id}";
+            }
+            $conn->query("CALL draft_submitted()");
+        } else {
+            // Original submit logic remains here
+        }
+    } catch (Exception $e) {
+        $error = "Error: " . $e->getMessage();
+    }
+}
+
+function getFieldValue($field_name, $draft_data, $default = '') {
+    return $draft_data[$field_name] ?? $default;
+}
+?>
+<?php
 require_once 'config.php';
 requireLogin();
 
@@ -232,6 +309,11 @@ foreach ($states as $state) {
     $selected = ($state === 'KY') ? ' selected' : '';
     $stateOptionsHtml .= '<option value="' . htmlspecialchars($state) . '"' . $selected . '>' . htmlspecialchars($state) . '</option>';
 }
+?>
+
+<?php
+$applicants_json = $draft_data && isset($draft_data['additional_applicants']) ? json_encode(json_decode($draft_data['additional_applicants'], true)) : '[]';
+$owners_json = $draft_data && isset($draft_data['additional_owners']) ? json_encode(json_decode($draft_data['additional_owners'], true)) : '[]';
 ?>
 <!doctype html>
 <html>
@@ -571,6 +653,46 @@ foreach ($states as $state) {
       }
     }
   </script>
+
+<script>
+window.onload = function() {
+    const applicants = <?php echo $applicants_json; ?>;
+    const owners = <?php echo $owners_json; ?>;
+
+    if (Array.isArray(applicants)) {
+        applicants.forEach(app => {
+            if (app && app.name) {
+                addApplicant();
+                const lastApplicant = document.querySelector('#additional-applicants .additional-entry:last-child');
+                if (lastApplicant) {
+                    lastApplicant.querySelector('input[name="additional_applicant_names[]"]').value = app.name;
+                    if (Array.isArray(app.officers)) {
+                        app.officers.forEach(officer => {
+                            addAdditionalApplicantOfficer(applicantCount);
+                            const officerContainer = lastApplicant.querySelector('#additional-officers-' + applicantCount);
+                            const lastOfficerInput = officerContainer.querySelector('input[name^="additional_applicant_officers_"]:last-child');
+                            if (lastOfficerInput) lastOfficerInput.value = officer;
+                        });
+                    }
+                }
+            }
+        });
+    }
+
+    if (Array.isArray(owners)) {
+        owners.forEach(owner => {
+            if (owner && owner.name) {
+                addOwner();
+                const lastOwner = document.querySelector('#additional-owners .additional-entry:last-child');
+                if (lastOwner) {
+                    lastOwner.querySelector('input[name="additional_owner_names[]"]').value = owner.name;
+                }
+            }
+        });
+    }
+};
+</script>
+
 </head>
 <body>
 
@@ -605,7 +727,9 @@ foreach ($states as $state) {
     </div>
   </div>
 
-  <form method="post" enctype="multipart/form-data">
+  <form method="post" id="mainForm">
+<input type="hidden" name="action" id="actionInput" value="submit">
+<?php if ($draft_id): ?><input type="hidden" name="draft_id" value="<?php echo $draft_id; ?>"><?php endif; ?> enctype="multipart/form-data">
     <!-- APPLICANT'S INFORMATION -->
     <div class="section-title">APPLICANT(S) INFORMATION</div>
 
@@ -1011,7 +1135,10 @@ foreach ($states as $state) {
     <div class="section-title" style="background: #d0d0d0;">REQUIRED FILING FEES MUST BE PAID BEFORE ANY APPLICATION WILL BE ACCEPTED</div>
 
     <div class="form-group mt-4">
-      <button class="btn btn-primary btn-lg btn-block" type="submit">Submit Application</button>
+      <div class="text-center mt-4 button-group">
+<button class="btn btn-warning btn-lg" type="button" onclick="document.getElementById('actionInput').value='save_draft'; document.getElementById('mainForm').submit();">Save as Draft</button>
+<button class="btn btn-danger btn-lg" type="button" onclick="document.getElementById('actionInput').value='submit'; document.getElementById('mainForm').submit();">Submit Application</button>
+</div>
     </div>
 
   </form>

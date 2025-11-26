@@ -9,6 +9,7 @@ SOURCE pandz_schema_mariadb_final.sql;
 --Create procedures for inserts and views for observation
 SOURCE find_duplicates.sql;
 SOURCE form_insert_procedures.sql;
+SOURCE form_update_procedures.sql;
 SOURCE database_views.sql;
 
 --Sample login data and sample data for insers

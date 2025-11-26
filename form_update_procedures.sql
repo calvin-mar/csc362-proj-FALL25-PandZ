@@ -1,58 +1,37 @@
-/*
-  form_insert_procedures.sql
-  Auto-generated stored procedures for inserting each form type and related records
-  Target: MariaDB / MySQL (uses DELIMITER and LAST_INSERT_ID())
-  Note: Procedures insert into `forms` table first (with CURRENT_TIMESTAMP) and then
-  insert into related tables using LAST_INSERT_ID() as form_id.
-  Updated to handle insertion of related entities (surveyors, engineers, etc.) when IDs are NULL.
-*/
-
-/* ---------------------------
-   Administrative Appeal Request with JSON Parsing
-   This procedure handles:
-   - Form information
-   - Multiple appellants (parsed from JSON)
-   - Multiple property owners (parsed from JSON)
-   - Address information
-   - Adjacent property owners
-   - Appeal details
-   --------------------------- */
-
 DELIMITER $$
-DROP PROCEDURE IF EXISTS sp_insert_administrative_appeal_request$$
-CREATE PROCEDURE sp_insert_administrative_appeal_request(
-  -- Form metadata
-  IN p_form_paid_bool BOOLEAN,
-  -- Hearing/submission dates
-  IN p_aar_hearing_date DATE,
-  IN p_aar_submit_date DATE,
-  -- Address information
-  IN p_aar_street_address VARCHAR(255),
-  IN p_aar_city_address VARCHAR(255),
-  IN p_state_code CHAR(2),
-  IN p_aar_zip_code VARCHAR(255),
-  -- Appeal details
-  IN p_aar_property_location TEXT,
-  IN p_aar_official_decision TEXT,
-  IN p_aar_relevant_provisions TEXT,
-  -- Primary appellant
-  IN p_aar_appellant_first_name VARCHAR(255),
-  IN p_aar_appellant_last_name VARCHAR(255),
-  -- Additional appellants (JSON array)
-  IN p_additional_appellants TEXT,
-  -- Adjacent property owner (optional)
-  IN p_adjacent_property_owner_street VARCHAR(255),
-  IN p_adjacent_property_owner_city VARCHAR(255),
-  IN p_adjacent_property_owner_state_code CHAR(2),
-  IN p_adjacent_property_owner_zip VARCHAR(255),
-  -- Primary property owner
-  IN p_aar_property_owner_first_name VARCHAR(255),
-  IN p_aar_property_owner_last_name VARCHAR(255),
-  -- Additional property owners (JSON array)
-  IN p_additional_property_owners TEXT
-)
+DROP PROCEDURE IF EXISTS sp_update_administrative_appeal_request$$
+CREATE PROCEDURE sp_update_administrative_appeal_request(IN p_form_id INT,
+-- Form metadata
+IN p_form_paid_bool BOOLEAN,
+-- Hearing/submission dates
+IN p_aar_hearing_date DATE,
+IN p_aar_submit_date DATE,
+-- Address information
+IN p_aar_street_address VARCHAR(255),
+IN p_aar_city_address VARCHAR(255),
+IN p_state_code CHAR(2),
+IN p_aar_zip_code VARCHAR(255),
+-- Appeal details
+IN p_aar_property_location TEXT,
+IN p_aar_official_decision TEXT,
+IN p_aar_relevant_provisions TEXT,
+-- Primary appellant
+IN p_aar_appellant_first_name VARCHAR(255),
+IN p_aar_appellant_last_name VARCHAR(255),
+-- Additional appellants (JSON array)
+IN p_additional_appellants TEXT,
+-- Adjacent property owner (optional)
+IN p_adjacent_property_owner_street VARCHAR(255),
+IN p_adjacent_property_owner_city VARCHAR(255),
+IN p_adjacent_property_owner_state_code CHAR(2),
+IN p_adjacent_property_owner_zip VARCHAR(255),
+-- Primary property owner
+IN p_aar_property_owner_first_name VARCHAR(255),
+IN p_aar_property_owner_last_name VARCHAR(255),
+-- Additional property owners (JSON array)
+IN p_additional_property_owners TEXT)
 BEGIN
-  DECLARE v_address_id INT DEFAULT NULL;
+DECLARE v_address_id INT DEFAULT NULL;
   DECLARE v_adjacent_address_id INT DEFAULT NULL;
   DECLARE v_primary_appellant_id INT DEFAULT NULL;
   DECLARE v_primary_property_owner_id INT DEFAULT NULL;
@@ -64,21 +43,18 @@ BEGIN
   DECLARE v_last_name VARCHAR(255);
   DECLARE v_temp_appellant_id INT;
   DECLARE v_temp_owner_id INT;
+START TRANSACTION;
+UPDATE forms SET form_datetime_submitted = CURRENT_TIMESTAMP, form_paid_bool = p_form_paid_bool WHERE form_id = p_form_id;
+DELETE FROM administrative_appellants WHERE form_id = p_form_id;
+DELETE FROM administrative_property_owners WHERE form_id = p_form_id;
+DELETE FROM adjacent_neighbor_owners WHERE form_id = p_form_id;
+DELETE FROM administrative_appeal_requests WHERE form_id = p_form_id;
 
   START TRANSACTION;
   
   -- 1. Insert into forms table
-  INSERT INTO forms(
-    form_type, 
-    form_datetime_submitted, 
-    form_paid_bool
-  )
-  VALUES(
-    'Administrative Appeal Request', 
-    CURRENT_TIMESTAMP, 
-    p_form_paid_bool
-  );
-  SET @new_form_id = LAST_INSERT_ID();
+  -- (removed forms insert in update) ;
+  -- (removed new_form_id in update)
 
   -- 2. Create address for the appeal
   SET v_address_id = find_duplicate_address_id(p_aar_street_address, p_aar_city_address, p_state_code, p_aar_zip_code);
@@ -96,7 +72,7 @@ BEGIN
     
     -- Link appellant to form
     INSERT INTO administrative_appellants(form_id, aar_appellant_id)
-      VALUES(@new_form_id, v_primary_appellant_id);
+      VALUES(p_form_id, v_primary_appellant_id);
   END IF;
 
   -- 4. Insert additional appellants from JSON array
@@ -121,7 +97,7 @@ BEGIN
         
         -- Link to form
         INSERT INTO administrative_appellants(form_id, aar_appellant_id)
-          VALUES(@new_form_id, v_temp_appellant_id);
+          VALUES(p_form_id, v_temp_appellant_id);
       END IF;
       SET v_idx = v_idx + 1;
     END WHILE;
@@ -135,7 +111,7 @@ BEGIN
     
     -- Link property owner to form
     INSERT INTO administrative_property_owners(form_id, aar_property_owner_id)
-      VALUES(@new_form_id, v_primary_property_owner_id);
+      VALUES(p_form_id, v_primary_property_owner_id);
   END IF;
 
   -- 6. Insert additional property owners from JSON array
@@ -160,7 +136,7 @@ BEGIN
         
         -- Link to form
         INSERT INTO administrative_property_owners(form_id, aar_property_owner_id)
-          VALUES(@new_form_id, v_temp_owner_id);
+          VALUES(p_form_id, v_temp_owner_id);
       END IF;
       SET v_idx = v_idx + 1;
     END WHILE;
@@ -181,7 +157,7 @@ BEGIN
     
     -- Link to form
     INSERT INTO adjacent_neighbor_owners(form_id, adjacent_property_owner_id)
-      VALUES(@new_form_id, v_adjacent_owner_id);
+      VALUES(p_form_id, v_adjacent_owner_id);
   END IF;
 
   -- 8. Insert into administrative_appeal_requests
@@ -193,7 +169,7 @@ BEGIN
     aar_official_decision,
     aar_relevant_provisions
   ) VALUES (
-    @new_form_id,
+    p_form_id,
     p_aar_hearing_date,
     p_aar_submit_date,
     v_address_id,
@@ -204,39 +180,30 @@ BEGIN
   COMMIT;
   
   -- Return the new form_id
-  SELECT @new_form_id AS form_id;
+  SELECT p_form_id AS form_id;
+COMMIT;
+SELECT p_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON PROCEDURE sp_insert_administrative_appeal_request TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_update_administrative_appeal_request TO 'webuser'@'localhost';
 
-
-/* ---------------------------
-   Adjacent Property Owners Form with JSON Parsing
-   This procedure handles:
-   - Form metadata
-   - Multiple adjacent properties (neighbors)
-   - Multiple owners per property (parsed from JSON)
-   - Property location details
-   - Owner mailing addresses
-   --------------------------- */
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS sp_insert_adjacent_property_owners_form_json$$
-CREATE PROCEDURE sp_insert_adjacent_property_owners_form_json(
-  -- JSON arrays for neighbor properties
-  IN p_pva_map_codes TEXT,                     -- JSON array of PVA map codes
-  IN p_neighbor_property_locations TEXT,        -- JSON array of property locations
-  IN p_neighbor_property_deed_books TEXT,       -- JSON array of deed books
-  IN p_property_street_pg_numbers TEXT,         -- JSON array of page numbers
-  -- JSON arrays for property owners (nested: array of arrays)
-  IN p_property_owner_names TEXT,               -- JSON: {"0": ["Owner1", "Owner2"], "1": ["Owner3"]}
-  IN p_property_owner_streets TEXT,             -- JSON: {"0": ["Street1", "Street2"], "1": ["Street3"]}
-  IN p_property_owner_cities TEXT,              -- JSON: {"0": ["City1", "City2"], "1": ["City3"]}
-  IN p_property_owner_state_codes TEXT,         -- JSON: {"0": ["KY", "KY"], "1": ["KY"]}
-  IN p_property_owner_zips TEXT                 -- JSON: {"0": ["40223", "40223"], "1": ["40223"]}
-)
+DROP PROCEDURE IF EXISTS sp_update_adjacent_property_owners_form_json$$
+CREATE PROCEDURE sp_update_adjacent_property_owners_form_json(IN p_form_id INT,
+-- JSON arrays for neighbor properties
+IN p_pva_map_codes TEXT,                     -- JSON array of PVA map codes
+IN p_neighbor_property_locations TEXT,        -- JSON array of property locations
+IN p_neighbor_property_deed_books TEXT,       -- JSON array of deed books
+IN p_property_street_pg_numbers TEXT,         -- JSON array of page numbers
+-- JSON arrays for property owners (nested: array of arrays)
+IN p_property_owner_names TEXT,               -- JSON: {"0": ["Owner1", "Owner2"], "1": ["Owner3"]}
+IN p_property_owner_streets TEXT,             -- JSON: {"0": ["Street1", "Street2"], "1": ["Street3"]}
+IN p_property_owner_cities TEXT,              -- JSON: {"0": ["City1", "City2"], "1": ["City3"]}
+IN p_property_owner_state_codes TEXT,         -- JSON: {"0": ["KY", "KY"], "1": ["KY"]}
+IN p_property_owner_zips TEXT)                 -- JSON: {"0": ["40223", "40223"], "1": ["40223"]})
 BEGIN
-  DECLARE v_neighbor_count INT DEFAULT 0;
+DECLARE v_neighbor_count INT DEFAULT 0;
   DECLARE v_neighbor_idx INT DEFAULT 0;
   DECLARE v_owner_count INT DEFAULT 0;
   DECLARE v_owner_idx INT DEFAULT 0;
@@ -262,23 +229,21 @@ BEGIN
   DECLARE v_last_name VARCHAR(255);
   DECLARE v_owner_array TEXT;
   DECLARE v_neighbor_key VARCHAR(10);
+START TRANSACTION;
+UPDATE forms SET form_datetime_submitted = CURRENT_TIMESTAMP WHERE form_id = p_form_id;
+DELETE FROM adjacent_property_owner_forms WHERE form_id = p_form_id;
+DELETE FROM adjacent_neighbors WHERE form_id = p_form_id;
+DELETE FROM adjacent_neighbor_owners WHERE form_id = p_form_id;
 
   START TRANSACTION;
   
   -- 1. Insert into forms table
-  INSERT INTO forms(
-    form_type, 
-    form_datetime_submitted
-  )
-  VALUES(
-    'Adjacent Property Owners Form', 
-    CURRENT_TIMESTAMP
-  );
-  SET @new_form_id = LAST_INSERT_ID();
+  -- (removed forms insert in update) ;
+  -- (removed new_form_id in update)
 
   -- 2. Insert into adjacent_property_owner_forms
   INSERT INTO adjacent_property_owner_forms(form_id)
-    VALUES(@new_form_id);
+    VALUES(p_form_id);
 
   -- 3. Validate and parse JSON arrays for neighbors
   IF p_pva_map_codes IS NOT NULL AND JSON_VALID(p_pva_map_codes) THEN
@@ -321,7 +286,7 @@ BEGIN
 
     -- Link neighbor to form
     INSERT INTO adjacent_neighbors(form_id, neighbor_id)
-      VALUES(@new_form_id, v_neighbor_id);
+      VALUES(p_form_id, v_neighbor_id);
 
     -- 5. Process owners for this neighbor property
     SET v_neighbor_key = CAST(v_neighbor_idx AS CHAR);
@@ -417,7 +382,7 @@ BEGIN
 
             -- Link owner to form
             INSERT INTO adjacent_neighbor_owners(form_id, adjacent_property_owner_id)
-              VALUES(@new_form_id, v_owner_id);
+              VALUES(p_form_id, v_owner_id);
 
             SET v_owner_idx = v_owner_idx + 1;
           END WHILE;
@@ -431,88 +396,73 @@ BEGIN
   COMMIT;
   
   -- Return the new form_id
-  SELECT @new_form_id AS form_id;
+  SELECT p_form_id AS form_id;
+COMMIT;
+SELECT p_form_id AS form_id;
 END$$
 DELIMITER ;
+GRANT EXECUTE ON PROCEDURE sp_update_adjacent_property_owners_form_json TO 'webuser'@'localhost';
 
-GRANT EXECUTE ON PROCEDURE sp_insert_adjacent_property_owners_form_json TO 'webuser'@'localhost';
-/* ---------------------------
-   Conditional Use Permit Application with JSON Parsing
-   Similar structure to Zoning Map Amendment Application
-   This procedure handles:
-   - Form and hearing information
-   - Multiple applicants with officers (parsed from JSON)
-   - Multiple property owners (parsed from JSON)
-   - Attorney information
-   - Property details
-   - CUP request and conditions
-   - Checklist items
-   - File attachments
-   - Signatures
-   - Fees
-   --------------------------- */
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS sp_insert_conditional_use_permit_application$$
-CREATE PROCEDURE sp_insert_conditional_use_permit_application(
-  -- Hearing information
-  IN p_docket_number VARCHAR(255),
-  IN p_public_hearing_date DATE,
-  IN p_date_application_filed DATE,
-  IN p_preapp_meeting_date DATE,
-  -- Primary applicant
-  IN p_applicant_name VARCHAR(255),
-  IN p_officers_names TEXT, -- JSON array
-  IN p_applicant_mailing_address VARCHAR(255),
-  IN p_applicant_phone VARCHAR(50),
-  IN p_applicant_cell VARCHAR(50),
-  IN p_applicant_email VARCHAR(255),
-  -- Additional applicants (JSON arrays)
-  IN p_additional_applicant_names TEXT,
-  IN p_additional_applicant_officers TEXT,
-  IN p_additional_applicant_mailing_addresses TEXT,
-  IN p_additional_applicant_phones TEXT,
-  IN p_additional_applicant_cells TEXT,
-  IN p_additional_applicant_emails TEXT,
-  -- Property owner
-  IN p_owner_name VARCHAR(255),
-  IN p_owner_mailing_address VARCHAR(255),
-  IN p_owner_phone VARCHAR(50),
-  IN p_owner_cell VARCHAR(50),
-  IN p_owner_email VARCHAR(255),
-  -- Additional owners (JSON arrays)
-  IN p_additional_owner_names TEXT,
-  IN p_additional_owner_mailing_addresses TEXT,
-  IN p_additional_owner_phones TEXT,
-  IN p_additional_owner_cells TEXT,
-  IN p_additional_owner_emails TEXT,
-  -- Attorney
-  IN p_attorney_first_name VARCHAR(255),
-  IN p_attorney_last_name VARCHAR(255),
-  IN p_law_firm VARCHAR(255),
-  IN p_attorney_phone VARCHAR(50),
-  IN p_attorney_cell VARCHAR(255),
-  IN p_attorney_email VARCHAR(255),
-  -- Property information
-  IN p_property_address VARCHAR(255),
-  IN p_parcel_number INT,
-  IN p_acreage VARCHAR(255),
-  IN p_current_zoning VARCHAR(255),
-  -- CUP request
-  IN p_cupa_permit_request TEXT,
-  IN p_cupa_proposed_conditions TEXT,
-  -- Checklist items
-  IN p_checklist_application BOOLEAN,
-  IN p_checklist_exhibit BOOLEAN,
-  IN p_checklist_adjacent BOOLEAN,
-  IN p_checklist_fees BOOLEAN,
-  -- File uploads (filenames)
-  IN p_file_exhibit VARCHAR(255),
-  IN p_file_adjacent VARCHAR(255)
-
-)
+DROP PROCEDURE IF EXISTS sp_update_conditional_use_permit_application$$
+CREATE PROCEDURE sp_update_conditional_use_permit_application(IN p_form_id INT,
+-- Hearing information
+IN p_docket_number VARCHAR(255),
+IN p_public_hearing_date DATE,
+IN p_date_application_filed DATE,
+IN p_preapp_meeting_date DATE,
+-- Primary applicant
+IN p_applicant_name VARCHAR(255),
+IN p_officers_names TEXT, -- JSON array
+IN p_applicant_mailing_address VARCHAR(255),
+IN p_applicant_phone VARCHAR(50),
+IN p_applicant_cell VARCHAR(50),
+IN p_applicant_email VARCHAR(255),
+-- Additional applicants (JSON arrays)
+IN p_additional_applicant_names TEXT,
+IN p_additional_applicant_officers TEXT,
+IN p_additional_applicant_mailing_addresses TEXT,
+IN p_additional_applicant_phones TEXT,
+IN p_additional_applicant_cells TEXT,
+IN p_additional_applicant_emails TEXT,
+-- Property owner
+IN p_owner_name VARCHAR(255),
+IN p_owner_mailing_address VARCHAR(255),
+IN p_owner_phone VARCHAR(50),
+IN p_owner_cell VARCHAR(50),
+IN p_owner_email VARCHAR(255),
+-- Additional owners (JSON arrays)
+IN p_additional_owner_names TEXT,
+IN p_additional_owner_mailing_addresses TEXT,
+IN p_additional_owner_phones TEXT,
+IN p_additional_owner_cells TEXT,
+IN p_additional_owner_emails TEXT,
+-- Attorney
+IN p_attorney_first_name VARCHAR(255),
+IN p_attorney_last_name VARCHAR(255),
+IN p_law_firm VARCHAR(255),
+IN p_attorney_phone VARCHAR(50),
+IN p_attorney_cell VARCHAR(255),
+IN p_attorney_email VARCHAR(255),
+-- Property information
+IN p_property_address VARCHAR(255),
+IN p_parcel_number INT,
+IN p_acreage VARCHAR(255),
+IN p_current_zoning VARCHAR(255),
+-- CUP request
+IN p_cupa_permit_request TEXT,
+IN p_cupa_proposed_conditions TEXT,
+-- Checklist items
+IN p_checklist_application BOOLEAN,
+IN p_checklist_exhibit BOOLEAN,
+IN p_checklist_adjacent BOOLEAN,
+IN p_checklist_fees BOOLEAN,
+-- File uploads (filenames)
+IN p_file_exhibit VARCHAR(255),
+IN p_file_adjacent VARCHAR(255))
 BEGIN
-  DECLARE v_primary_applicant_id INT DEFAULT NULL;
+DECLARE v_primary_applicant_id INT DEFAULT NULL;
   DECLARE v_primary_owner_id INT DEFAULT NULL;
   DECLARE v_attorney_id INT DEFAULT NULL;
   DECLARE v_idx INT DEFAULT 0;
@@ -528,19 +478,18 @@ BEGIN
   DECLARE v_last_name VARCHAR(255);
   DECLARE v_officer_name VARCHAR(255);
   DECLARE v_exec_id INT;
+START TRANSACTION;
+UPDATE forms SET form_datetime_submitted = CURRENT_TIMESTAMP WHERE form_id = p_form_id;
+DELETE FROM hearing_forms WHERE form_id = p_form_id;
+DELETE FROM applicants_link_forms WHERE form_id = p_form_id;
+DELETE FROM owners_link_forms WHERE form_id = p_form_id;
+DELETE FROM conditional_use_permit_applications WHERE form_id = p_form_id;
 
   START TRANSACTION;
   
   -- 1. Insert into forms table
-  INSERT INTO forms(
-    form_type, 
-    form_datetime_submitted
-  )
-  VALUES(
-    'Conditional Use Permit Application', 
-    CURRENT_TIMESTAMP
-  );
-  SET @new_form_id = LAST_INSERT_ID();
+  -- (removed forms insert in update) ;
+  -- (removed new_form_id in update)
 
   -- 2. Insert hearing information if provided
   IF p_docket_number IS NOT NULL OR p_public_hearing_date IS NOT NULL THEN
@@ -564,7 +513,7 @@ BEGIN
       form_id, hearing_docket_number, hearing_date_application_filed,
       hearing_date, hearing_preapp_meeting_date, attorney_id
     ) VALUES (
-      @new_form_id, p_docket_number, p_date_application_filed,
+      p_form_id, p_docket_number, p_date_application_filed,
       p_public_hearing_date, p_preapp_meeting_date, v_attorney_id
     );
   END IF;
@@ -598,7 +547,7 @@ BEGIN
 
     -- Link applicant to form
     INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-      VALUES(v_primary_applicant_id, @new_form_id);
+      VALUES(v_primary_applicant_id, p_form_id);
 
     -- Parse and insert officers/directors from JSON
     IF p_officers_names IS NOT NULL AND JSON_VALID(p_officers_names) THEN
@@ -660,7 +609,7 @@ BEGIN
         
         -- Link to form
         INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-          VALUES(v_temp_applicant_id, @new_form_id);
+          VALUES(v_temp_applicant_id, p_form_id);
         
         -- Handle officers for this additional applicant
         IF p_additional_applicant_officers IS NOT NULL AND JSON_VALID(p_additional_applicant_officers) THEN
@@ -711,7 +660,7 @@ BEGIN
 
     -- Link owner to form
     INSERT INTO owners_link_forms(t1_owner_id, form_id)
-      VALUES(v_primary_owner_id, @new_form_id);
+      VALUES(v_primary_owner_id, p_form_id);
   END IF;
 
   -- 7. Insert additional owners from JSON arrays
@@ -736,7 +685,7 @@ BEGIN
         
         -- Link to form
         INSERT INTO owners_link_forms(t1_owner_id, form_id)
-          VALUES(v_temp_owner_id, @new_form_id);
+          VALUES(v_temp_owner_id, p_form_id);
       END IF;
       SET v_idx = v_idx + 1;
     END WHILE;
@@ -749,7 +698,7 @@ BEGIN
     cupa_proposed_conditions,
     PVA_parcel_number
   ) VALUES (
-    @new_form_id,
+    p_form_id,
     p_cupa_permit_request,
     p_cupa_proposed_conditions,
     p_parcel_number
@@ -758,101 +707,99 @@ BEGIN
   COMMIT;
   
   -- Return the new form_id
-  SELECT @new_form_id AS form_id;
+  SELECT p_form_id AS form_id;
+COMMIT;
+SELECT p_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON PROCEDURE sp_insert_conditional_use_permit_application TO 'webuser'@'localhost';
-/* ---------------------------
-   General Development Plan Application - Comprehensive Version
-   Handles all form data including applicants, owners, property details, etc.
-   --------------------------- */
+GRANT EXECUTE ON PROCEDURE sp_update_conditional_use_permit_application TO 'webuser'@'localhost';
+
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS sp_insert_general_development_plan_application_comprehensive$$
-CREATE PROCEDURE sp_insert_general_development_plan_application_comprehensive(
-  -- Hearing information (4)
-  IN p_docket_number VARCHAR(255),
-  IN p_public_hearing_date DATE,
-  IN p_date_application_filed DATE,
-  IN p_preapp_meeting_date DATE,
-  -- Primary applicant (9)
-  IN p_applicant_name VARCHAR(255),
-  IN p_officers_names TEXT, -- JSON array
-  IN p_applicant_street VARCHAR(255),
-  IN p_applicant_phone VARCHAR(50),
-  IN p_applicant_cell VARCHAR(50),
-  IN p_applicant_city VARCHAR(255),
-  IN p_applicant_state CHAR(2),
-  IN p_applicant_zip_code VARCHAR(255),
-  IN p_applicant_email VARCHAR(255),
-  -- Additional applicants (JSON arrays) (9)
-  IN p_additional_applicant_names TEXT,
-  IN p_additional_applicant_officers TEXT,
-  IN p_additional_applicant_streets TEXT,
-  IN p_additional_applicant_phones TEXT,
-  IN p_additional_applicant_cells TEXT,
-  IN p_additional_applicant_cities TEXT,
-  IN p_additional_applicant_states TEXT,
-  IN p_additional_applicant_zip_codes TEXT,
-  IN p_additional_applicant_emails TEXT,
-  -- Property owner (9)
-  IN p_owner_first_name VARCHAR(255),
-  IN p_owner_last_name VARCHAR(255),
-  IN p_owner_street VARCHAR(255),
-  IN p_owner_phone VARCHAR(50),
-  IN p_owner_cell VARCHAR(50),
-  IN p_owner_city VARCHAR(255),
-  IN p_owner_state CHAR(2),
-  IN p_owner_zip_code VARCHAR(255),
-  IN p_owner_email VARCHAR(255),
-  -- Additional owners (JSON arrays) (8)
-  IN p_additional_owner_names TEXT,
-  IN p_additional_owner_streets TEXT,
-  IN p_additional_owner_phones TEXT,
-  IN p_additional_owner_cells TEXT,
-  IN p_additional_owner_cities TEXT,
-  IN p_additional_owner_states TEXT,
-  IN p_additional_owner_zip_codes TEXT,
-  IN p_additional_owner_emails TEXT,
-  -- Attorney (6)
-  IN p_attorney_first_name VARCHAR(255),
-  IN p_attorney_last_name VARCHAR(255),
-  IN p_law_firm VARCHAR(255),
-  IN p_attorney_phone VARCHAR(50),
-  IN p_attorney_cell VARCHAR(255),
-  IN p_attorney_email VARCHAR(255),
-  -- Property information (8)
-  IN p_property_street VARCHAR(255),
-  IN p_property_city VARCHAR(255),
-  IN p_property_state CHAR(2),
-  IN p_property_zip_code VARCHAR(255),
-  IN p_property_other_address VARCHAR(255),
-  IN p_parcel_number INT,
-  IN p_acreage VARCHAR(255),
-  IN p_current_zoning VARCHAR(255),
-  -- GDP details (3)
-  IN p_gdp_amendment_request TEXT,
-  IN p_proposed_conditions TEXT,
-  IN p_finding_type VARCHAR(255),
-  -- Findings explanation (1)
-  IN p_findings_explanation TEXT,
-  -- Checklist items (8)
-  IN p_checklist_application BOOLEAN,
-  IN p_checklist_adjacent BOOLEAN,
-  IN p_checklist_verification BOOLEAN,
-  IN p_checklist_fees BOOLEAN,
-  IN p_checklist_gdp_conditions BOOLEAN,
-  IN p_checklist_concept BOOLEAN,
-  IN p_checklist_traffic BOOLEAN,
-  IN p_checklist_geologic BOOLEAN,
-  -- Signatures (4)
-  IN p_signature_date_1 DATE,
-  IN p_signature_name_1 VARCHAR(255),
-  IN p_signature_date_2 DATE,
-  IN p_signature_name_2 VARCHAR(255)
-)
+DROP PROCEDURE IF EXISTS sp_update_general_development_plan_application_comprehensive$$
+CREATE PROCEDURE sp_update_general_development_plan_application_comprehensive(IN p_form_id INT,
+-- Hearing information (4)
+IN p_docket_number VARCHAR(255),
+IN p_public_hearing_date DATE,
+IN p_date_application_filed DATE,
+IN p_preapp_meeting_date DATE,
+-- Primary applicant (9)
+IN p_applicant_name VARCHAR(255),
+IN p_officers_names TEXT, -- JSON array
+IN p_applicant_street VARCHAR(255),
+IN p_applicant_phone VARCHAR(50),
+IN p_applicant_cell VARCHAR(50),
+IN p_applicant_city VARCHAR(255),
+IN p_applicant_state CHAR(2),
+IN p_applicant_zip_code VARCHAR(255),
+IN p_applicant_email VARCHAR(255),
+-- Additional applicants (JSON arrays) (9)
+IN p_additional_applicant_names TEXT,
+IN p_additional_applicant_officers TEXT,
+IN p_additional_applicant_streets TEXT,
+IN p_additional_applicant_phones TEXT,
+IN p_additional_applicant_cells TEXT,
+IN p_additional_applicant_cities TEXT,
+IN p_additional_applicant_states TEXT,
+IN p_additional_applicant_zip_codes TEXT,
+IN p_additional_applicant_emails TEXT,
+-- Property owner (9)
+IN p_owner_first_name VARCHAR(255),
+IN p_owner_last_name VARCHAR(255),
+IN p_owner_street VARCHAR(255),
+IN p_owner_phone VARCHAR(50),
+IN p_owner_cell VARCHAR(50),
+IN p_owner_city VARCHAR(255),
+IN p_owner_state CHAR(2),
+IN p_owner_zip_code VARCHAR(255),
+IN p_owner_email VARCHAR(255),
+-- Additional owners (JSON arrays) (8)
+IN p_additional_owner_names TEXT,
+IN p_additional_owner_streets TEXT,
+IN p_additional_owner_phones TEXT,
+IN p_additional_owner_cells TEXT,
+IN p_additional_owner_cities TEXT,
+IN p_additional_owner_states TEXT,
+IN p_additional_owner_zip_codes TEXT,
+IN p_additional_owner_emails TEXT,
+-- Attorney (6)
+IN p_attorney_first_name VARCHAR(255),
+IN p_attorney_last_name VARCHAR(255),
+IN p_law_firm VARCHAR(255),
+IN p_attorney_phone VARCHAR(50),
+IN p_attorney_cell VARCHAR(255),
+IN p_attorney_email VARCHAR(255),
+-- Property information (8)
+IN p_property_street VARCHAR(255),
+IN p_property_city VARCHAR(255),
+IN p_property_state CHAR(2),
+IN p_property_zip_code VARCHAR(255),
+IN p_property_other_address VARCHAR(255),
+IN p_parcel_number INT,
+IN p_acreage VARCHAR(255),
+IN p_current_zoning VARCHAR(255),
+-- GDP details (3)
+IN p_gdp_amendment_request TEXT,
+IN p_proposed_conditions TEXT,
+IN p_finding_type VARCHAR(255),
+-- Findings explanation (1)
+IN p_findings_explanation TEXT,
+-- Checklist items (8)
+IN p_checklist_application BOOLEAN,
+IN p_checklist_adjacent BOOLEAN,
+IN p_checklist_verification BOOLEAN,
+IN p_checklist_fees BOOLEAN,
+IN p_checklist_gdp_conditions BOOLEAN,
+IN p_checklist_concept BOOLEAN,
+IN p_checklist_traffic BOOLEAN,
+IN p_checklist_geologic BOOLEAN,
+-- Signatures (4)
+IN p_signature_date_1 DATE,
+IN p_signature_name_1 VARCHAR(255),
+IN p_signature_date_2 DATE,
+IN p_signature_name_2 VARCHAR(255))
 BEGIN
-  DECLARE v_property_address_id INT DEFAULT NULL;
+DECLARE v_property_address_id INT DEFAULT NULL;
   DECLARE v_primary_applicant_address_id INT DEFAULT NULL;
   DECLARE v_owner_address_id INT DEFAULT NULL;
   DECLARE v_primary_applicant_id INT DEFAULT NULL;
@@ -875,19 +822,18 @@ BEGIN
   DECLARE v_last_name VARCHAR(255);
   DECLARE v_officer_name VARCHAR(255);
   DECLARE v_exec_id INT;
+START TRANSACTION;
+UPDATE forms SET form_datetime_submitted = CURRENT_TIMESTAMP WHERE form_id = p_form_id;
+DELETE FROM hearing_forms WHERE form_id = p_form_id;
+DELETE FROM applicants_link_forms WHERE form_id = p_form_id;
+DELETE FROM owners_link_forms WHERE form_id = p_form_id;
+DELETE FROM general_development_plan_applications WHERE form_id = p_form_id;
 
   START TRANSACTION;
   
   -- 1. Insert into forms table
-  INSERT INTO forms(
-    form_type, 
-    form_datetime_submitted
-  )
-  VALUES(
-    'Development Plan Application (General)', 
-    CURRENT_TIMESTAMP
-  );
-  SET @new_form_id = LAST_INSERT_ID();
+  -- (removed forms insert in update) ;
+  -- (removed new_form_id in update)
 
   -- 2. Insert hearing information if provided
   IF p_docket_number IS NOT NULL OR p_public_hearing_date IS NOT NULL THEN
@@ -911,7 +857,7 @@ BEGIN
       form_id, hearing_docket_number, hearing_date_application_filed,
       hearing_date, hearing_preapp_meeting_date, attorney_id
     ) VALUES (
-      @new_form_id, p_docket_number, p_date_application_filed,
+      p_form_id, p_docket_number, p_date_application_filed,
       p_public_hearing_date, p_preapp_meeting_date, v_attorney_id
     );
   END IF;
@@ -962,7 +908,7 @@ BEGIN
 
     -- Link applicant to form
     INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-      VALUES(v_primary_applicant_id, @new_form_id);
+      VALUES(v_primary_applicant_id, p_form_id);
 
     -- Parse and insert officers/directors from JSON
     IF p_officers_names IS NOT NULL AND JSON_VALID(p_officers_names) THEN
@@ -1028,7 +974,7 @@ BEGIN
         SET v_temp_applicant_id = LAST_INSERT_ID();
         
         INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-          VALUES(v_temp_applicant_id, @new_form_id);
+          VALUES(v_temp_applicant_id, p_form_id);
         
         -- Handle officers
         IF p_additional_applicant_officers IS NOT NULL AND JSON_VALID(p_additional_applicant_officers) THEN
@@ -1071,7 +1017,7 @@ BEGIN
     SET v_primary_owner_id = LAST_INSERT_ID();
 
     INSERT INTO owners_link_forms(t1_owner_id, form_id)
-      VALUES(v_primary_owner_id, @new_form_id);
+      VALUES(v_primary_owner_id, p_form_id);
   END IF;
 
   -- 8. Insert additional owners
@@ -1093,7 +1039,7 @@ BEGIN
         SET v_temp_owner_id = LAST_INSERT_ID();
         
         INSERT INTO owners_link_forms(t1_owner_id, form_id)
-          VALUES(v_temp_owner_id, @new_form_id);
+          VALUES(v_temp_owner_id, p_form_id);
       END IF;
       SET v_idx = v_idx + 1;
     END WHILE;
@@ -1104,138 +1050,134 @@ BEGIN
     form_id, address_id, gdpa_applicant_phone, gdpa_plan_amendment_request,
     gdpa_proposed_conditions, required_findings_type
   ) VALUES (
-    @new_form_id, v_primary_applicant_address_id, p_applicant_phone,
+    p_form_id, v_primary_applicant_address_id, p_applicant_phone,
     p_gdp_amendment_request, p_proposed_conditions, p_finding_type
   );
 
   COMMIT;
   
-  SELECT @new_form_id AS form_id;
+  SELECT p_form_id AS form_id;
+COMMIT;
+SELECT p_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON PROCEDURE sp_insert_general_development_plan_application_comprehensive TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_update_general_development_plan_application_comprehensive TO 'webuser'@'localhost';
 
-
-/* ---------------------------
-   Site Development Plan Application - Comprehensive Version
-   Handles all form data including applicants, owners, professionals, etc.
-   --------------------------- */
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS sp_insert_site_development_plan_application_comprehensive$$
-CREATE PROCEDURE sp_insert_site_development_plan_application_comprehensive(
-  -- Form metadata (3)
-  IN p_form_datetime_resolved DATETIME,
-  IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
-  -- Hearing information (4)
-  IN p_docket_number VARCHAR(255),
-  IN p_public_hearing_date DATE,
-  IN p_date_application_filed DATE,
-  IN p_preapp_meeting_date DATE,
-  -- Primary applicant (9)
-  IN p_applicant_name VARCHAR(255),
-  IN p_officers_names TEXT, -- JSON array
-  IN p_applicant_street VARCHAR(255),
-  IN p_applicant_phone VARCHAR(50),
-  IN p_applicant_cell VARCHAR(50),
-  IN p_applicant_city VARCHAR(255),
-  IN p_applicant_state CHAR(2),
-  IN p_applicant_zip_code VARCHAR(255),
-  IN p_applicant_email VARCHAR(255),
-  -- Additional applicants (JSON arrays) (9)
-  IN p_additional_applicant_names TEXT,
-  IN p_additional_applicant_officers TEXT,
-  IN p_additional_applicant_streets TEXT,
-  IN p_additional_applicant_phones TEXT,
-  IN p_additional_applicant_cells TEXT,
-  IN p_additional_applicant_cities TEXT,
-  IN p_additional_applicant_states TEXT,
-  IN p_additional_applicant_zip_codes TEXT,
-  IN p_additional_applicant_emails TEXT,
-  -- Property owner (8)
-  IN p_owner_first_name VARCHAR(255),
-  IN p_owner_last_name VARCHAR(255),
-  IN p_owner_street VARCHAR(255),
-  IN p_owner_phone VARCHAR(50),
-  IN p_owner_cell VARCHAR(50),
-  IN p_owner_city VARCHAR(255),
-  IN p_owner_state CHAR(2),
-  IN p_owner_zip_code VARCHAR(255),
-  IN p_owner_email VARCHAR(255),
-  -- Additional owners (JSON arrays) (8)
-  IN p_additional_owner_names TEXT,
-  IN p_additional_owner_streets TEXT,
-  IN p_additional_owner_phones TEXT,
-  IN p_additional_owner_cells TEXT,
-  IN p_additional_owner_cities TEXT,
-  IN p_additional_owner_states TEXT,
-  IN p_additional_owner_zip_codes TEXT,
-  IN p_additional_owner_emails TEXT,
-  -- Attorney (6)
-  IN p_attorney_first_name VARCHAR(255),
-  IN p_attorney_last_name VARCHAR(255),
-  IN p_law_firm VARCHAR(255),
-  IN p_attorney_phone VARCHAR(50),
-  IN p_attorney_cell VARCHAR(255),
-  IN p_attorney_email VARCHAR(255),
-  -- Surveyor (6)
-  IN p_surveyor_first_name VARCHAR(255),
-  IN p_surveyor_last_name VARCHAR(255),
-  IN p_surveyor_firm VARCHAR(255),
-  IN p_surveyor_phone VARCHAR(50),
-  IN p_surveyor_cell VARCHAR(255),
-  IN p_surveyor_email VARCHAR(255),
-  -- Engineer (6)
-  IN p_engineer_first_name VARCHAR(255),
-  IN p_engineer_last_name VARCHAR(255),
-  IN p_engineer_firm VARCHAR(255),
-  IN p_engineer_phone VARCHAR(50),
-  IN p_engineer_cell VARCHAR(255),
-  IN p_engineer_email VARCHAR(255),
-  -- Architect (6)
-  IN p_architect_first_name VARCHAR(255),
-  IN p_architect_last_name VARCHAR(255),
-  IN p_architect_firm VARCHAR(255),
-  IN p_architect_phone VARCHAR(50),
-  IN p_architect_cell VARCHAR(255),
-  IN p_architect_email VARCHAR(255),
-  -- Landscape Architect (6)
-  IN p_land_architect_first_name VARCHAR(255),
-  IN p_land_architect_last_name VARCHAR(255),
-  IN p_land_architect_firm VARCHAR(255),
-  IN p_land_architect_phone VARCHAR(50),
-  IN p_land_architect_cell VARCHAR(255),
-  IN p_land_architect_email VARCHAR(255),
-  -- Application details (2)
-  IN p_application_type VARCHAR(255),
-  IN p_site_plan_request TEXT,
-  -- Checklist items (9)
-  IN p_checklist_application BOOLEAN,
-  IN p_checklist_verification BOOLEAN,
-  IN p_checklist_project_plans BOOLEAN,
-  IN p_checklist_landscape BOOLEAN,
-  IN p_checklist_topographic BOOLEAN,
-  IN p_checklist_traffic BOOLEAN,
-  IN p_checklist_architectural BOOLEAN,
-  IN p_checklist_covenants BOOLEAN,
-  IN p_checklist_fees BOOLEAN,
-  -- File uploads (7)
-  IN p_file_verification VARCHAR(255),
-  IN p_file_project_plans VARCHAR(255),
-  IN p_file_landscape VARCHAR(255),
-  IN p_file_topographic VARCHAR(255),
-  IN p_file_traffic VARCHAR(255),
-  IN p_file_architectural VARCHAR(255),
-  IN p_file_covenants VARCHAR(255),
-  -- Signatures (4)
-  IN p_signature_date_1 DATE,
-  IN p_signature_name_1 VARCHAR(255),
-  IN p_signature_date_2 DATE,
-  IN p_signature_name_2 VARCHAR(255)
-)
+DROP PROCEDURE IF EXISTS sp_update_site_development_plan_application_comprehensive$$
+CREATE PROCEDURE sp_update_site_development_plan_application_comprehensive(IN p_form_id INT,
+-- Form metadata (3)
+IN p_form_datetime_resolved DATETIME,
+IN p_form_paid_bool BOOLEAN,
+IN p_correction_form_id INT,
+-- Hearing information (4)
+IN p_docket_number VARCHAR(255),
+IN p_public_hearing_date DATE,
+IN p_date_application_filed DATE,
+IN p_preapp_meeting_date DATE,
+-- Primary applicant (9)
+IN p_applicant_name VARCHAR(255),
+IN p_officers_names TEXT, -- JSON array
+IN p_applicant_street VARCHAR(255),
+IN p_applicant_phone VARCHAR(50),
+IN p_applicant_cell VARCHAR(50),
+IN p_applicant_city VARCHAR(255),
+IN p_applicant_state CHAR(2),
+IN p_applicant_zip_code VARCHAR(255),
+IN p_applicant_email VARCHAR(255),
+-- Additional applicants (JSON arrays) (9)
+IN p_additional_applicant_names TEXT,
+IN p_additional_applicant_officers TEXT,
+IN p_additional_applicant_streets TEXT,
+IN p_additional_applicant_phones TEXT,
+IN p_additional_applicant_cells TEXT,
+IN p_additional_applicant_cities TEXT,
+IN p_additional_applicant_states TEXT,
+IN p_additional_applicant_zip_codes TEXT,
+IN p_additional_applicant_emails TEXT,
+-- Property owner (8)
+IN p_owner_first_name VARCHAR(255),
+IN p_owner_last_name VARCHAR(255),
+IN p_owner_street VARCHAR(255),
+IN p_owner_phone VARCHAR(50),
+IN p_owner_cell VARCHAR(50),
+IN p_owner_city VARCHAR(255),
+IN p_owner_state CHAR(2),
+IN p_owner_zip_code VARCHAR(255),
+IN p_owner_email VARCHAR(255),
+-- Additional owners (JSON arrays) (8)
+IN p_additional_owner_names TEXT,
+IN p_additional_owner_streets TEXT,
+IN p_additional_owner_phones TEXT,
+IN p_additional_owner_cells TEXT,
+IN p_additional_owner_cities TEXT,
+IN p_additional_owner_states TEXT,
+IN p_additional_owner_zip_codes TEXT,
+IN p_additional_owner_emails TEXT,
+-- Attorney (6)
+IN p_attorney_first_name VARCHAR(255),
+IN p_attorney_last_name VARCHAR(255),
+IN p_law_firm VARCHAR(255),
+IN p_attorney_phone VARCHAR(50),
+IN p_attorney_cell VARCHAR(255),
+IN p_attorney_email VARCHAR(255),
+-- Surveyor (6)
+IN p_surveyor_first_name VARCHAR(255),
+IN p_surveyor_last_name VARCHAR(255),
+IN p_surveyor_firm VARCHAR(255),
+IN p_surveyor_phone VARCHAR(50),
+IN p_surveyor_cell VARCHAR(255),
+IN p_surveyor_email VARCHAR(255),
+-- Engineer (6)
+IN p_engineer_first_name VARCHAR(255),
+IN p_engineer_last_name VARCHAR(255),
+IN p_engineer_firm VARCHAR(255),
+IN p_engineer_phone VARCHAR(50),
+IN p_engineer_cell VARCHAR(255),
+IN p_engineer_email VARCHAR(255),
+-- Architect (6)
+IN p_architect_first_name VARCHAR(255),
+IN p_architect_last_name VARCHAR(255),
+IN p_architect_firm VARCHAR(255),
+IN p_architect_phone VARCHAR(50),
+IN p_architect_cell VARCHAR(255),
+IN p_architect_email VARCHAR(255),
+-- Landscape Architect (6)
+IN p_land_architect_first_name VARCHAR(255),
+IN p_land_architect_last_name VARCHAR(255),
+IN p_land_architect_firm VARCHAR(255),
+IN p_land_architect_phone VARCHAR(50),
+IN p_land_architect_cell VARCHAR(255),
+IN p_land_architect_email VARCHAR(255),
+-- Application details (2)
+IN p_application_type VARCHAR(255),
+IN p_site_plan_request TEXT,
+-- Checklist items (9)
+IN p_checklist_application BOOLEAN,
+IN p_checklist_verification BOOLEAN,
+IN p_checklist_project_plans BOOLEAN,
+IN p_checklist_landscape BOOLEAN,
+IN p_checklist_topographic BOOLEAN,
+IN p_checklist_traffic BOOLEAN,
+IN p_checklist_architectural BOOLEAN,
+IN p_checklist_covenants BOOLEAN,
+IN p_checklist_fees BOOLEAN,
+-- File uploads (7)
+IN p_file_verification VARCHAR(255),
+IN p_file_project_plans VARCHAR(255),
+IN p_file_landscape VARCHAR(255),
+IN p_file_topographic VARCHAR(255),
+IN p_file_traffic VARCHAR(255),
+IN p_file_architectural VARCHAR(255),
+IN p_file_covenants VARCHAR(255),
+-- Signatures (4)
+IN p_signature_date_1 DATE,
+IN p_signature_name_1 VARCHAR(255),
+IN p_signature_date_2 DATE,
+IN p_signature_name_2 VARCHAR(255))
 BEGIN
-  DECLARE v_primary_applicant_address_id INT DEFAULT NULL;
+DECLARE v_primary_applicant_address_id INT DEFAULT NULL;
   DECLARE v_owner_address_id INT DEFAULT NULL;
   DECLARE v_primary_applicant_id INT DEFAULT NULL;
   DECLARE v_primary_owner_id INT DEFAULT NULL;
@@ -1261,25 +1203,18 @@ BEGIN
   DECLARE v_last_name VARCHAR(255);
   DECLARE v_officer_name VARCHAR(255);
   DECLARE v_exec_id INT;
+START TRANSACTION;
+UPDATE forms SET form_datetime_submitted = CURRENT_TIMESTAMP, form_paid_bool = p_form_paid_bool, form_datetime_resolved = p_form_datetime_resolved, correction_form_id = p_correction_form_id WHERE form_id = p_form_id;
+DELETE FROM hearing_forms WHERE form_id = p_form_id;
+DELETE FROM applicants_link_forms WHERE form_id = p_form_id;
+DELETE FROM owners_link_forms WHERE form_id = p_form_id;
+DELETE FROM site_development_plan_applications WHERE form_id = p_form_id;
 
   START TRANSACTION;
   
   -- 1. Insert into forms table
-  INSERT INTO forms(
-    form_type, 
-    form_datetime_submitted, 
-    form_datetime_resolved, 
-    form_paid_bool, 
-    correction_form_id
-  )
-  VALUES(
-    'Development Plan Application (Site)', 
-    CURRENT_TIMESTAMP, 
-    p_form_datetime_resolved, 
-    p_form_paid_bool, 
-    p_correction_form_id
-  );
-  SET @new_form_id = LAST_INSERT_ID();
+  -- (removed forms insert in update) ;
+  -- (removed new_form_id in update)
 
   -- 2. Insert hearing information if provided
   IF p_docket_number IS NOT NULL OR p_public_hearing_date IS NOT NULL THEN
@@ -1303,7 +1238,7 @@ BEGIN
       form_id, hearing_docket_number, hearing_date_application_filed,
       hearing_date, hearing_preapp_meeting_date, attorney_id
     ) VALUES (
-      @new_form_id, p_docket_number, p_date_application_filed,
+      p_form_id, p_docket_number, p_date_application_filed,
       p_public_hearing_date, p_preapp_meeting_date, v_attorney_id
     );
   END IF;
@@ -1389,7 +1324,7 @@ BEGIN
 
     -- Link applicant to form
     INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-      VALUES(v_primary_applicant_id, @new_form_id);
+      VALUES(v_primary_applicant_id, p_form_id);
 
     -- Parse and insert officers/directors from JSON
     IF p_officers_names IS NOT NULL AND JSON_VALID(p_officers_names) THEN
@@ -1455,7 +1390,7 @@ BEGIN
         SET v_temp_applicant_id = LAST_INSERT_ID();
         
         INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-          VALUES(v_temp_applicant_id, @new_form_id);
+          VALUES(v_temp_applicant_id, p_form_id);
         
         -- Handle officers for additional applicants
         IF p_additional_applicant_officers IS NOT NULL AND JSON_VALID(p_additional_applicant_officers) THEN
@@ -1498,7 +1433,7 @@ BEGIN
     SET v_primary_owner_id = LAST_INSERT_ID();
 
     INSERT INTO owners_link_forms(t1_owner_id, form_id)
-      VALUES(v_primary_owner_id, @new_form_id);
+      VALUES(v_primary_owner_id, p_form_id);
   END IF;
 
   -- 10. Insert additional owners from JSON arrays
@@ -1520,7 +1455,7 @@ BEGIN
         SET v_temp_owner_id = LAST_INSERT_ID();
         
         INSERT INTO owners_link_forms(t1_owner_id, form_id)
-          VALUES(v_temp_owner_id, @new_form_id);
+          VALUES(v_temp_owner_id, p_form_id);
       END IF;
       SET v_idx = v_idx + 1;
     END WHILE;
@@ -1530,102 +1465,98 @@ BEGIN
   INSERT INTO site_development_plan_applications(
     form_id, surveyor_id, land_architect_id, engineer_id, architect_id, site_plan_request
   ) VALUES (
-    @new_form_id, v_surveyor_id, v_land_architect_id, v_engineer_id, v_architect_id, p_site_plan_request
+    p_form_id, v_surveyor_id, v_land_architect_id, v_engineer_id, v_architect_id, p_site_plan_request
   );
 
   COMMIT;
   
   -- Return the new form_id
-  SELECT @new_form_id AS form_id;
+  SELECT p_form_id AS form_id;
+COMMIT;
+SELECT p_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON PROCEDURE sp_insert_site_development_plan_application_comprehensive TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_update_site_development_plan_application_comprehensive TO 'webuser'@'localhost';
 
-
-/* ---------------------------
-   Future Land Use Map (FLUM) Application with Comprehensive Support
-   Similar structure to Zoning Map Amendment Application
-   --------------------------- */
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS sp_insert_future_land_use_map_application_comprehensive$$
-CREATE PROCEDURE sp_insert_future_land_use_map_application_comprehensive(
-  -- Hearing information
-  IN p_docket_number VARCHAR(255),
-  IN p_public_hearing_date DATE,
-  IN p_date_application_filed DATE,
-  IN p_preapp_meeting_date DATE,
-  -- Primary applicant
-  IN p_applicant_name VARCHAR(255),
-  IN p_officers_names TEXT, -- JSON array
-  IN p_applicant_street VARCHAR(255),
-  IN p_applicant_phone VARCHAR(50),
-  IN p_applicant_cell VARCHAR(50),
-  IN p_applicant_city VARCHAR(255),
-  IN p_applicant_state CHAR(2),
-  IN p_applicant_zip_code VARCHAR(255),
-  IN p_applicant_other_address VARCHAR(255),
-  IN p_applicant_email VARCHAR(255),
-  -- Additional applicants (JSON arrays)
-  IN p_additional_applicant_names TEXT,
-  IN p_additional_applicant_officers TEXT,
-  IN p_additional_applicant_streets TEXT,
-  IN p_additional_applicant_phones TEXT,
-  IN p_additional_applicant_cells TEXT,
-  IN p_additional_applicant_cities TEXT,
-  IN p_additional_applicant_states TEXT,
-  IN p_additional_applicant_zip_codes TEXT,
-  IN p_additional_applicant_other_addresses TEXT,
-  IN p_additional_applicant_emails TEXT,
-  -- Property owner
-  IN p_owner_first_name VARCHAR(255),
-  IN p_owner_last_name VARCHAR(255),
-  IN p_owner_street VARCHAR(255),
-  IN p_owner_phone VARCHAR(50),
-  IN p_owner_cell VARCHAR(50),
-  IN p_owner_city VARCHAR(255),
-  IN p_owner_state CHAR(2),
-  IN p_owner_zip_code VARCHAR(255),
-  IN p_owner_other_address VARCHAR(255),
-  IN p_owner_email VARCHAR(255),
-  -- Additional owners (JSON arrays)
-  IN p_additional_owner_names TEXT,
-  IN p_additional_owner_streets TEXT,
-  IN p_additional_owner_phones TEXT,
-  IN p_additional_owner_cells TEXT,
-  IN p_additional_owner_cities TEXT,
-  IN p_additional_owner_states TEXT,
-  IN p_additional_owner_zip_codes TEXT,
-  IN p_additional_owner_other_addresses TEXT,
-  IN p_additional_owner_emails TEXT,
-  -- Attorney
-  IN p_attorney_first_name VARCHAR(255),
-  IN p_attorney_last_name VARCHAR(255),
-  IN p_law_firm VARCHAR(255),
-  IN p_attorney_phone VARCHAR(50),
-  IN p_attorney_cell VARCHAR(255),
-  IN p_attorney_email VARCHAR(255),
-  -- Property information
-  IN p_property_street VARCHAR(255),
-  IN p_property_city VARCHAR(255),
-  IN p_property_state CHAR(2),
-  IN p_property_zip_code VARCHAR(255),
-  IN p_property_other_address VARCHAR(255),
-  IN p_parcel_number INT,
-  IN p_acreage VARCHAR(255),
-  IN p_current_zoning VARCHAR(255),
-  -- FLUM request
-  IN p_flum_request TEXT,
-  -- Findings
-  IN p_finding_type VARCHAR(255),
-  IN p_findings_explanation TEXT,
-  -- File uploads (stored as file paths/names)
-  IN p_file_exhibit VARCHAR(255),
-  IN p_file_concept VARCHAR(255),
-  IN p_file_compatibility VARCHAR(255)
-)
+DROP PROCEDURE IF EXISTS sp_update_future_land_use_map_application_comprehensive$$
+CREATE PROCEDURE sp_update_future_land_use_map_application_comprehensive(IN p_form_id INT,
+-- Hearing information
+IN p_docket_number VARCHAR(255),
+IN p_public_hearing_date DATE,
+IN p_date_application_filed DATE,
+IN p_preapp_meeting_date DATE,
+-- Primary applicant
+IN p_applicant_name VARCHAR(255),
+IN p_officers_names TEXT, -- JSON array
+IN p_applicant_street VARCHAR(255),
+IN p_applicant_phone VARCHAR(50),
+IN p_applicant_cell VARCHAR(50),
+IN p_applicant_city VARCHAR(255),
+IN p_applicant_state CHAR(2),
+IN p_applicant_zip_code VARCHAR(255),
+IN p_applicant_other_address VARCHAR(255),
+IN p_applicant_email VARCHAR(255),
+-- Additional applicants (JSON arrays)
+IN p_additional_applicant_names TEXT,
+IN p_additional_applicant_officers TEXT,
+IN p_additional_applicant_streets TEXT,
+IN p_additional_applicant_phones TEXT,
+IN p_additional_applicant_cells TEXT,
+IN p_additional_applicant_cities TEXT,
+IN p_additional_applicant_states TEXT,
+IN p_additional_applicant_zip_codes TEXT,
+IN p_additional_applicant_other_addresses TEXT,
+IN p_additional_applicant_emails TEXT,
+-- Property owner
+IN p_owner_first_name VARCHAR(255),
+IN p_owner_last_name VARCHAR(255),
+IN p_owner_street VARCHAR(255),
+IN p_owner_phone VARCHAR(50),
+IN p_owner_cell VARCHAR(50),
+IN p_owner_city VARCHAR(255),
+IN p_owner_state CHAR(2),
+IN p_owner_zip_code VARCHAR(255),
+IN p_owner_other_address VARCHAR(255),
+IN p_owner_email VARCHAR(255),
+-- Additional owners (JSON arrays)
+IN p_additional_owner_names TEXT,
+IN p_additional_owner_streets TEXT,
+IN p_additional_owner_phones TEXT,
+IN p_additional_owner_cells TEXT,
+IN p_additional_owner_cities TEXT,
+IN p_additional_owner_states TEXT,
+IN p_additional_owner_zip_codes TEXT,
+IN p_additional_owner_other_addresses TEXT,
+IN p_additional_owner_emails TEXT,
+-- Attorney
+IN p_attorney_first_name VARCHAR(255),
+IN p_attorney_last_name VARCHAR(255),
+IN p_law_firm VARCHAR(255),
+IN p_attorney_phone VARCHAR(50),
+IN p_attorney_cell VARCHAR(255),
+IN p_attorney_email VARCHAR(255),
+-- Property information
+IN p_property_street VARCHAR(255),
+IN p_property_city VARCHAR(255),
+IN p_property_state CHAR(2),
+IN p_property_zip_code VARCHAR(255),
+IN p_property_other_address VARCHAR(255),
+IN p_parcel_number INT,
+IN p_acreage VARCHAR(255),
+IN p_current_zoning VARCHAR(255),
+-- FLUM request
+IN p_flum_request TEXT,
+-- Findings
+IN p_finding_type VARCHAR(255),
+IN p_findings_explanation TEXT,
+-- File uploads (stored as file paths/names)
+IN p_file_exhibit VARCHAR(255),
+IN p_file_concept VARCHAR(255),
+IN p_file_compatibility VARCHAR(255))
 BEGIN
-  DECLARE v_property_address_id INT DEFAULT NULL;
+DECLARE v_property_address_id INT DEFAULT NULL;
   DECLARE v_primary_applicant_address_id INT DEFAULT NULL;
   DECLARE v_owner_address_id INT DEFAULT NULL;
   DECLARE v_primary_applicant_id INT DEFAULT NULL;
@@ -1648,19 +1579,18 @@ BEGIN
   DECLARE v_last_name VARCHAR(255);
   DECLARE v_officer_name VARCHAR(255);
   DECLARE v_exec_id INT;
+START TRANSACTION;
+UPDATE forms SET form_datetime_submitted = CURRENT_TIMESTAMP WHERE form_id = p_form_id;
+DELETE FROM hearing_forms WHERE form_id = p_form_id;
+DELETE FROM applicants_link_forms WHERE form_id = p_form_id;
+DELETE FROM owners_link_forms WHERE form_id = p_form_id;
+DELETE FROM future_land_use_map_applications WHERE form_id = p_form_id;
 
   START TRANSACTION;
   
   -- 1. Insert into forms table
-  INSERT INTO forms(
-    form_type, 
-    form_datetime_submitted
-  )
-  VALUES(
-    'Future Land Use Map (FLUM) Application', 
-    CURRENT_TIMESTAMP
-  );
-  SET @new_form_id = LAST_INSERT_ID();
+  -- (removed forms insert in update) ;
+  -- (removed new_form_id in update)
 
   -- 2. Insert hearing information if provided
   IF p_docket_number IS NOT NULL OR p_public_hearing_date IS NOT NULL THEN
@@ -1684,7 +1614,7 @@ BEGIN
       form_id, hearing_docket_number, hearing_date_application_filed,
       hearing_date, hearing_preapp_meeting_date, attorney_id
     ) VALUES (
-      @new_form_id, p_docket_number, p_date_application_filed,
+      p_form_id, p_docket_number, p_date_application_filed,
       p_public_hearing_date, p_preapp_meeting_date, v_attorney_id
     );
   END IF;
@@ -1735,7 +1665,7 @@ BEGIN
 
     -- Link applicant to form
     INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-      VALUES(v_primary_applicant_id, @new_form_id);
+      VALUES(v_primary_applicant_id, p_form_id);
 
     -- Parse and insert officers/directors from JSON
     IF p_officers_names IS NOT NULL AND JSON_VALID(p_officers_names) THEN
@@ -1801,7 +1731,7 @@ BEGIN
         SET v_temp_applicant_id = LAST_INSERT_ID();
         
         INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-          VALUES(v_temp_applicant_id, @new_form_id);
+          VALUES(v_temp_applicant_id, p_form_id);
         
         -- Handle officers for additional applicants
         IF p_additional_applicant_officers IS NOT NULL AND JSON_VALID(p_additional_applicant_officers) THEN
@@ -1844,7 +1774,7 @@ BEGIN
     SET v_primary_owner_id = LAST_INSERT_ID();
 
     INSERT INTO owners_link_forms(t1_owner_id, form_id)
-      VALUES(v_primary_owner_id, @new_form_id);
+      VALUES(v_primary_owner_id, p_form_id);
   END IF;
 
   -- 8. Insert additional owners from JSON arrays
@@ -1866,7 +1796,7 @@ BEGIN
         SET v_temp_owner_id = LAST_INSERT_ID();
         
         INSERT INTO owners_link_forms(t1_owner_id, form_id)
-          VALUES(v_temp_owner_id, @new_form_id);
+          VALUES(v_temp_owner_id, p_form_id);
       END IF;
       SET v_idx = v_idx + 1;
     END WHILE;
@@ -1880,7 +1810,7 @@ BEGIN
     findings_explanation,
     PVA_parcel_number
   ) VALUES (
-    @new_form_id,
+    p_form_id,
     p_flum_request,
     p_finding_type,
     p_findings_explanation,
@@ -1890,371 +1820,133 @@ BEGIN
   COMMIT;
   
   -- Return the new form_id
-  SELECT @new_form_id AS form_id;
+  SELECT p_form_id AS form_id;
+COMMIT;
+SELECT p_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON PROCEDURE sp_insert_future_land_use_map_application_comprehensive TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_update_future_land_use_map_application_comprehensive TO 'webuser'@'localhost';
 
-
-
-/* ---------------------------
-   7) Open Records Request
-   Tables: forms, open_record_requests, orr_applicants, orr_public_record_names (via public_records)
-   Note: For simplicity this procedure can insert one orr_applicant and optionally one public_record mapping.
-   --------------------------- */
 
 DELIMITER $$
-CREATE PROCEDURE sp_insert_open_records_request(
-  IN p_orr_commercial_purpose VARCHAR(255),
-  IN p_orr_request_for_copies VARCHAR(255),
-  IN p_orr_received_on_datetime DATE,
-  IN p_orr_receivable_datetime DATE,
-  IN p_orr_denied_reasons TEXT,
-  -- orr_applicant fields (optional)
-  IN p_orr_applicant_first_name VARCHAR(255),
-  IN p_orr_applicant_last_name VARCHAR(255),
-  IN p_orr_applicant_telephone VARCHAR(50),
-  IN p_orr_applicant_street VARCHAR(255),
-  IN p_orr_applicant_city VARCHAR(255),
-  IN p_orr_state_code CHAR(2),
-  IN p_orr_applicant_zip_code VARCHAR(50),
-  -- public record to map (optional)
-  IN p_public_record_description TEXT
-)
+DROP PROCEDURE IF EXISTS sp_update_major_subdivision_plat_application$$
+CREATE PROCEDURE sp_update_major_subdivision_plat_application(IN p_form_id INT,
+-- Technical form dates
+IN p_application_filing_date DATE,
+IN p_technical_review_date DATE,
+IN p_preliminary_approval_date DATE,
+IN p_final_approval_date DATE,
+-- Primary applicant
+IN p_applicant_name VARCHAR(255),
+IN p_officers_names TEXT, -- JSON array
+IN p_applicant_street VARCHAR(255),
+IN p_applicant_phone VARCHAR(50),
+IN p_applicant_cell VARCHAR(50),
+IN p_applicant_city VARCHAR(255),
+IN p_applicant_state CHAR(2),
+IN p_applicant_zip_code VARCHAR(255),
+IN p_applicant_other_address VARCHAR(255),
+IN p_applicant_email VARCHAR(255),
+-- Additional applicants (JSON arrays)
+IN p_additional_applicant_names TEXT,
+IN p_additional_applicant_officers TEXT,
+IN p_additional_applicant_streets TEXT,
+IN p_additional_applicant_phones TEXT,
+IN p_additional_applicant_cells TEXT,
+IN p_additional_applicant_cities TEXT,
+IN p_additional_applicant_states TEXT,
+IN p_additional_applicant_zip_codes TEXT,
+IN p_additional_applicant_other_addresses TEXT,
+IN p_additional_applicant_emails TEXT,
+-- Property owner
+IN p_owner_first_name VARCHAR(255),
+IN p_owner_last_name VARCHAR(255),
+IN p_owner_street VARCHAR(255),
+IN p_owner_phone VARCHAR(50),
+IN p_owner_cell VARCHAR(50),
+IN p_owner_city VARCHAR(255),
+IN p_owner_state CHAR(2),
+IN p_owner_zip_code VARCHAR(255),
+IN p_owner_other_address VARCHAR(255),
+IN p_owner_email VARCHAR(255),
+-- Additional owners (JSON arrays)
+IN p_additional_owner_names TEXT,
+IN p_additional_owner_streets TEXT,
+IN p_additional_owner_phones TEXT,
+IN p_additional_owner_cells TEXT,
+IN p_additional_owner_cities TEXT,
+IN p_additional_owner_states TEXT,
+IN p_additional_owner_zip_codes TEXT,
+IN p_additional_owner_other_addresses TEXT,
+IN p_additional_owner_emails TEXT,
+-- Surveyor (can be new or existing)
+IN p_surveyor_first_name VARCHAR(255),
+IN p_surveyor_last_name VARCHAR(255),
+IN p_surveyor_firm VARCHAR(255),
+IN p_surveyor_email VARCHAR(255),
+IN p_surveyor_phone VARCHAR(50),
+IN p_surveyor_cell VARCHAR(255),
+-- Engineer (can be new or existing)
+IN p_engineer_first_name VARCHAR(255),
+IN p_engineer_last_name VARCHAR(255),
+IN p_engineer_firm VARCHAR(255),
+IN p_engineer_email VARCHAR(255),
+IN p_engineer_phone VARCHAR(50),
+IN p_engineer_cell VARCHAR(255),
+-- Property information
+IN p_property_street VARCHAR(255),
+IN p_property_city VARCHAR(255),
+IN p_property_state CHAR(2),
+IN p_property_zip_code VARCHAR(255),
+IN p_property_other_address VARCHAR(255),
+IN p_parcel_number INT,
+IN p_acreage VARCHAR(255),
+IN p_current_zoning VARCHAR(255),
+-- Subdivision plat details (expanded for major subdivision)
+IN p_mspa_topographic_survey VARCHAR(255),
+IN p_mspa_proposed_plot_layout VARCHAR(255),
+IN p_mspa_plat_restrictions VARCHAR(255),
+IN p_mspa_property_owner_convenants VARCHAR(255),
+IN p_mspa_association_covenants VARCHAR(255),
+IN p_mspa_master_deed VARCHAR(255),
+IN p_mspa_construction_plans VARCHAR(255),
+IN p_mspa_traffic_impact_study VARCHAR(255),
+IN p_mspa_geologic_study VARCHAR(255),
+IN p_mspa_drainage_plan VARCHAR(255),
+IN p_mspa_pavement_design VARCHAR(255),
+IN p_mspa_SWPPP_EPSC_plan VARCHAR(255),
+IN p_mspa_construction_bond_est VARCHAR(255),
+-- Checklist items (15 items for major subdivision)
+IN p_checklist_application BOOLEAN,
+IN p_checklist_agency_signatures BOOLEAN,
+IN p_checklist_lot_layout BOOLEAN,
+IN p_checklist_topographic BOOLEAN,
+IN p_checklist_restrictions BOOLEAN,
+IN p_checklist_fees BOOLEAN,
+IN p_checklist_construction_plans BOOLEAN,
+IN p_checklist_traffic_study BOOLEAN,
+IN p_checklist_drainage BOOLEAN,
+IN p_checklist_pavement BOOLEAN,
+IN p_checklist_swppp BOOLEAN,
+IN p_checklist_bond_estimate BOOLEAN,
+IN p_checklist_construction_contract BOOLEAN,
+IN p_checklist_construction_bond BOOLEAN,
+IN p_checklist_notice_proceed BOOLEAN,
+-- File uploads (stored as file paths/names)
+IN p_file_agency_signatures VARCHAR(255),
+IN p_file_lot_layout VARCHAR(255),
+IN p_file_topographic VARCHAR(255),
+IN p_file_restrictions VARCHAR(255),
+IN p_file_construction_plans VARCHAR(255),
+IN p_file_traffic_study VARCHAR(255),
+IN p_file_drainage VARCHAR(255),
+IN p_file_pavement VARCHAR(255),
+IN p_file_swppp VARCHAR(255),
+IN p_file_bond_estimate VARCHAR(255),
+IN p_file_construction_contract VARCHAR(255),
+IN p_file_construction_bond VARCHAR(255))
 BEGIN
-DECLARE
-  orr_property_address_id INT DEFAULT NULL;
-  START TRANSACTION;
-  INSERT INTO forms(form_type, form_datetime_submitted)
-    VALUES('Open Records Request', CURRENT_TIMESTAMP);
-  SET @new_form_id = LAST_INSERT_ID();
-
-  SET orr_property_address_id = find_duplicate_address_id(p_orr_applicant_street, p_orr_applicant_city, p_orr_state_code, p_orr_applicant_zip_code);
-  IF p_orr_applicant_street IS NOT NULL OR p_orr_applicant_city IS NOT NULL THEN
-    INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
-      VALUES(p_orr_applicant_street, p_orr_applicant_city, p_orr_state_code, p_orr_applicant_zip_code);
-    SET orr_property_address_id = LAST_INSERT_ID();
-  END IF;
-
-  IF p_orr_applicant_first_name IS NOT NULL OR p_orr_applicant_last_name IS NOT NULL THEN
-    INSERT INTO orr_applicants(
-      orr_applicant_first_name, orr_applicant_last_name, orr_applicant_telephone,
-      address_id
-    ) VALUES (
-      p_orr_applicant_first_name, p_orr_applicant_last_name, p_orr_applicant_telephone,
-      orr_property_address_id
-    );
-    SET @new_orr_applicant_id = LAST_INSERT_ID();
-  ELSE
-    SET @new_orr_applicant_id = NULL;
-  END IF;
-
-  INSERT INTO open_record_requests(
-    form_id, orr_commercial_purpose, orr_request_for_copies, orr_received_on_datetime,
-    orr_receivable_datetime, orr_denied_reasons, orr_applicant_id
-  ) VALUES (
-    @new_form_id, p_orr_commercial_purpose, p_orr_request_for_copies, p_orr_received_on_datetime,
-    p_orr_receivable_datetime, p_orr_denied_reasons, @new_orr_applicant_id
-  );
-
-  IF p_public_record_description IS NOT NULL THEN
-    INSERT INTO public_records(public_record_description)
-      VALUES(p_public_record_description);
-    SET @new_public_record_id = LAST_INSERT_ID();
-    INSERT INTO orr_public_record_names(form_id, public_record_id) VALUES(@new_form_id, @new_public_record_id);
-  END IF;
-
-  COMMIT;
-END$$
-DELIMITER ;
-GRANT EXECUTE ON PROCEDURE sp_insert_open_records_request TO 'webuser'@'localhost';
-
-
-
-/* ---------------------------
-   8) Sign Permit Application
-   Tables: forms, sign_permit_applications, sp_property_owners, sp_businesses, sp_contractors, signs, permits_link_signs
-   This procedure supports inserting one owner, one business, one contractor, and one sign then linking them.
-   --------------------------- */
-DELIMITER $$
-CREATE PROCEDURE sp_insert_sign_permit_application(
-  -- sign_permit_applications fields
-  IN p_sp_date DATE,
-  IN p_sp_permit_number VARCHAR(255),
-  IN p_sp_building_coverage_percent VARCHAR(255),
-  IN p_sp_permit_fee VARCHAR(255),
-  -- new owner fields (if p_sp_owner_id IS NULL)
-  IN p_sp_owner_first_name VARCHAR(255),
-  IN p_sp_owner_last_name VARCHAR(255),
-  IN p_sp_owner_street VARCHAR(255),
-  IN p_sp_owner_city VARCHAR(255),
-  IN p_sp_owner_state_code CHAR(2),
-  IN p_sp_owner_zip_code VARCHAR(50),
-  -- new business fields (if p_sp_business_id IS NULL)
-  IN p_sp_business_name VARCHAR(255),
-  IN p_sp_business_street VARCHAR(255),
-  IN p_sp_business_city VARCHAR(255),
-  IN p_sp_business_state_code CHAR(2),
-  IN p_sp_business_zip_code VARCHAR(50),
-  -- new applicant fields (if p_sp_business_id IS NULL)
-  IN p_sp_applicant_name VARCHAR(255),
-  IN p_sp_applicant_street VARCHAR(255),
-  IN p_sp_applicant_city VARCHAR(255),
-  IN p_sp_applicant_state_code CHAR(2),
-  IN p_sp_applicant_zip_code VARCHAR(50),
-  -- new contractor fields (if p_contractor_id IS NULL)
-  IN p_sp_contractor_first_name VARCHAR(255),
-  IN p_sp_contractor_last_name VARCHAR(255),
-  IN p_sp_contractor_phone_number VARCHAR(50),
-  -- sign fields (optional)
-  IN p_sign_type VARCHAR(255),
-  IN p_sign_square_footage DECIMAL(12,2),
-  IN p_lettering_height VARCHAR(255)
-)
-BEGIN
-  DECLARE owner_address_id INT DEFAULT 0;
-  DECLARE business_address_id INT DEFAULT 0;
-  DECLARE applicant_address_id INT DEFAULT 0;
-  DECLARE p_sp_owner_id INT DEFAULT NULL;
-  DECLARE p_contractor_id INT DEFAULT NULL;
-  DECLARE p_sp_business_id INT DEFAULT NULL;
-  DECLARE p_sp_applicant_id INT DEFAULT NULL;
-
-  START TRANSACTION;
-  INSERT INTO forms(form_type, form_datetime_submitted)
-    VALUES('Sign Permit Application', CURRENT_TIMESTAMP);
-  SET @new_form_id = LAST_INSERT_ID();
-
-
- -- owner
-  SET owner_address_id = find_duplicate_address_id(p_sp_owner_street, p_sp_owner_city, p_sp_owner_state_code, p_sp_owner_zip_code);
-  IF owner_address_id IS NULL AND (p_sp_owner_street IS NOT NULL OR p_sp_owner_city IS NOT NULL) THEN
-    INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
-      VALUES(p_sp_owner_street, p_sp_owner_city, p_sp_owner_state_code, p_sp_owner_zip_code);
-    SET owner_address_id = LAST_INSERT_ID();
-  END IF;
-
-  IF p_sp_owner_id IS NULL THEN
-    IF p_sp_owner_first_name IS NOT NULL OR p_sp_owner_last_name IS NOT NULL THEN
-      INSERT INTO sp_property_owners(sp_owner_first_name, sp_owner_last_name, address_id)
-        VALUES(p_sp_owner_first_name, p_sp_owner_last_name, owner_address_id);
-      SET @insert_owner_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_owner_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_owner_id = p_sp_owner_id;
-  END IF;
-
-  -- business
-  SET business_address_id = find_duplicate_address_id(p_sp_business_street, p_sp_business_city, p_sp_business_state_code, p_sp_business_zip_code);
-  IF business_address_id IS NULL AND (p_sp_business_street IS NOT NULL OR p_sp_business_city IS NOT NULL) THEN
-    INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
-      VALUES(p_sp_business_street, p_sp_business_city, p_sp_business_state_code, p_sp_business_zip_code);
-    SET business_address_id = LAST_INSERT_ID();
-  END IF;
-
-  IF p_sp_business_id IS NULL THEN
-    IF p_sp_business_name IS NOT NULL THEN
-      INSERT INTO sp_businesses(sp_business_name, address_id)
-        VALUES(p_sp_business_name, business_address_id);
-      SET @insert_business_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_business_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_business_id = p_sp_business_id;
-  END IF;
-
-  -- applicant
-  SET applicant_address_id = find_duplicate_address_id(p_sp_applicant_street, p_sp_applicant_city, p_sp_applicant_state_code, p_sp_applicant_zip_code);
-  IF applicant_address_id IS NULL AND (p_sp_applicant_street IS NOT NULL OR p_sp_applicant_city IS NOT NULL) THEN
-    INSERT INTO addresses(address_street, address_city, state_code, address_zip_code)
-      VALUES(p_sp_applicant_street, p_sp_applicant_city, p_sp_applicant_state_code, p_sp_applicant_zip_code);
-    SET applicant_address_id = LAST_INSERT_ID();
-  END IF;
-
-  IF p_sp_applicant_id IS NULL THEN
-    IF p_sp_applicant_name IS NOT NULL THEN
-      INSERT INTO sp_applicants(sp_applicant_name, address_id)
-        VALUES(p_sp_applicant_name, applicant_address_id);
-      SET @insert_applicant_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_applicant_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_applicant_id = p_sp_applicant_id;
-  END IF;
-
-  -- contractor
-  IF p_contractor_id IS NULL THEN
-    IF p_sp_contractor_first_name IS NOT NULL OR p_sp_contractor_last_name IS NOT NULL THEN
-      INSERT INTO sp_contractors(sp_contractor_first_name, sp_contractor_last_name, sp_contractor_phone_number)
-        VALUES(p_sp_contractor_first_name, p_sp_contractor_last_name, p_sp_contractor_phone_number);
-      SET @insert_contractor_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_contractor_id = NULL;
-    END IF;
-  ELSE
-    SET @insert_contractor_id = p_contractor_id;
-  END IF;
-
-  INSERT INTO sign_permit_applications(form_id, owner_id, sp_contractor_id, business_id, sp_applicant_id, sp_date, sp_permit_number, sp_building_coverage_percent, sp_permit_fee)
-    VALUES(@new_form_id, @insert_owner_id, @insert_contractor_id, @insert_business_id, @insert_applicant_id, p_sp_date, p_sp_permit_number, p_sp_building_coverage_percent, p_sp_permit_fee);
-
-  -- optional sign
-  IF p_sign_type IS NOT NULL OR p_sign_square_footage IS NOT NULL THEN
-    INSERT INTO signs(sp_owner_id, sign_type, sign_square_footage, lettering_height)
-      VALUES(@insert_owner_id, p_sign_type, p_sign_square_footage, p_lettering_height);
-    SET @new_sign_id = LAST_INSERT_ID();
-    INSERT INTO permits_link_signs(form_id, sign_id) VALUES(@new_form_id, @new_sign_id);
-  END IF;
-
-  COMMIT;
-    SELECT @new_form_id AS form_id;
-END$$
-DELIMITER ;
-GRANT EXECUTE ON PROCEDURE sp_insert_sign_permit_application TO 'webuser'@'localhost';
-
-
-
-/* ---------------------------
-   Corrected: Major Subdivision Plat Application
-   Tables: forms, major_subdivision_plat_applications, technical_forms, properties, addresses,
-           type_one_applicants, type_one_owners, type_one_execs, surveyors, engineers
-   This procedure handles the complete major subdivision plat application with all required fields
-   --------------------------- */
-
-DELIMITER $$
-DROP PROCEDURE IF EXISTS sp_insert_major_subdivision_plat_application$$
-CREATE PROCEDURE sp_insert_major_subdivision_plat_application(
-  -- Technical form dates
-  IN p_application_filing_date DATE,
-  IN p_technical_review_date DATE,
-  IN p_preliminary_approval_date DATE,
-  IN p_final_approval_date DATE,
-  
-  -- Primary applicant
-  IN p_applicant_name VARCHAR(255),
-  IN p_officers_names TEXT, -- JSON array
-  IN p_applicant_street VARCHAR(255),
-  IN p_applicant_phone VARCHAR(50),
-  IN p_applicant_cell VARCHAR(50),
-  IN p_applicant_city VARCHAR(255),
-  IN p_applicant_state CHAR(2),
-  IN p_applicant_zip_code VARCHAR(255),
-  IN p_applicant_other_address VARCHAR(255),
-  IN p_applicant_email VARCHAR(255),
-  
-  -- Additional applicants (JSON arrays)
-  IN p_additional_applicant_names TEXT,
-  IN p_additional_applicant_officers TEXT,
-  IN p_additional_applicant_streets TEXT,
-  IN p_additional_applicant_phones TEXT,
-  IN p_additional_applicant_cells TEXT,
-  IN p_additional_applicant_cities TEXT,
-  IN p_additional_applicant_states TEXT,
-  IN p_additional_applicant_zip_codes TEXT,
-  IN p_additional_applicant_other_addresses TEXT,
-  IN p_additional_applicant_emails TEXT,
-  
-  -- Property owner
-  IN p_owner_first_name VARCHAR(255),
-  IN p_owner_last_name VARCHAR(255),
-  IN p_owner_street VARCHAR(255),
-  IN p_owner_phone VARCHAR(50),
-  IN p_owner_cell VARCHAR(50),
-  IN p_owner_city VARCHAR(255),
-  IN p_owner_state CHAR(2),
-  IN p_owner_zip_code VARCHAR(255),
-  IN p_owner_other_address VARCHAR(255),
-  IN p_owner_email VARCHAR(255),
-  
-  -- Additional owners (JSON arrays)
-  IN p_additional_owner_names TEXT,
-  IN p_additional_owner_streets TEXT,
-  IN p_additional_owner_phones TEXT,
-  IN p_additional_owner_cells TEXT,
-  IN p_additional_owner_cities TEXT,
-  IN p_additional_owner_states TEXT,
-  IN p_additional_owner_zip_codes TEXT,
-  IN p_additional_owner_other_addresses TEXT,
-  IN p_additional_owner_emails TEXT,
-  
-  -- Surveyor (can be new or existing)
-  IN p_surveyor_first_name VARCHAR(255),
-  IN p_surveyor_last_name VARCHAR(255),
-  IN p_surveyor_firm VARCHAR(255),
-  IN p_surveyor_email VARCHAR(255),
-  IN p_surveyor_phone VARCHAR(50),
-  IN p_surveyor_cell VARCHAR(255),
-  
-  -- Engineer (can be new or existing)
-  IN p_engineer_first_name VARCHAR(255),
-  IN p_engineer_last_name VARCHAR(255),
-  IN p_engineer_firm VARCHAR(255),
-  IN p_engineer_email VARCHAR(255),
-  IN p_engineer_phone VARCHAR(50),
-  IN p_engineer_cell VARCHAR(255),
-  
-  -- Property information
-  IN p_property_street VARCHAR(255),
-  IN p_property_city VARCHAR(255),
-  IN p_property_state CHAR(2),
-  IN p_property_zip_code VARCHAR(255),
-  IN p_property_other_address VARCHAR(255),
-  IN p_parcel_number INT,
-  IN p_acreage VARCHAR(255),
-  IN p_current_zoning VARCHAR(255),
-  
-  -- Subdivision plat details (expanded for major subdivision)
-  IN p_mspa_topographic_survey VARCHAR(255),
-  IN p_mspa_proposed_plot_layout VARCHAR(255),
-  IN p_mspa_plat_restrictions VARCHAR(255),
-  IN p_mspa_property_owner_convenants VARCHAR(255),
-  IN p_mspa_association_covenants VARCHAR(255),
-  IN p_mspa_master_deed VARCHAR(255),
-  IN p_mspa_construction_plans VARCHAR(255),
-  IN p_mspa_traffic_impact_study VARCHAR(255),
-  IN p_mspa_geologic_study VARCHAR(255),
-  IN p_mspa_drainage_plan VARCHAR(255),
-  IN p_mspa_pavement_design VARCHAR(255),
-  IN p_mspa_SWPPP_EPSC_plan VARCHAR(255),
-  IN p_mspa_construction_bond_est VARCHAR(255),
-  
-  -- Checklist items (15 items for major subdivision)
-  IN p_checklist_application BOOLEAN,
-  IN p_checklist_agency_signatures BOOLEAN,
-  IN p_checklist_lot_layout BOOLEAN,
-  IN p_checklist_topographic BOOLEAN,
-  IN p_checklist_restrictions BOOLEAN,
-  IN p_checklist_fees BOOLEAN,
-  IN p_checklist_construction_plans BOOLEAN,
-  IN p_checklist_traffic_study BOOLEAN,
-  IN p_checklist_drainage BOOLEAN,
-  IN p_checklist_pavement BOOLEAN,
-  IN p_checklist_swppp BOOLEAN,
-  IN p_checklist_bond_estimate BOOLEAN,
-  IN p_checklist_construction_contract BOOLEAN,
-  IN p_checklist_construction_bond BOOLEAN,
-  IN p_checklist_notice_proceed BOOLEAN,
-  
-  -- File uploads (stored as file paths/names)
-  IN p_file_agency_signatures VARCHAR(255),
-  IN p_file_lot_layout VARCHAR(255),
-  IN p_file_topographic VARCHAR(255),
-  IN p_file_restrictions VARCHAR(255),
-  IN p_file_construction_plans VARCHAR(255),
-  IN p_file_traffic_study VARCHAR(255),
-  IN p_file_drainage VARCHAR(255),
-  IN p_file_pavement VARCHAR(255),
-  IN p_file_swppp VARCHAR(255),
-  IN p_file_bond_estimate VARCHAR(255),
-  IN p_file_construction_contract VARCHAR(255),
-  IN p_file_construction_bond VARCHAR(255)
-)
-BEGIN
-  DECLARE v_property_address_id INT DEFAULT NULL;
+DECLARE v_property_address_id INT DEFAULT NULL;
   DECLARE v_primary_applicant_address_id INT DEFAULT NULL;
   DECLARE v_owner_address_id INT DEFAULT NULL;
   DECLARE v_primary_applicant_id INT DEFAULT NULL;
@@ -2278,19 +1970,18 @@ BEGIN
   DECLARE v_last_name VARCHAR(255);
   DECLARE v_officer_name VARCHAR(255);
   DECLARE v_exec_id INT;
+START TRANSACTION;
+UPDATE forms SET form_datetime_submitted = CURRENT_TIMESTAMP WHERE form_id = p_form_id;
+DELETE FROM technical_forms WHERE form_id = p_form_id;
+DELETE FROM applicants_link_forms WHERE form_id = p_form_id;
+DELETE FROM owners_link_forms WHERE form_id = p_form_id;
+DELETE FROM major_subdivision_plat_applications WHERE form_id = p_form_id;
 
   START TRANSACTION;
   
   -- 1. Insert into forms table
-  INSERT INTO forms(
-    form_type, 
-    form_datetime_submitted
-  )
-  VALUES(
-    'Major Subdivision Plat Application', 
-    CURRENT_TIMESTAMP
-  );
-  SET @new_form_id = LAST_INSERT_ID();
+  -- (removed forms insert in update) ;
+  -- (removed new_form_id in update)
 
   -- 2. Insert technical form dates if provided
   IF p_application_filing_date IS NOT NULL OR p_technical_review_date IS NOT NULL OR 
@@ -2299,7 +1990,7 @@ BEGIN
       form_id, technical_app_filing_date, technical_review_date,
       technical_prelim_approval_date, technical_final_approval_date
     ) VALUES (
-      @new_form_id, p_application_filing_date, p_technical_review_date,
+      p_form_id, p_application_filing_date, p_technical_review_date,
       p_preliminary_approval_date, p_final_approval_date
     );
   END IF;
@@ -2350,7 +2041,7 @@ BEGIN
 
     -- Link applicant to form
     INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-      VALUES(v_primary_applicant_id, @new_form_id);
+      VALUES(v_primary_applicant_id, p_form_id);
 
     -- Parse and insert officers/directors from JSON
     IF p_officers_names IS NOT NULL AND JSON_VALID(p_officers_names) THEN
@@ -2423,7 +2114,7 @@ BEGIN
         
         -- Link to form
         INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-          VALUES(v_temp_applicant_id, @new_form_id);
+          VALUES(v_temp_applicant_id, p_form_id);
         
         -- Handle officers for this additional applicant
         IF p_additional_applicant_officers IS NOT NULL AND JSON_VALID(p_additional_applicant_officers) THEN
@@ -2467,7 +2158,7 @@ BEGIN
 
     -- Link owner to form
     INSERT INTO owners_link_forms(t1_owner_id, form_id)
-      VALUES(v_primary_owner_id, @new_form_id);
+      VALUES(v_primary_owner_id, p_form_id);
   END IF;
 
   -- 8. Insert additional owners from JSON arrays
@@ -2492,7 +2183,7 @@ BEGIN
         
         -- Link to form
         INSERT INTO owners_link_forms(t1_owner_id, form_id)
-          VALUES(v_temp_owner_id, @new_form_id);
+          VALUES(v_temp_owner_id, p_form_id);
       END IF;
       SET v_idx = v_idx + 1;
     END WHILE;
@@ -2532,7 +2223,7 @@ BEGIN
     mspa_geologic_study, mspa_drainage_plan, mspa_pavement_design,
     mspa_SWPPP_EPSC_plan, mspa_construction_bond_est
   ) VALUES (
-    @new_form_id, v_insert_surveyor_id, v_insert_engineer_id, p_parcel_number,
+    p_form_id, v_insert_surveyor_id, v_insert_engineer_id, p_parcel_number,
     p_mspa_topographic_survey, p_mspa_proposed_plot_layout,
     p_mspa_plat_restrictions, p_mspa_property_owner_convenants,
     p_mspa_association_covenants, p_mspa_master_deed,
@@ -2544,126 +2235,109 @@ BEGIN
   COMMIT;
   
   -- Return the new form_id
-  SELECT @new_form_id AS form_id;
+  SELECT p_form_id AS form_id;
+COMMIT;
+SELECT p_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON PROCEDURE sp_insert_major_subdivision_plat_application TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_update_major_subdivision_plat_application TO 'webuser'@'localhost';
 
-
-
-/* ---------------------------
-   Corrected: Minor Subdivision Plat Application
-   Tables: forms, minor_subdivision_plat_applications, technical_forms, properties, addresses,
-           type_one_applicants, type_one_owners, type_one_execs, surveyors, engineers
-   This procedure handles the complete minor subdivision plat application with all required fields
-   --------------------------- */
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS sp_insert_minor_subdivision_plat_application$$
-CREATE PROCEDURE sp_insert_minor_subdivision_plat_application(
-  -- Technical form dates
-  IN p_application_filing_date DATE,
-  IN p_technical_review_date DATE,
-  IN p_preliminary_approval_date DATE,
-  IN p_final_approval_date DATE,
-  
-  -- Primary applicant
-  IN p_applicant_name VARCHAR(255),
-  IN p_officers_names TEXT, -- JSON array
-  IN p_applicant_street VARCHAR(255),
-  IN p_applicant_phone VARCHAR(50),
-  IN p_applicant_cell VARCHAR(50),
-  IN p_applicant_city VARCHAR(255),
-  IN p_applicant_state CHAR(2),
-  IN p_applicant_zip_code VARCHAR(255),
-  IN p_applicant_other_address VARCHAR(255),
-  IN p_applicant_email VARCHAR(255),
-  
-  -- Additional applicants (JSON arrays)
-  IN p_additional_applicant_names TEXT,
-  IN p_additional_applicant_officers TEXT,
-  IN p_additional_applicant_streets TEXT,
-  IN p_additional_applicant_phones TEXT,
-  IN p_additional_applicant_cells TEXT,
-  IN p_additional_applicant_cities TEXT,
-  IN p_additional_applicant_states TEXT,
-  IN p_additional_applicant_zip_codes TEXT,
-  IN p_additional_applicant_other_addresses TEXT,
-  IN p_additional_applicant_emails TEXT,
-  
-  -- Property owner
-  IN p_owner_first_name VARCHAR(255),
-  IN p_owner_last_name VARCHAR(255),
-  IN p_owner_street VARCHAR(255),
-  IN p_owner_phone VARCHAR(50),
-  IN p_owner_cell VARCHAR(50),
-  IN p_owner_city VARCHAR(255),
-  IN p_owner_state CHAR(2),
-  IN p_owner_zip_code VARCHAR(255),
-  IN p_owner_other_address VARCHAR(255),
-  IN p_owner_email VARCHAR(255),
-  
-  -- Additional owners (JSON arrays)
-  IN p_additional_owner_names TEXT,
-  IN p_additional_owner_streets TEXT,
-  IN p_additional_owner_phones TEXT,
-  IN p_additional_owner_cells TEXT,
-  IN p_additional_owner_cities TEXT,
-  IN p_additional_owner_states TEXT,
-  IN p_additional_owner_zip_codes TEXT,
-  IN p_additional_owner_other_addresses TEXT,
-  IN p_additional_owner_emails TEXT,
-  
-  -- Surveyor (can be new or existing)
-  IN p_surveyor_first_name VARCHAR(255),
-  IN p_surveyor_last_name VARCHAR(255),
-  IN p_surveyor_firm VARCHAR(255),
-  IN p_surveyor_email VARCHAR(255),
-  IN p_surveyor_phone VARCHAR(50),
-  IN p_surveyor_cell VARCHAR(255),
-  
-  -- Engineer (can be new or existing)
-  IN p_engineer_first_name VARCHAR(255),
-  IN p_engineer_last_name VARCHAR(255),
-  IN p_engineer_firm VARCHAR(255),
-  IN p_engineer_email VARCHAR(255),
-  IN p_engineer_phone VARCHAR(50),
-  IN p_engineer_cell VARCHAR(255),
-  
-  -- Property information
-  IN p_property_street VARCHAR(255),
-  IN p_property_city VARCHAR(255),
-  IN p_property_state CHAR(2),
-  IN p_property_zip_code VARCHAR(255),
-  IN p_property_other_address VARCHAR(255),
-  IN p_parcel_number INT,
-  IN p_acreage VARCHAR(255),
-  IN p_current_zoning VARCHAR(255),
-  
-  -- Subdivision plat details
-  IN p_minspa_topographic_survey VARCHAR(255),
-  IN p_minspa_proposed_plot_layout VARCHAR(255),
-  IN p_minspa_plat_restrictions VARCHAR(255),
-  IN p_minspa_property_owner_covenants VARCHAR(255),
-  IN p_minspa_association_covenants VARCHAR(255),
-  IN p_minspa_master_deed VARCHAR(255),
-  
-  -- Checklist items
-  IN p_checklist_application BOOLEAN,
-  IN p_checklist_agency_signatures BOOLEAN,
-  IN p_checklist_lot_layout BOOLEAN,
-  IN p_checklist_topographic BOOLEAN,
-  IN p_checklist_restrictions BOOLEAN,
-  IN p_checklist_fees BOOLEAN,
-  
-  -- File uploads (stored as file paths/names)
-  IN p_file_agency_signatures VARCHAR(255),
-  IN p_file_lot_layout VARCHAR(255),
-  IN p_file_topographic VARCHAR(255),
-  IN p_file_restrictions VARCHAR(255)
-)
+DROP PROCEDURE IF EXISTS sp_update_minor_subdivision_plat_application$$
+CREATE PROCEDURE sp_update_minor_subdivision_plat_application(IN p_form_id INT,
+-- Technical form dates
+IN p_application_filing_date DATE,
+IN p_technical_review_date DATE,
+IN p_preliminary_approval_date DATE,
+IN p_final_approval_date DATE,
+-- Primary applicant
+IN p_applicant_name VARCHAR(255),
+IN p_officers_names TEXT, -- JSON array
+IN p_applicant_street VARCHAR(255),
+IN p_applicant_phone VARCHAR(50),
+IN p_applicant_cell VARCHAR(50),
+IN p_applicant_city VARCHAR(255),
+IN p_applicant_state CHAR(2),
+IN p_applicant_zip_code VARCHAR(255),
+IN p_applicant_other_address VARCHAR(255),
+IN p_applicant_email VARCHAR(255),
+-- Additional applicants (JSON arrays)
+IN p_additional_applicant_names TEXT,
+IN p_additional_applicant_officers TEXT,
+IN p_additional_applicant_streets TEXT,
+IN p_additional_applicant_phones TEXT,
+IN p_additional_applicant_cells TEXT,
+IN p_additional_applicant_cities TEXT,
+IN p_additional_applicant_states TEXT,
+IN p_additional_applicant_zip_codes TEXT,
+IN p_additional_applicant_other_addresses TEXT,
+IN p_additional_applicant_emails TEXT,
+-- Property owner
+IN p_owner_first_name VARCHAR(255),
+IN p_owner_last_name VARCHAR(255),
+IN p_owner_street VARCHAR(255),
+IN p_owner_phone VARCHAR(50),
+IN p_owner_cell VARCHAR(50),
+IN p_owner_city VARCHAR(255),
+IN p_owner_state CHAR(2),
+IN p_owner_zip_code VARCHAR(255),
+IN p_owner_other_address VARCHAR(255),
+IN p_owner_email VARCHAR(255),
+-- Additional owners (JSON arrays)
+IN p_additional_owner_names TEXT,
+IN p_additional_owner_streets TEXT,
+IN p_additional_owner_phones TEXT,
+IN p_additional_owner_cells TEXT,
+IN p_additional_owner_cities TEXT,
+IN p_additional_owner_states TEXT,
+IN p_additional_owner_zip_codes TEXT,
+IN p_additional_owner_other_addresses TEXT,
+IN p_additional_owner_emails TEXT,
+-- Surveyor (can be new or existing)
+IN p_surveyor_first_name VARCHAR(255),
+IN p_surveyor_last_name VARCHAR(255),
+IN p_surveyor_firm VARCHAR(255),
+IN p_surveyor_email VARCHAR(255),
+IN p_surveyor_phone VARCHAR(50),
+IN p_surveyor_cell VARCHAR(255),
+-- Engineer (can be new or existing)
+IN p_engineer_first_name VARCHAR(255),
+IN p_engineer_last_name VARCHAR(255),
+IN p_engineer_firm VARCHAR(255),
+IN p_engineer_email VARCHAR(255),
+IN p_engineer_phone VARCHAR(50),
+IN p_engineer_cell VARCHAR(255),
+-- Property information
+IN p_property_street VARCHAR(255),
+IN p_property_city VARCHAR(255),
+IN p_property_state CHAR(2),
+IN p_property_zip_code VARCHAR(255),
+IN p_property_other_address VARCHAR(255),
+IN p_parcel_number INT,
+IN p_acreage VARCHAR(255),
+IN p_current_zoning VARCHAR(255),
+-- Subdivision plat details
+IN p_minspa_topographic_survey VARCHAR(255),
+IN p_minspa_proposed_plot_layout VARCHAR(255),
+IN p_minspa_plat_restrictions VARCHAR(255),
+IN p_minspa_property_owner_covenants VARCHAR(255),
+IN p_minspa_association_covenants VARCHAR(255),
+IN p_minspa_master_deed VARCHAR(255),
+-- Checklist items
+IN p_checklist_application BOOLEAN,
+IN p_checklist_agency_signatures BOOLEAN,
+IN p_checklist_lot_layout BOOLEAN,
+IN p_checklist_topographic BOOLEAN,
+IN p_checklist_restrictions BOOLEAN,
+IN p_checklist_fees BOOLEAN,
+-- File uploads (stored as file paths/names)
+IN p_file_agency_signatures VARCHAR(255),
+IN p_file_lot_layout VARCHAR(255),
+IN p_file_topographic VARCHAR(255),
+IN p_file_restrictions VARCHAR(255))
 BEGIN
-  DECLARE v_property_address_id INT DEFAULT NULL;
+DECLARE v_property_address_id INT DEFAULT NULL;
   DECLARE v_primary_applicant_address_id INT DEFAULT NULL;
   DECLARE v_owner_address_id INT DEFAULT NULL;
   DECLARE v_primary_applicant_id INT DEFAULT NULL;
@@ -2687,19 +2361,18 @@ BEGIN
   DECLARE v_last_name VARCHAR(255);
   DECLARE v_officer_name VARCHAR(255);
   DECLARE v_exec_id INT;
+START TRANSACTION;
+UPDATE forms SET form_datetime_submitted = CURRENT_TIMESTAMP WHERE form_id = p_form_id;
+DELETE FROM technical_forms WHERE form_id = p_form_id;
+DELETE FROM applicants_link_forms WHERE form_id = p_form_id;
+DELETE FROM owners_link_forms WHERE form_id = p_form_id;
+DELETE FROM minor_subdivision_plat_applications WHERE form_id = p_form_id;
 
   START TRANSACTION;
   
   -- 1. Insert into forms table
-  INSERT INTO forms(
-    form_type, 
-    form_datetime_submitted
-  )
-  VALUES(
-    'Minor Subdivision Plat Application', 
-    CURRENT_TIMESTAMP
-  );
-  SET @new_form_id = LAST_INSERT_ID();
+  -- (removed forms insert in update) ;
+  -- (removed new_form_id in update)
 
   -- 2. Insert technical form dates if provided
   IF p_application_filing_date IS NOT NULL OR p_technical_review_date IS NOT NULL OR 
@@ -2708,7 +2381,7 @@ BEGIN
       form_id, technical_app_filing_date, technical_review_date,
       technical_prelim_approval_date, technical_final_approval_date
     ) VALUES (
-      @new_form_id, p_application_filing_date, p_technical_review_date,
+      p_form_id, p_application_filing_date, p_technical_review_date,
       p_preliminary_approval_date, p_final_approval_date
     );
   END IF;
@@ -2759,7 +2432,7 @@ BEGIN
 
     -- Link applicant to form
     INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-      VALUES(v_primary_applicant_id, @new_form_id);
+      VALUES(v_primary_applicant_id, p_form_id);
 
     -- Parse and insert officers/directors from JSON
     IF p_officers_names IS NOT NULL AND JSON_VALID(p_officers_names) THEN
@@ -2832,7 +2505,7 @@ BEGIN
         
         -- Link to form
         INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-          VALUES(v_temp_applicant_id, @new_form_id);
+          VALUES(v_temp_applicant_id, p_form_id);
         
         -- Handle officers for this additional applicant
         IF p_additional_applicant_officers IS NOT NULL AND JSON_VALID(p_additional_applicant_officers) THEN
@@ -2876,7 +2549,7 @@ BEGIN
 
     -- Link owner to form
     INSERT INTO owners_link_forms(t1_owner_id, form_id)
-      VALUES(v_primary_owner_id, @new_form_id);
+      VALUES(v_primary_owner_id, p_form_id);
   END IF;
 
   -- 8. Insert additional owners from JSON arrays
@@ -2901,7 +2574,7 @@ BEGIN
         
         -- Link to form
         INSERT INTO owners_link_forms(t1_owner_id, form_id)
-          VALUES(v_temp_owner_id, @new_form_id);
+          VALUES(v_temp_owner_id, p_form_id);
       END IF;
       SET v_idx = v_idx + 1;
     END WHILE;
@@ -2938,7 +2611,7 @@ BEGIN
     minspa_plat_restrictions, minspa_property_owner_covenants,
     minspa_association_covenants, minspa_master_deed
   ) VALUES (
-    @new_form_id, v_insert_surveyor_id, v_insert_engineer_id, p_parcel_number,
+    p_form_id, v_insert_surveyor_id, v_insert_engineer_id, p_parcel_number,
     p_minspa_topographic_survey, p_minspa_proposed_plot_layout,
     p_minspa_plat_restrictions, p_minspa_property_owner_covenants,
     p_minspa_association_covenants, p_minspa_master_deed
@@ -2947,126 +2620,107 @@ BEGIN
   COMMIT;
   
   -- Return the new form_id
-  SELECT @new_form_id AS form_id;
+  SELECT p_form_id AS form_id;
+COMMIT;
+SELECT p_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON PROCEDURE sp_insert_minor_subdivision_plat_application TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_update_minor_subdivision_plat_application TO 'webuser'@'localhost';
 
-
-
-/* ---------------------------
-   Corrected: 12) Variance Application
-   Tables: forms, variance_applications, hearing_forms, properties, addresses, 
-           type_one_applicants, type_one_owners, type_one_execs, attorneys
-   This procedure handles the complete variance application with all required fields
-   --------------------------- */
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS sp_insert_variance_application$$
-CREATE PROCEDURE sp_insert_variance_application(
-  -- Form metadata
-  IN p_form_datetime_resolved DATETIME,
-  IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
-  
-  -- Hearing information
-  IN p_docket_number VARCHAR(255),
-  IN p_public_hearing_date DATE,
-  IN p_date_application_filed DATE,
-  IN p_preapp_meeting_date DATE,
-  
-  -- Primary applicant
-  IN p_applicant_name VARCHAR(255),
-  IN p_officers_names TEXT, -- JSON array
-  IN p_applicant_street VARCHAR(255),
-  IN p_applicant_phone VARCHAR(50),
-  IN p_applicant_cell VARCHAR(50),
-  IN p_applicant_city VARCHAR(255),
-  IN p_applicant_state CHAR(2),
-  IN p_applicant_zip_code VARCHAR(255),
-  IN p_applicant_other_address VARCHAR(255),
-  IN p_applicant_email VARCHAR(255),
-  
-  -- Additional applicants (JSON arrays)
-  IN p_additional_applicant_names TEXT,
-  IN p_additional_applicant_officers TEXT,
-  IN p_additional_applicant_streets TEXT,
-  IN p_additional_applicant_phones TEXT,
-  IN p_additional_applicant_cells TEXT,
-  IN p_additional_applicant_cities TEXT,
-  IN p_additional_applicant_states TEXT,
-  IN p_additional_applicant_zip_codes TEXT,
-  IN p_additional_applicant_other_addresses TEXT,
-  IN p_additional_applicant_emails TEXT,
-  
-  -- Property owner
-  IN p_owner_first_name VARCHAR(255),
-  IN p_owner_last_name VARCHAR(255),
-  IN p_owner_street VARCHAR(255),
-  IN p_owner_phone VARCHAR(50),
-  IN p_owner_cell VARCHAR(50),
-  IN p_owner_city VARCHAR(255),
-  IN p_owner_state CHAR(2),
-  IN p_owner_zip_code VARCHAR(255),
-  IN p_owner_other_address VARCHAR(255),
-  IN p_owner_email VARCHAR(255),
-  
-  -- Additional owners (JSON arrays)
-  IN p_additional_owner_names TEXT,
-  IN p_additional_owner_streets TEXT,
-  IN p_additional_owner_phones TEXT,
-  IN p_additional_owner_cells TEXT,
-  IN p_additional_owner_cities TEXT,
-  IN p_additional_owner_states TEXT,
-  IN p_additional_owner_zip_codes TEXT,
-  IN p_additional_owner_other_addresses TEXT,
-  IN p_additional_owner_emails TEXT,
-  
-  -- Attorney
-  IN p_attorney_first_name VARCHAR(255),
-  IN p_attorney_last_name VARCHAR(255),
-  IN p_law_firm VARCHAR(255),
-  IN p_attorney_phone VARCHAR(50),
-  IN p_attorney_cell VARCHAR(255),
-  IN p_attorney_email VARCHAR(255),
-  
-  -- Property information
-  IN p_property_street VARCHAR(255),
-  IN p_property_city VARCHAR(255),
-  IN p_property_state CHAR(2),
-  IN p_property_zip_code VARCHAR(255),
-  IN p_property_other_address VARCHAR(255),
-  IN p_parcel_number INT,
-  IN p_acreage VARCHAR(255),
-  IN p_current_zoning VARCHAR(255),
-  
-  -- Variance request
-  IN p_variance_request TEXT,
-  IN p_proposed_conditions TEXT,
-  IN p_findings_explanation TEXT,
-  
-  -- Checklist items
-  IN p_checklist_application BOOLEAN,
-  IN p_checklist_exhibit BOOLEAN,
-  IN p_checklist_adjacent BOOLEAN,
-  IN p_checklist_fees BOOLEAN,
-  
-  -- File uploads (stored as file paths/names)
-  IN p_file_exhibit VARCHAR(255),
-  IN p_file_adjacent VARCHAR(255),
-  
-  -- Signatures
-  IN p_signature_date_1 DATE,
-  IN p_signature_name_1 VARCHAR(255),
-  IN p_signature_date_2 DATE,
-  IN p_signature_name_2 VARCHAR(255),
-  
-  -- Admin/fees
-  IN p_application_fee VARCHAR(255),
-  IN p_certificate_fee VARCHAR(255)
-)
+DROP PROCEDURE IF EXISTS sp_update_variance_application$$
+CREATE PROCEDURE sp_update_variance_application(IN p_form_id INT,
+-- Form metadata
+IN p_form_datetime_resolved DATETIME,
+IN p_form_paid_bool BOOLEAN,
+IN p_correction_form_id INT,
+-- Hearing information
+IN p_docket_number VARCHAR(255),
+IN p_public_hearing_date DATE,
+IN p_date_application_filed DATE,
+IN p_preapp_meeting_date DATE,
+-- Primary applicant
+IN p_applicant_name VARCHAR(255),
+IN p_officers_names TEXT, -- JSON array
+IN p_applicant_street VARCHAR(255),
+IN p_applicant_phone VARCHAR(50),
+IN p_applicant_cell VARCHAR(50),
+IN p_applicant_city VARCHAR(255),
+IN p_applicant_state CHAR(2),
+IN p_applicant_zip_code VARCHAR(255),
+IN p_applicant_other_address VARCHAR(255),
+IN p_applicant_email VARCHAR(255),
+-- Additional applicants (JSON arrays)
+IN p_additional_applicant_names TEXT,
+IN p_additional_applicant_officers TEXT,
+IN p_additional_applicant_streets TEXT,
+IN p_additional_applicant_phones TEXT,
+IN p_additional_applicant_cells TEXT,
+IN p_additional_applicant_cities TEXT,
+IN p_additional_applicant_states TEXT,
+IN p_additional_applicant_zip_codes TEXT,
+IN p_additional_applicant_other_addresses TEXT,
+IN p_additional_applicant_emails TEXT,
+-- Property owner
+IN p_owner_first_name VARCHAR(255),
+IN p_owner_last_name VARCHAR(255),
+IN p_owner_street VARCHAR(255),
+IN p_owner_phone VARCHAR(50),
+IN p_owner_cell VARCHAR(50),
+IN p_owner_city VARCHAR(255),
+IN p_owner_state CHAR(2),
+IN p_owner_zip_code VARCHAR(255),
+IN p_owner_other_address VARCHAR(255),
+IN p_owner_email VARCHAR(255),
+-- Additional owners (JSON arrays)
+IN p_additional_owner_names TEXT,
+IN p_additional_owner_streets TEXT,
+IN p_additional_owner_phones TEXT,
+IN p_additional_owner_cells TEXT,
+IN p_additional_owner_cities TEXT,
+IN p_additional_owner_states TEXT,
+IN p_additional_owner_zip_codes TEXT,
+IN p_additional_owner_other_addresses TEXT,
+IN p_additional_owner_emails TEXT,
+-- Attorney
+IN p_attorney_first_name VARCHAR(255),
+IN p_attorney_last_name VARCHAR(255),
+IN p_law_firm VARCHAR(255),
+IN p_attorney_phone VARCHAR(50),
+IN p_attorney_cell VARCHAR(255),
+IN p_attorney_email VARCHAR(255),
+-- Property information
+IN p_property_street VARCHAR(255),
+IN p_property_city VARCHAR(255),
+IN p_property_state CHAR(2),
+IN p_property_zip_code VARCHAR(255),
+IN p_property_other_address VARCHAR(255),
+IN p_parcel_number INT,
+IN p_acreage VARCHAR(255),
+IN p_current_zoning VARCHAR(255),
+-- Variance request
+IN p_variance_request TEXT,
+IN p_proposed_conditions TEXT,
+IN p_findings_explanation TEXT,
+-- Checklist items
+IN p_checklist_application BOOLEAN,
+IN p_checklist_exhibit BOOLEAN,
+IN p_checklist_adjacent BOOLEAN,
+IN p_checklist_fees BOOLEAN,
+-- File uploads (stored as file paths/names)
+IN p_file_exhibit VARCHAR(255),
+IN p_file_adjacent VARCHAR(255),
+-- Signatures
+IN p_signature_date_1 DATE,
+IN p_signature_name_1 VARCHAR(255),
+IN p_signature_date_2 DATE,
+IN p_signature_name_2 VARCHAR(255),
+-- Admin/fees
+IN p_application_fee VARCHAR(255),
+IN p_certificate_fee VARCHAR(255))
 BEGIN
-  DECLARE v_property_address_id INT DEFAULT NULL;
+DECLARE v_property_address_id INT DEFAULT NULL;
   DECLARE v_primary_applicant_address_id INT DEFAULT NULL;
   DECLARE v_owner_address_id INT DEFAULT NULL;
   DECLARE v_primary_applicant_id INT DEFAULT NULL;
@@ -3089,25 +2743,18 @@ BEGIN
   DECLARE v_last_name VARCHAR(255);
   DECLARE v_officer_name VARCHAR(255);
   DECLARE v_exec_id INT;
+START TRANSACTION;
+UPDATE forms SET form_datetime_submitted = CURRENT_TIMESTAMP, form_paid_bool = p_form_paid_bool, form_datetime_resolved = p_form_datetime_resolved, correction_form_id = p_correction_form_id WHERE form_id = p_form_id;
+DELETE FROM hearing_forms WHERE form_id = p_form_id;
+DELETE FROM applicants_link_forms WHERE form_id = p_form_id;
+DELETE FROM owners_link_forms WHERE form_id = p_form_id;
+DELETE FROM variance_applications WHERE form_id = p_form_id;
 
   START TRANSACTION;
   
   -- 1. Insert into forms table
-  INSERT INTO forms(
-    form_type, 
-    form_datetime_submitted, 
-    form_datetime_resolved, 
-    form_paid_bool, 
-    correction_form_id
-  )
-  VALUES(
-    'Variance Application', 
-    CURRENT_TIMESTAMP, 
-    p_form_datetime_resolved, 
-    p_form_paid_bool, 
-    p_correction_form_id
-  );
-  SET @new_form_id = LAST_INSERT_ID();
+  -- (removed forms insert in update) ;
+  -- (removed new_form_id in update)
 
   -- 2. Insert hearing information if provided
   IF p_docket_number IS NOT NULL OR p_public_hearing_date IS NOT NULL THEN
@@ -3131,7 +2778,7 @@ BEGIN
       form_id, hearing_docket_number, hearing_date_application_filed,
       hearing_date, hearing_preapp_meeting_date, attorney_id
     ) VALUES (
-      @new_form_id, p_docket_number, p_date_application_filed,
+      p_form_id, p_docket_number, p_date_application_filed,
       p_public_hearing_date, p_preapp_meeting_date, v_attorney_id
     );
   END IF;
@@ -3182,7 +2829,7 @@ BEGIN
 
     -- Link applicant to form
     INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-      VALUES(v_primary_applicant_id, @new_form_id);
+      VALUES(v_primary_applicant_id, p_form_id);
 
     -- Parse and insert officers/directors from JSON
     IF p_officers_names IS NOT NULL AND JSON_VALID(p_officers_names) THEN
@@ -3255,7 +2902,7 @@ BEGIN
         
         -- Link to form
         INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-          VALUES(v_temp_applicant_id, @new_form_id);
+          VALUES(v_temp_applicant_id, p_form_id);
         
         -- Handle officers for this additional applicant
         IF p_additional_applicant_officers IS NOT NULL AND JSON_VALID(p_additional_applicant_officers) THEN
@@ -3299,7 +2946,7 @@ BEGIN
 
     -- Link owner to form
     INSERT INTO owners_link_forms(t1_owner_id, form_id)
-      VALUES(v_primary_owner_id, @new_form_id);
+      VALUES(v_primary_owner_id, p_form_id);
   END IF;
 
   -- 8. Insert additional owners from JSON arrays
@@ -3324,7 +2971,7 @@ BEGIN
         
         -- Link to form
         INSERT INTO owners_link_forms(t1_owner_id, form_id)
-          VALUES(v_temp_owner_id, @new_form_id);
+          VALUES(v_temp_owner_id, p_form_id);
       END IF;
       SET v_idx = v_idx + 1;
     END WHILE;
@@ -3337,7 +2984,7 @@ BEGIN
     va_proposed_conditions,
     PVA_parcel_number
   ) VALUES (
-    @new_form_id,
+    p_form_id,
     p_variance_request,
     p_proposed_conditions,
     p_parcel_number
@@ -3346,132 +2993,117 @@ BEGIN
   COMMIT;
   
   -- Return the new form_id
-  SELECT @new_form_id AS form_id;
+  SELECT p_form_id AS form_id;
+COMMIT;
+SELECT p_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON PROCEDURE sp_insert_variance_application TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_update_variance_application TO 'webuser'@'localhost';
 
-
-
-/* ---------------------------
-   13) Comprehensive Zoning Map Amendment Application with JSON Parsing
-   This procedure handles the complete form submission including:
-   - Form and hearing information
-   - Multiple applicants with officers (parsed from JSON)
-   - Multiple property owners (parsed from JSON)
-   - Attorney information
-   - Property details
-   - Amendment request and conditions
-   - Checklist items
-   - File attachments
-   - Signatures
-   - Fees
-   --------------------------- */
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS sp_insert_zoning_map_amendment_application$$
-CREATE PROCEDURE sp_insert_zoning_map_amendment_application(
-  -- Form metadata
-  IN p_form_datetime_resolved DATETIME,
-  IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
-  -- Hearing information
-  IN p_docket_number VARCHAR(255),
-  IN p_public_hearing_date DATE,
-  IN p_date_application_filed DATE,
-  IN p_preapp_meeting_date DATE,
-  -- Primary applicant
-  IN p_applicant_name VARCHAR(255),
-  IN p_officers_names TEXT, -- JSON array
-  IN p_applicant_street VARCHAR(255),
-  IN p_applicant_phone VARCHAR(50),
-  IN p_applicant_cell VARCHAR(50),
-  IN p_applicant_city VARCHAR(255),
-  IN p_applicant_state CHAR(2),
-  IN p_applicant_zip_code VARCHAR(255),
-  IN p_applicant_other_address VARCHAR(255),
-  IN p_applicant_email VARCHAR(255),
-  -- Additional applicants (JSON arrays)
-  IN p_additional_applicant_names TEXT,
-  IN p_additional_applicant_officers TEXT,
-  IN p_additional_applicant_streets TEXT,
-  IN p_additional_applicant_phones TEXT,
-  IN p_additional_applicant_cells TEXT,
-  IN p_additional_applicant_cities TEXT,
-  IN p_additional_applicant_states TEXT,
-  IN p_additional_applicant_zip_codes TEXT,
-  IN p_additional_applicant_other_addresses TEXT,
-  IN p_additional_applicant_emails TEXT,
-  -- Property owner
-  IN p_owner_first_name VARCHAR(255),
-  IN p_owner_last_name VARCHAR(255),
-  IN p_owner_street VARCHAR(255),
-  IN p_owner_phone VARCHAR(50),
-  IN p_owner_cell VARCHAR(50),
-  IN p_owner_city VARCHAR(255),
-  IN p_owner_state CHAR(2),
-  IN p_owner_zip_code VARCHAR(255),
-  IN p_owner_other_address VARCHAR(255),
-  IN p_owner_email VARCHAR(255),
-  -- Additional owners (JSON arrays)
-  IN p_additional_owner_names TEXT,
-  IN p_additional_owner_streets TEXT,
-  IN p_additional_owner_phones TEXT,
-  IN p_additional_owner_cells TEXT,
-  IN p_additional_owner_cities TEXT,
-  IN p_additional_owner_states TEXT,
-  IN p_additional_owner_zip_codes TEXT,
-  IN p_additional_owner_other_addresses TEXT,
-  IN p_additional_owner_emails TEXT,
-  -- Attorney
-  IN p_attorney_first_name VARCHAR(255),
-  IN p_attorney_last_name VARCHAR(255),
-  IN p_law_firm VARCHAR(255),
-  IN p_attorney_phone VARCHAR(50),
-  IN p_attorney_cell VARCHAR(255),
-  IN p_attorney_email VARCHAR(255),
-  -- Property information
-  IN p_property_street VARCHAR(255),
-  IN p_property_city VARCHAR(255),
-  IN p_property_state CHAR(2),
-  IN p_property_zip_code VARCHAR(255),
-  IN p_property_other_address VARCHAR(255),
-  IN p_parcel_number INT,
-  IN p_acreage VARCHAR(255),
-  IN p_current_zoning VARCHAR(255),
-  -- Amendment request
-  IN p_zoning_map_amendment_request TEXT,
-  IN p_zmaa_proposed_conditions TEXT,
-  -- Findings
-  IN p_finding_type VARCHAR(255),
-  IN p_findings_explanation TEXT,
-  -- Checklist items
-  IN p_checklist_application BOOLEAN,
-  IN p_checklist_exhibit BOOLEAN,
-  IN p_checklist_adjacent BOOLEAN,
-  IN p_checklist_verification BOOLEAN,
-  IN p_checklist_fees BOOLEAN,
-  IN p_checklist_conditions BOOLEAN,
-  IN p_checklist_concept BOOLEAN,
-  IN p_checklist_traffic BOOLEAN,
-  IN p_checklist_geologic BOOLEAN,
-  -- File uploads (BLOBs) - stored as file paths/names
-  IN p_file_exhibit VARCHAR(255),
-  IN p_file_adjacent VARCHAR(255),
-  IN p_file_verification VARCHAR(255),
-  IN p_file_conditions VARCHAR(255),
-  IN p_file_concept VARCHAR(255),
-  IN p_file_traffic VARCHAR(255),
-  IN p_file_geologic VARCHAR(255),
-  -- Signatures
-  IN p_signature_date_1 DATE,
-  IN p_signature_name_1 VARCHAR(255),
-  IN p_signature_date_2 DATE,
-  IN p_signature_name_2 VARCHAR(255),
-  -- Admin/fees
-  IN p_application_fee VARCHAR(255),
-  IN p_certificate_fee VARCHAR(255)
-)
+DROP PROCEDURE IF EXISTS sp_update_zoning_map_amendment_application$$
+CREATE PROCEDURE sp_update_zoning_map_amendment_application(IN p_form_id INT,
+-- Form metadata
+IN p_form_datetime_resolved DATETIME,
+IN p_form_paid_bool BOOLEAN,
+IN p_correction_form_id INT,
+-- Hearing information
+IN p_docket_number VARCHAR(255),
+IN p_public_hearing_date DATE,
+IN p_date_application_filed DATE,
+IN p_preapp_meeting_date DATE,
+-- Primary applicant
+IN p_applicant_name VARCHAR(255),
+IN p_officers_names TEXT, -- JSON array
+IN p_applicant_street VARCHAR(255),
+IN p_applicant_phone VARCHAR(50),
+IN p_applicant_cell VARCHAR(50),
+IN p_applicant_city VARCHAR(255),
+IN p_applicant_state CHAR(2),
+IN p_applicant_zip_code VARCHAR(255),
+IN p_applicant_other_address VARCHAR(255),
+IN p_applicant_email VARCHAR(255),
+-- Additional applicants (JSON arrays)
+IN p_additional_applicant_names TEXT,
+IN p_additional_applicant_officers TEXT,
+IN p_additional_applicant_streets TEXT,
+IN p_additional_applicant_phones TEXT,
+IN p_additional_applicant_cells TEXT,
+IN p_additional_applicant_cities TEXT,
+IN p_additional_applicant_states TEXT,
+IN p_additional_applicant_zip_codes TEXT,
+IN p_additional_applicant_other_addresses TEXT,
+IN p_additional_applicant_emails TEXT,
+-- Property owner
+IN p_owner_first_name VARCHAR(255),
+IN p_owner_last_name VARCHAR(255),
+IN p_owner_street VARCHAR(255),
+IN p_owner_phone VARCHAR(50),
+IN p_owner_cell VARCHAR(50),
+IN p_owner_city VARCHAR(255),
+IN p_owner_state CHAR(2),
+IN p_owner_zip_code VARCHAR(255),
+IN p_owner_other_address VARCHAR(255),
+IN p_owner_email VARCHAR(255),
+-- Additional owners (JSON arrays)
+IN p_additional_owner_names TEXT,
+IN p_additional_owner_streets TEXT,
+IN p_additional_owner_phones TEXT,
+IN p_additional_owner_cells TEXT,
+IN p_additional_owner_cities TEXT,
+IN p_additional_owner_states TEXT,
+IN p_additional_owner_zip_codes TEXT,
+IN p_additional_owner_other_addresses TEXT,
+IN p_additional_owner_emails TEXT,
+-- Attorney
+IN p_attorney_first_name VARCHAR(255),
+IN p_attorney_last_name VARCHAR(255),
+IN p_law_firm VARCHAR(255),
+IN p_attorney_phone VARCHAR(50),
+IN p_attorney_cell VARCHAR(255),
+IN p_attorney_email VARCHAR(255),
+-- Property information
+IN p_property_street VARCHAR(255),
+IN p_property_city VARCHAR(255),
+IN p_property_state CHAR(2),
+IN p_property_zip_code VARCHAR(255),
+IN p_property_other_address VARCHAR(255),
+IN p_parcel_number INT,
+IN p_acreage VARCHAR(255),
+IN p_current_zoning VARCHAR(255),
+-- Amendment request
+IN p_zoning_map_amendment_request TEXT,
+IN p_zmaa_proposed_conditions TEXT,
+-- Findings
+IN p_finding_type VARCHAR(255),
+IN p_findings_explanation TEXT,
+-- Checklist items
+IN p_checklist_application BOOLEAN,
+IN p_checklist_exhibit BOOLEAN,
+IN p_checklist_adjacent BOOLEAN,
+IN p_checklist_verification BOOLEAN,
+IN p_checklist_fees BOOLEAN,
+IN p_checklist_conditions BOOLEAN,
+IN p_checklist_concept BOOLEAN,
+IN p_checklist_traffic BOOLEAN,
+IN p_checklist_geologic BOOLEAN,
+-- File uploads (BLOBs) - stored as file paths/names
+IN p_file_exhibit VARCHAR(255),
+IN p_file_adjacent VARCHAR(255),
+IN p_file_verification VARCHAR(255),
+IN p_file_conditions VARCHAR(255),
+IN p_file_concept VARCHAR(255),
+IN p_file_traffic VARCHAR(255),
+IN p_file_geologic VARCHAR(255),
+-- Signatures
+IN p_signature_date_1 DATE,
+IN p_signature_name_1 VARCHAR(255),
+IN p_signature_date_2 DATE,
+IN p_signature_name_2 VARCHAR(255),
+-- Admin/fees
+IN p_application_fee VARCHAR(255),
+IN p_certificate_fee VARCHAR(255))
 BEGIN
   DECLARE v_property_address_id INT DEFAULT NULL;
   DECLARE v_primary_applicant_address_id INT DEFAULT NULL;
@@ -3496,25 +3128,19 @@ BEGIN
   DECLARE v_last_name VARCHAR(255);
   DECLARE v_officer_name VARCHAR(255);
   DECLARE v_exec_id INT;
+START TRANSACTION;
+UPDATE forms SET form_datetime_submitted = CURRENT_TIMESTAMP, form_paid_bool = p_form_paid_bool, form_datetime_resolved = p_form_datetime_resolved, correction_form_id = p_correction_form_id WHERE form_id = p_form_id;
+DELETE FROM hearing_forms WHERE form_id = p_form_id;
+DELETE FROM applicants_link_forms WHERE form_id = p_form_id;
+DELETE FROM owners_link_forms WHERE form_id = p_form_id;
+DELETE FROM zoning_map_amendment_applications WHERE form_id = p_form_id;
 
+COMMIT;
   START TRANSACTION;
   
   -- 1. Insert into forms table
-  INSERT INTO forms(
-    form_type, 
-    form_datetime_submitted, 
-    form_datetime_resolved, 
-    form_paid_bool, 
-    correction_form_id
-  )
-  VALUES(
-    'Zoning Map Amendment Application', 
-    CURRENT_TIMESTAMP, 
-    p_form_datetime_resolved, 
-    p_form_paid_bool, 
-    p_correction_form_id
-  );
-  SET @new_form_id = LAST_INSERT_ID();
+  -- (removed forms insert in update) ;
+  -- (removed new_form_id in update)
 
   -- 2. Insert hearing information if provided
   IF p_docket_number IS NOT NULL OR p_public_hearing_date IS NOT NULL THEN
@@ -3538,7 +3164,7 @@ BEGIN
       form_id, hearing_docket_number, hearing_date_application_filed,
       hearing_date, hearing_preapp_meeting_date, attorney_id
     ) VALUES (
-      @new_form_id, p_docket_number, p_date_application_filed,
+      p_form_id, p_docket_number, p_date_application_filed,
       p_public_hearing_date, p_preapp_meeting_date, v_attorney_id
     );
   END IF;
@@ -3589,7 +3215,7 @@ BEGIN
 
     -- Link applicant to form
     INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-      VALUES(v_primary_applicant_id, @new_form_id);
+      VALUES(v_primary_applicant_id, p_form_id);
 
     -- Parse and insert officers/directors from JSON
     IF p_officers_names IS NOT NULL AND JSON_VALID(p_officers_names) THEN
@@ -3662,7 +3288,7 @@ BEGIN
         
         -- Link to form
         INSERT INTO applicants_link_forms(t1_applicant_id, form_id)
-          VALUES(v_temp_applicant_id, @new_form_id);
+          VALUES(v_temp_applicant_id, p_form_id);
         
         -- Handle officers for this additional applicant if they exist
         -- Officers are stored in p_additional_applicant_officers as {"0": ["name1", "name2"], "1": ["name3"]}
@@ -3707,7 +3333,7 @@ BEGIN
 
     -- Link owner to form
     INSERT INTO owners_link_forms(t1_owner_id, form_id)
-      VALUES(v_primary_owner_id, @new_form_id);
+      VALUES(v_primary_owner_id, p_form_id);
   END IF;
 
   -- 8. Insert additional owners from JSON arrays
@@ -3732,7 +3358,7 @@ BEGIN
         
         -- Link to form
         INSERT INTO owners_link_forms(t1_owner_id, form_id)
-          VALUES(v_temp_owner_id, @new_form_id);
+          VALUES(v_temp_owner_id, p_form_id);
       END IF;
       SET v_idx = v_idx + 1;
     END WHILE;
@@ -3745,7 +3371,7 @@ BEGIN
     zmaa_proposed_conditions,
     PVA_parcel_number
   ) VALUES (
-    @new_form_id,
+    p_form_id,
     p_zoning_map_amendment_request,
     p_zmaa_proposed_conditions,
     p_parcel_number
@@ -3754,177 +3380,63 @@ BEGIN
   COMMIT;
   
   -- Return the new form_id
-  SELECT @new_form_id AS form_id;
+  SELECT p_form_id AS form_id;
+COMMIT;
+SELECT p_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON PROCEDURE sp_insert_zoning_map_amendment_application TO 'webuser'@'localhost';
-
-/* ---------------------------
-   14) Zoning Permit Application
-   Tables: forms, zoning_permit_applications
-   --------------------------- */
-
-DELIMITER $$
-CREATE PROCEDURE sp_insert_zoning_permit_application(
-  IN p_form_datetime_resolved DATETIME,
-  IN p_form_paid_bool BOOLEAN,
-  -- surveyor parameters
-  IN p_surveyor_first_name VARCHAR(255),
-  IN p_surveyor_last_name VARCHAR(255),
-  IN p_surveyor_firm VARCHAR(255),
-  IN p_surveyor_email VARCHAR(255),
-  IN p_surveyor_phone VARCHAR(50),
-  IN p_surveyor_cell VARCHAR(255),
-  -- architect parameters
-  IN p_architect_first_name VARCHAR(255),
-  IN p_architect_last_name VARCHAR(255),
-  IN p_architect_law_firm VARCHAR(255),
-  IN p_architect_email VARCHAR(255),
-  IN p_architect_phone VARCHAR(50),
-  IN p_architect_cell VARCHAR(255),
-  -- land architect parameters
-  IN p_land_architect_first_name VARCHAR(255),
-  IN p_land_architect_last_name VARCHAR(255),
-  IN p_land_architect_law_firm VARCHAR(255),
-  IN p_land_architect_email VARCHAR(255),
-  IN p_land_architect_phone VARCHAR(50),
-  IN p_land_architect_cell VARCHAR(255),
-  -- contractor parameters
-  IN p_contractor_first_name VARCHAR(255),
-  IN p_contractor_last_name VARCHAR(255),
-  IN p_contractor_law_firm VARCHAR(255),
-  IN p_contractor_email VARCHAR(255),
-  IN p_contractor_phone VARCHAR(50),
-  IN p_contractor_cell VARCHAR(255),
-  -- application data
-  IN p_PVA_parcel_number INT,
-  IN p_project_type VARCHAR(255),
-  IN p_zpa_project_plans VARCHAR(255),
-  IN p_zpa_preliminary_site_evaluation VARCHAR(255)
-)
-BEGIN
-  START TRANSACTION;
-  INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Zoning Permit Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, NULL);
-  SET @new_form_id = LAST_INSERT_ID();
-
-  -- Handle surveyor
-  SET @insert_surveyor_id = find_duplicate_surveyor_id(p_surveyor_first_name, p_surveyor_last_name, p_surveyor_firm, p_surveyor_email, p_surveyor_phone, p_surveyor_cell);
-  IF @insert_surveyor_id IS NULL THEN
-    IF p_surveyor_first_name IS NOT NULL OR p_surveyor_last_name IS NOT NULL THEN
-      INSERT INTO surveyors(surveyor_first_name, surveyor_last_name, surveyor_firm, surveyor_email, surveyor_phone, surveyor_cell)
-        VALUES(p_surveyor_first_name, p_surveyor_last_name, p_surveyor_firm, p_surveyor_email, p_surveyor_phone, p_surveyor_cell);
-      SET @insert_surveyor_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_surveyor_id = NULL;
-    END IF;
-  END IF;
-
-  -- Handle architect
-  SET @insert_architect_id = find_duplicate_architect_id(p_architect_first_name, p_architect_last_name, p_architect_firm, p_architect_email, p_architect_phone, p_architect_cell);
-  IF @insert_architect_id IS NULL THEN
-    IF p_architect_first_name IS NOT NULL OR p_architect_last_name IS NOT NULL THEN
-      INSERT INTO architects(architect_first_name, architect_last_name, architect_law_firm, architect_email, architect_phone, architect_cell)
-        VALUES(p_architect_first_name, p_architect_last_name, p_architect_law_firm, p_architect_email, p_architect_phone, p_architect_cell);
-      SET @insert_architect_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_architect_id = NULL;
-    END IF;
-  END IF;
-
-  -- Handle land architect
-  SET @insert_land_architect_id = find_duplicate_land_architect_id(p_land_architect_first_name, p_land_architect_last_name, p_land_architect_firm, p_land_architect_email, p_land_architect_phone, p_land_architect_cell);
-  IF @insert_land_architect_id IS NULL THEN
-    IF p_land_architect_first_name IS NOT NULL OR p_land_architect_last_name IS NOT NULL THEN
-      INSERT INTO land_architects(land_architect_first_name, land_architect_last_name, land_architect_law_firm, land_architect_email, land_architect_phone, land_architect_cell)
-        VALUES(p_land_architect_first_name, p_land_architect_last_name, p_land_architect_law_firm, p_land_architect_email, p_land_architect_phone, p_land_architect_cell);
-      SET @insert_land_architect_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_land_architect_id = NULL;
-    END IF;
-  END IF;
-
-  -- Handle contractor
-  SET @insert_contractor_id = find_duplicate_contractor_id(p_contractor_first_name, p_contractor_last_name, p_contractor_firm, p_contractor_email, p_contractor_phone, p_contractor_cell);
-  IF @insert_contractor_id IS NULL THEN
-    IF p_contractor_first_name IS NOT NULL OR p_contractor_last_name IS NOT NULL THEN
-      INSERT INTO contractors(contractor_first_name, contractor_last_name, contractor_law_firm, contractor_email, contractor_phone, contractor_cell)
-        VALUES(p_contractor_first_name, p_contractor_last_name, p_contractor_law_firm, p_contractor_email, p_contractor_phone, p_contractor_cell);
-      SET @insert_contractor_id = LAST_INSERT_ID();
-    ELSE
-      SET @insert_contractor_id = NULL;
-    END IF;
-  END IF;
-
-  INSERT INTO zoning_permit_applications(
-    form_id, surveyor_id, architect_id, land_architect_id, contractor_id, PVA_parcel_number,
-    project_type, zpa_project_plans, zpa_preliminary_site_evaluation
-  ) VALUES (
-    @new_form_id, @insert_surveyor_id, @insert_architect_id, @insert_land_architect_id, @insert_contractor_id, p_PVA_parcel_number,
-    p_project_type, p_zpa_project_plans, p_zpa_preliminary_site_evaluation
-  );
-
-  COMMIT;
-END$$
-DELIMITER ;
-GRANT EXECUTE ON PROCEDURE sp_insert_zoning_permit_application TO 'webuser'@'localhost';
-
-
-
-/* ---------------------------
-   Corrected: 15) Zoning Verification Application
-   Tables: forms, zoning_verification_letter, zva_applicants, zva_property_owners, addresses
-   --------------------------- */
+GRANT EXECUTE ON PROCEDURE sp_update_zoning_map_amendment_application TO 'webuser'@'localhost';
 
 
 DELIMITER $$
-DROP PROCEDURE IF EXISTS sp_insert_zoning_verification_application$$
-CREATE PROCEDURE sp_insert_zoning_verification_application(
-  IN p_form_datetime_resolved DATETIME,
-  IN p_form_paid_bool BOOLEAN,
-  IN p_correction_form_id INT,
-  IN p_zva_letter_content TEXT,
-  -- zoning address fields
-  IN p_zva_zoning_letter_street VARCHAR(255),
-  IN p_zva_zoning_letter_city VARCHAR(255),
-  IN p_zva_state_code CHAR(2),
-  IN p_zva_zoning_letter_zip VARCHAR(255),
-  -- property address fields
-  IN p_zva_property_street VARCHAR(255),
-  IN p_property_city VARCHAR(255),
-  IN p_zva_property_state_code CHAR(2),
-  IN p_zva_property_zip VARCHAR(255),
-  -- applicant fields
-  IN p_zva_applicant_first_name VARCHAR(255),
-  IN p_zva_applicant_last_name VARCHAR(255),
-  IN p_zva_applicant_street VARCHAR(255),
-  IN p_zva_applicant_city VARCHAR(255),
-  IN p_zva_applicant_state_code CHAR(2),
-  IN p_zva_applicant_zip_code VARCHAR(255),
-  IN p_zva_applicant_phone_number VARCHAR(50),
-  IN p_zva_applicant_fax_number VARCHAR(255),
-  -- property owner fields
-  IN p_zva_owner_first_name VARCHAR(255),
-  IN p_zva_owner_last_name VARCHAR(255),
-  IN p_zva_owner_street VARCHAR(255),
-  IN p_zva_owner_city VARCHAR(255),
-  IN p_zva_owner_state_code CHAR(2),
-  IN p_zva_owner_zip_code VARCHAR(255)
-)
+DROP PROCEDURE IF EXISTS sp_update_zoning_verification_application$$
+CREATE PROCEDURE sp_update_zoning_verification_application(IN p_form_id INT,
+IN p_form_datetime_resolved DATETIME,
+IN p_form_paid_bool BOOLEAN,
+IN p_correction_form_id INT,
+IN p_zva_letter_content TEXT,
+-- zoning address fields
+IN p_zva_zoning_letter_street VARCHAR(255),
+IN p_zva_zoning_letter_city VARCHAR(255),
+IN p_zva_state_code CHAR(2),
+IN p_zva_zoning_letter_zip VARCHAR(255),
+-- property address fields
+IN p_zva_property_street VARCHAR(255),
+IN p_property_city VARCHAR(255),
+IN p_zva_property_state_code CHAR(2),
+IN p_zva_property_zip VARCHAR(255),
+-- applicant fields
+IN p_zva_applicant_first_name VARCHAR(255),
+IN p_zva_applicant_last_name VARCHAR(255),
+IN p_zva_applicant_street VARCHAR(255),
+IN p_zva_applicant_city VARCHAR(255),
+IN p_zva_applicant_state_code CHAR(2),
+IN p_zva_applicant_zip_code VARCHAR(255),
+IN p_zva_applicant_phone_number VARCHAR(50),
+IN p_zva_applicant_fax_number VARCHAR(255),
+-- property owner fields
+IN p_zva_owner_first_name VARCHAR(255),
+IN p_zva_owner_last_name VARCHAR(255),
+IN p_zva_owner_street VARCHAR(255),
+IN p_zva_owner_city VARCHAR(255),
+IN p_zva_owner_state_code CHAR(2),
+IN p_zva_owner_zip_code VARCHAR(255))
 BEGIN
-  DECLARE v_zva_zoning_address_id INT DEFAULT NULL;
-  DECLARE v_zva_property_address_id INT DEFAULT NULL;
-  DECLARE v_zva_applicant_address_id INT DEFAULT NULL;
-  DECLARE v_zva_owner_address_id INT DEFAULT NULL;
-  DECLARE v_zva_applicant_id INT DEFAULT NULL;
-  DECLARE v_zva_owner_id INT DEFAULT NULL;
+DECLARE v_zva_zoning_address_id INT DEFAULT NULL;
+DECLARE v_zva_property_address_id INT DEFAULT NULL;
+DECLARE v_zva_applicant_address_id INT DEFAULT NULL;
+DECLARE v_zva_owner_address_id INT DEFAULT NULL;
+DECLARE v_zva_applicant_id INT DEFAULT NULL;
+DECLARE v_zva_owner_id INT DEFAULT NULL;
+START TRANSACTION;
+UPDATE forms SET form_datetime_submitted = CURRENT_TIMESTAMP, form_paid_bool = p_form_paid_bool, form_datetime_resolved = p_form_datetime_resolved, correction_form_id = p_correction_form_id WHERE form_id = p_form_id;
+DELETE FROM zoning_verification_letter WHERE form_id = p_form_id;
 
   START TRANSACTION;
   
   -- Insert into forms table
-  INSERT INTO forms(form_type, form_datetime_submitted, form_datetime_resolved, form_paid_bool, correction_form_id)
-    VALUES('Zoning Verification Application', CURRENT_TIMESTAMP, p_form_datetime_resolved, p_form_paid_bool, p_correction_form_id);
-  SET @new_form_id = LAST_INSERT_ID();
+  -- (removed forms insert in update) ;
+  -- (removed new_form_id in update)
 
   -- Create zoning address if provided
   SET v_zva_zoning_address_id = find_duplicate_address_id(p_zva_zoning_letter_street, p_zva_zoning_letter_city, p_zva_state_code, p_zva_zoning_letter_zip);
@@ -3985,30 +3497,13 @@ BEGIN
     form_id, zva_owner_id, zva_applicant_id, zva_letter_content,
     zva_zoning_address_id, zva_property_address_id
   ) VALUES (
-    @new_form_id, v_zva_owner_id, v_zva_applicant_id, p_zva_letter_content,
+    p_form_id, v_zva_owner_id, v_zva_applicant_id, p_zva_letter_content,
     v_zva_zoning_address_id, v_zva_property_address_id
   );
 
   COMMIT;
+COMMIT;
+SELECT p_form_id AS form_id;
 END$$
 DELIMITER ;
-GRANT EXECUTE ON PROCEDURE sp_insert_zoning_verification_application TO 'webuser'@'localhost';
-
-
-DELIMITER $$
-DROP PROCEDURE IF EXISTS submit_draft$$
-CREATE PROCEDURE submit_draft()
-  BEGIN
-  SET FOREIGN_KEY_CHECKS=0;
-  END$$
-DELIMITER ;
-GRANT EXECUTE ON PROCEDURE submit_draft TO 'webuser'@'localhost';
-
-DELIMITER $$
-DROP PROCEDURE IF EXISTS draft_submitted$$
-CREATE PROCEDURE draft_submitted()
-  BEGIN
-  SET FOREIGN_KEY_CHECKS=1;
-  END$$
-DELIMITER ;
-GRANT EXECUTE ON PROCEDURE draft_submitted TO 'webuser'@'localhost';
+GRANT EXECUTE ON PROCEDURE sp_update_zoning_verification_application TO 'webuser'@'localhost';

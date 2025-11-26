@@ -1,13 +1,4 @@
 <?php
-    // Show all errors from the PHP interpreter.
-    ini_set('display_errors', 1);
-    ini_set('display_startup_errors', 1);
-    error_reporting(E_ALL);
-
-    // Show all errors from the MySQLi Extension.
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);  
-?>
-<?php
 /**
  * Process Sign Permit Application
  * 
@@ -113,33 +104,6 @@ function processSignPermit($post, $files, $conn) {
             throw new Exception("Failed to prepare statement: " . $conn->error);
         }
 
-        // Bind parameters
-        // IN p_form_datetime_resolved DATETIME,
-        // IN p_form_paid_bool BOOLEAN,
-        // IN p_sp_applicant_id INT,
-        // IN p_contractor_id INT,
-        // IN p_sp_business_id INT,
-        // IN p_sp_date DATE,
-        // IN p_sp_permit_number VARCHAR(255),
-        // IN p_sp_building_coverage_percent VARCHAR(255),
-        // IN p_sp_permit_fee VARCHAR(255),
-        // IN p_sp_owner_first_name VARCHAR(255),
-        // IN p_sp_owner_last_name VARCHAR(255),
-        // IN p_sp_owner_street VARCHAR(255),
-        // IN p_sp_owner_city VARCHAR(255),
-        // IN p_sp_owner_state_code CHAR(2),
-        // IN p_sp_owner_zip_code VARCHAR(50),
-        // IN p_sp_business_name VARCHAR(255),
-        // IN p_sp_business_street VARCHAR(255),
-        // IN p_sp_business_city VARCHAR(255),
-        // IN p_sp_business_state_code CHAR(2),
-        // IN p_sp_business_zip_code VARCHAR(50),
-        // IN p_sp_contractor_first_name VARCHAR(255),
-        // IN p_sp_contractor_last_name VARCHAR(255),
-        // IN p_sp_contractor_phone_number VARCHAR(50),
-        // IN p_sign_type VARCHAR(255),
-        // IN p_sign_square_footage DECIMAL(12,2),
-        // IN p_lettering_height VARCHAR(255)
 
         $stmt->bind_param(
             "ssssssssssssssssssssssssii",
