@@ -46,7 +46,7 @@ $stmt->bind_param("i", $client_id);
 $stmt->execute();
 $draft_result = $stmt->get_result();
 $drafts = $draft_result->fetch_all(MYSQLI_ASSOC);
-$stmt->close()
+$stmt->close();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -210,7 +210,12 @@ $stmt->close()
                             <td><?= htmlspecialchars($draft['form_type']); ?></td>
                             <td><?= htmlspecialchars($draft['form_datetime_submitted']); ?></td>
                             <td>
-                                <a href="form_sp_insert_administrative_appeal_request.php?draft_id=<?= urlencode($draft['draft_id']); ?>" class="btn btn-warning btn-sm">Edit Draft</a>
+                                <?php
+                                    // Build a safe, lowercase filename-like token from form_type
+                                $safe_type = strtolower(preg_replace('/[^A-Za-z0-9_\\-]/', '_', $draft['form_type']));
+                                $target = 'v2_form_sp_insert_' . $safe_type . '.php?draft_id=' . urlencode($draft['draft_id']);
+                                ?>
+                                <a href="<?= htmlspecialchars($target, ENT_QUOTES); ?>" class="btn btn-warning btn-sm">Edit Draft</a>
                             </td>
                         </tr>
                     <?php endforeach; ?>
