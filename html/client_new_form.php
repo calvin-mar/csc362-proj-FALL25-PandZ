@@ -37,20 +37,20 @@ $error = '';
       <label for="formfile">Form type</label>
       <select id="formfile" name="file" class="form-control">
         <option value="">-- Select a form --</option>
-<option value="form_sp_insert_administrative_appeal_request.php">Administrative Appeal Request</option>
-<option value="form_sp_insert_adjacent_property_owners_form.php">Adjacent Property Owners Form</option>
-<option value="form_sp_insert_conditional_use_permit_application.php">Conditional Use Permit Application</option>
-<option value="form_sp_insert_general_development_plan_application.php">General Development Plan Application</option>
-<option value="form_sp_insert_site_development_plan_application.php">Site Development Plan Application</option>
-<option value="form_sp_insert_future_land_use_map_application.php">Future Land Use Map Application</option>
-<option value="form_sp_insert_open_records_request.php">Open Records Request</option>
-<option value="form_sp_insert_sign_permit_application.php">Sign Permit Application</option>
-<option value="form_sp_insert_major_subdivision_plat_application.php">Major Subdivision Plat Application</option>
-<option value="form_sp_insert_minor_subdivision_plat_application.php">Minor Subdivision Plat Application</option>
-<option value="form_sp_insert_variance_application.php">Variance Application</option>
-<option value="form_sp_insert_zoning_map_amendment_application.php">Zoning Map Amendment Application</option>
-<option value="form_sp_insert_zoning_permit_application.php">Zoning Permit Application</option>
-<option value="form_sp_insert_zoning_verification_application.php">Zoning Verification Application</option>
+<option value="v2_form_sp_insert_administrative_appeal_request.php">Administrative Appeal Request</option>
+<option value="v2_form_sp_insert_adjacent_property_owners_form.php">Adjacent Property Owners Form</option>
+<option value="v2_form_sp_insert_conditional_use_permit_application.php">Conditional Use Permit Application</option>
+<option value="v2_form_sp_insert_general_development_plan_application.php">General Development Plan Application</option>
+<option value="v2_form_sp_insert_site_development_plan_application.php">Site Development Plan Application</option>
+<option value="v2_form_sp_insert_future_land_use_map_application.php">Future Land Use Map Application</option>
+<option value="v2_form_sp_insert_open_records_request.php">Open Records Request</option>
+<option value="v2_form_sp_insert_sign_permit_application.php">Sign Permit Application</option>
+<option value="v2_form_sp_insert_major_subdivision_plat_application.php">Major Subdivision Plat Application</option>
+<option value="v2_form_sp_insert_minor_subdivision_plat_application.php">Minor Subdivision Plat Application</option>
+<option value="v2_form_sp_insert_variance_application.php">Variance Application</option>
+<option value="v2_form_sp_insert_zoning_map_amendment_application.php">Zoning Map Amendment Application</option>
+<option value="v2_form_sp_insert_zoning_permit_application.php">Zoning Permit Application</option>
+<option value="v2_form_sp_insert_zoning_verification_application.php">Zoning Verification Application</option>
 
       </select>
     </div>
