@@ -1029,10 +1029,13 @@ function uploadFileWithTimestamp(array $files, string $fieldName, string $prefix
     }
     
     $upload_dir = 'uploads/';
-    if (!is_dir($upload_dir)) {
-        mkdir($upload_dir, 0755, true);
+   // Create upload directory if it doesn't exist
+if (!is_dir($uploadDir)) {
+    if (!@mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+        error_log("Warning: Could not create upload directory: $uploadDir");
+        // Continue anyway - files will just not be saved
     }
-    
+}
     $filename = $prefix . '_' . time() . '_' . basename($files[$fieldName]['name']);
     
     if (move_uploaded_file($files[$fieldName]['tmp_name'], $upload_dir . $filename)) {
@@ -3951,6 +3954,7 @@ function insertAdjacentPropertyOwnersFormApplication($conn, array $formData): ar
 
 /**
  * Extracts form data for Zoning Permit Application
+ * Updated to match the actual stored procedure structure
  * 
  * @param array $post The $_POST array
  * @param array $files The $_FILES array
@@ -3958,57 +3962,88 @@ function insertAdjacentPropertyOwnersFormApplication($conn, array $formData): ar
  */
 function extractZoningPermitFormData(array $post, array $files = []): array
 {
+    // Helper function to split name into first/last
+    $splitName = function($fullName) {
+        if (empty($fullName)) {
+            return ['first' => null, 'last' => null];
+        }
+        $parts = explode(' ', trim($fullName), 2);
+        return [
+            'first' => $parts[0] ?? null,
+            'last' => $parts[1] ?? null
+        ];
+    };
+    
+    // Split professional names
+    $surveyor = $splitName($post['surveyor'] ?? '');
+    $architect = $splitName($post['architect'] ?? '');
+    $landscapeArchitect = $splitName($post['landscape_architect'] ?? '');
+    $contractor = $splitName($post['contractor'] ?? '');
+    
     return [
-        // Form metadata (3)
-        'form_datetime_resolved' => isset($post['p_form_datetime_resolved']) && $post['p_form_datetime_resolved'] !== '' 
-            ? $post['p_form_datetime_resolved'] : null,
+        // Form metadata (2)
+        'form_datetime_resolved' => $post['p_form_datetime_resolved'] ?? null,
         'form_paid_bool' => 0,
-        'correction_form_id' => isset($post['p_correction_form_id']) && $post['p_correction_form_id'] !== '' 
-            ? (int)$post['p_correction_form_id'] : null,
         
-        // Application details (3)
-        'application_date' => $post['application_date'] ?? null,
-        'construction_start_date' => $post['construction_start_date'] ?? null,
-        'permit_number' => $post['permit_number'] ?? null,
+        // Surveyor/Engineer (6)
+        'surveyor_first_name' => $surveyor['first'],
+        'surveyor_last_name' => $surveyor['last'],
+        'surveyor_firm' => $post['surveyor'] ?? null, // Use full name as firm
+        'surveyor_email' => null, // Not in form
+        'surveyor_phone' => null, // Not in form
+        'surveyor_cell' => null, // Not in form
         
-        // Applicant information (5)
+        // Architect (6)
+        'architect_first_name' => $architect['first'],
+        'architect_last_name' => $architect['last'],
+        'architect_law_firm' => $post['architect'] ?? null, // Use full name as firm
+        'architect_email' => null, // Not in form
+        'architect_phone' => null, // Not in form
+        'architect_cell' => null, // Not in form
+        
+        // Land Architect (Landscape Architect) (6)
+        'land_architect_first_name' => $landscapeArchitect['first'],
+        'land_architect_last_name' => $landscapeArchitect['last'],
+        'land_architect_law_firm' => $post['landscape_architect'] ?? null,
+        'land_architect_email' => null, // Not in form
+        'land_architect_phone' => null, // Not in form
+        'land_architect_cell' => null, // Not in form
+        
+        // Contractor (6)
+        'contractor_first_name' => $contractor['first'],
+        'contractor_last_name' => $contractor['last'],
+        'contractor_law_firm' => $post['contractor'] ?? null,
+        'contractor_email' => null, // Not in form
+        'contractor_phone' => null, // Not in form
+        'contractor_cell' => null, // Not in form
+        
+        // Application data (4)
+        'pva_parcel_number' => isset($post['pva_number']) && $post['pva_number'] !== '' 
+            ? (int)$post['pva_number'] : null,
+        'project_type' => $post['project_type'] ?? null,
+        'project_plans' => null, // Will be set after file upload
+        'preliminary_site_evaluation' => null, // Will be set after file upload
+        
+        // Extra fields from form (not in SP but useful)
         'applicant_name' => $post['applicant_name'] ?? null,
         'applicant_address' => $post['applicant_address'] ?? null,
         'applicant_phone' => $post['applicant_phone'] ?? null,
         'applicant_cell' => $post['applicant_cell'] ?? null,
         'applicant_email' => $post['applicant_email'] ?? null,
-        
-        // Property owner information (5)
         'owner_name' => $post['owner_name'] ?? null,
         'owner_address' => $post['owner_address'] ?? null,
         'owner_phone' => $post['owner_phone'] ?? null,
         'owner_cell' => $post['owner_cell'] ?? null,
         'owner_email' => $post['owner_email'] ?? null,
-        
-        // Professional contacts (4)
-        'surveyor' => $post['surveyor'] ?? null,
-        'contractor' => $post['contractor'] ?? null,
-        'architect' => $post['architect'] ?? null,
-        'landscape_architect' => $post['landscape_architect'] ?? null,
-        
-        // Property information (5)
         'property_address' => $post['property_address'] ?? null,
-        'pva_number' => $post['pva_number'] ?? null,
         'acreage' => $post['acreage'] ?? null,
         'current_zoning' => $post['current_zoning'] ?? null,
-        'project_type' => $post['project_type'] ?? null,
-        
-        // Construction information (3)
         'structure_type' => $post['structure_type'] ?? null,
         'square_feet' => $post['square_feet'] ?? null,
         'project_value' => $post['project_value'] ?? null,
-        
-        // File uploads (5) - Note: Files are already uploaded, we just store paths
-        'project_plans_file' => null, // Will be set after upload
-        'landscape_plans_file' => null,
-        'verification_file' => null,
-        'site_evaluation_file' => null,
-        'additional_docs_file' => null,
+        'application_date' => $post['application_date'] ?? null,
+        'construction_start_date' => $post['construction_start_date'] ?? null,
+        'permit_number' => $post['permit_number'] ?? null,
     ];
 }
 
@@ -4082,29 +4117,26 @@ function validateZoningPermitData(array $formData): array
  * 
  * @param array $files The $_FILES array
  * @param string $uploadDir Directory to upload files to
- * @return array Array with file paths for each upload field
+ * @return array Array with file paths for uploaded files
  */
 function processZoningPermitFileUploads(array $files, string $uploadDir = 'uploads/'): array
 {
     // Create upload directory if it doesn't exist
     if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
+        if (!@mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+            error_log("Warning: Could not create upload directory: $uploadDir");
+        }
     }
     
     $uploadedFiles = [
-        'project_plans_file' => null,
-        'landscape_plans_file' => null,
-        'verification_file' => null,
-        'site_evaluation_file' => null,
-        'additional_docs_file' => null,
+        'project_plans' => null,
+        'preliminary_site_evaluation' => null,
     ];
     
+    // Map form fields to our keys
     $fileFields = [
-        'project_plans' => 'project_plans_file',
-        'landscape_plans' => 'landscape_plans_file',
-        'verification_file' => 'verification_file',
-        'site_evaluation_file' => 'site_evaluation_file',
-        'additional_docs' => 'additional_docs_file',
+        'project_plans' => 'project_plans',
+        'site_evaluation_file' => 'preliminary_site_evaluation',
     ];
     
     foreach ($fileFields as $inputName => $outputKey) {
@@ -4114,6 +4146,8 @@ function processZoningPermitFileUploads(array $files, string $uploadDir = 'uploa
             
             if (move_uploaded_file($files[$inputName]['tmp_name'], $targetPath)) {
                 $uploadedFiles[$outputKey] = $targetPath;
+            } else {
+                error_log("Failed to move uploaded file: $fileName to $targetPath");
             }
         }
     }
@@ -4130,10 +4164,8 @@ function processZoningPermitFileUploads(array $files, string $uploadDir = 'uploa
  */
 function insertZoningPermitApplication($conn, array $formData): array
 {
-    // Build SQL with 28 parameters (23 from stored procedure + 5 file paths)
-    // Note: The original stored procedure has 25 params but is missing applicant_name and has a typo
-    // We'll use 28 parameters to include all fields properly
-    $sql = "CALL sp_insert_zoning_permit_application(" . str_repeat("?,", 27) . "?)";
+    // Build SQL with 30 parameters (to match stored procedure)
+    $sql = "CALL sp_insert_zoning_permit_application(" . str_repeat("?,", 29) . "?)";
     
     $stmt = $conn->prepare($sql);
     
@@ -4145,54 +4177,53 @@ function insertZoningPermitApplication($conn, array $formData): array
         ];
     }
     
-    // Build the type string (28 parameters, all strings)
-    $types = 'ssssssssssssssssssssssssssss';
+    // Build the type string (30 parameters)
+    // i = integer, s = string
+    $types = 'sisssssssssssssssssssssssssiss';
     
-    // Build params array in correct order (28 parameters)
+    // Build params array in correct order (30 parameters)
     $params = [
-        // Application details (3)
-        $formData['application_date'],
-        $formData['construction_start_date'],
-        $formData['permit_number'],
+        // Form metadata (2)
+        $formData['form_datetime_resolved'],
+        $formData['form_paid_bool'],
         
-        // Applicant information (5)
-        $formData['applicant_name'],
-        $formData['applicant_address'],
-        $formData['applicant_phone'],
-        $formData['applicant_cell'],
-        $formData['applicant_email'],
+        // Surveyor (6)
+        $formData['surveyor_first_name'],
+        $formData['surveyor_last_name'],
+        $formData['surveyor_firm'],
+        $formData['surveyor_email'],
+        $formData['surveyor_phone'],
+        $formData['surveyor_cell'],
         
-        // Property owner information (5)
-        $formData['owner_name'],
-        $formData['owner_address'],
-        $formData['owner_phone'],
-        $formData['owner_cell'],
-        $formData['owner_email'],
+        // Architect (6)
+        $formData['architect_first_name'],
+        $formData['architect_last_name'],
+        $formData['architect_law_firm'],
+        $formData['architect_email'],
+        $formData['architect_phone'],
+        $formData['architect_cell'],
         
-        // Professional contacts (4)
-        $formData['surveyor'],
-        $formData['contractor'],
-        $formData['architect'],
-        $formData['landscape_architect'],
+        // Land Architect (6)
+        $formData['land_architect_first_name'],
+        $formData['land_architect_last_name'],
+        $formData['land_architect_law_firm'],
+        $formData['land_architect_email'],
+        $formData['land_architect_phone'],
+        $formData['land_architect_cell'],
         
-        // Property information (5)
-        $formData['property_address'],
-        $formData['pva_number'],
-        $formData['acreage'],
-        $formData['current_zoning'],
+        // Contractor (6)
+        $formData['contractor_first_name'],
+        $formData['contractor_last_name'],
+        $formData['contractor_law_firm'],
+        $formData['contractor_email'],
+        $formData['contractor_phone'],
+        $formData['contractor_cell'],
+        
+        // Application data (4)
+        $formData['pva_parcel_number'],
         $formData['project_type'],
-        
-        // Construction information (3)
-        $formData['structure_type'],
-        $formData['square_feet'],
-        $formData['project_value'],
-        
-        // File uploads (5)
-        $formData['project_plans_file'],
-        $formData['landscape_plans_file'],
-        $formData['verification_file'],
-        $formData['site_evaluation_file'],
-        $formData['additional_docs_file'],
+        $formData['project_plans'],
+        $formData['preliminary_site_evaluation'],
     ];
     
     // Create references for bind_param

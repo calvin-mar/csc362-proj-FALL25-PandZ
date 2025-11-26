@@ -5,6 +5,24 @@
  * with this code block (lines 11-99 in original file)
  */
 
+// Enable error display for debugging
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+require_once 'config.php';
+require_once 'zoning_form_functions.php';  // ← THIS IS CRITICAL!
+requireLogin();
+
+if (getUserType() != 'client') {
+    header('Location: login.php');
+    exit();
+}
+
+$conn = getDBConnection();
+$client_id = getUserId();
+$success = '';
+$error = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Extract form data
