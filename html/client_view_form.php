@@ -112,11 +112,22 @@ try {
     // Query the appropriate view if one was found
     if ($view_name) {
         $stmt = $conn->prepare("SELECT * FROM {$view_name} WHERE form_id = ?");
-        $stmt->bind_param("i", $form_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $form_details = $result->fetch_assoc();
-        $stmt->close();
+        if (!$stmt) {
+            error_log("[DEBUG] Failed to prepare view query: " . $conn->error . " | View: $view_name | Form ID: $form_id");
+            $error = "Database error: View not available or inaccessible";
+        } else {
+            $stmt->bind_param("i", $form_id);
+            $stmt->execute();
+            if ($stmt->errno) {
+                error_log("[ERROR] View query execution failed: " . $stmt->error . " | View: $view_name | Form ID: $form_id");
+            }
+            $result = $stmt->get_result();
+            $form_details = $result->fetch_assoc();
+            if (!$form_details) {
+                error_log("[DEBUG] No data returned from view: $view_name | Form ID: $form_id");
+            }
+            $stmt->close();
+        }
     }
 } catch(Exception $e) {
     error_log("Error loading form details: " . $e->getMessage());
@@ -389,40 +400,34 @@ if ($form_details) {
         <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
     <?php endif; ?>
     
-    
-<div class="form-display-container">
-    <style>
-        .input-box { border: 1px solid #000; min-height: 18px; display: block; padding: 3px; margin-bottom: 8px; }
-        h2 { font-size: 16px; margin-top: 20px; border-bottom: 1px solid #000; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        td { padding: 5px; border: 1px solid #000; }
-        .label { font-weight: bold; background-color: #f2f2f2; }
-    </style>
-    <h1 style="text-align:center;">Danville-Boyle County Planning & Zoning Commission<br>Application Details</h1>
-    <table>
-        <tr>
-            <td class="label">Form Type:</td>
-            <td><div class="input-box"><?php echo htmlspecialchars($form['form_type']); ?></div></td>
-            <td class="label">Form ID:</td>
-            <td><div class="input-box"><?php echo htmlspecialchars($form['form_id']); ?></div></td>
-        </tr>
-        <tr>
-            <td class="label">Submitted:</td>
-            <td><div class="input-box"><?php echo date('M j, Y g:i A', strtotime($form['form_datetime_submitted'])); ?></div></td>
-            <td class="label">Status:</td>
-            <td><div class="input-box"><?php echo $form['form_datetime_resolved'] ? 'Resolved' : 'Pending'; ?></div></td>
-        </tr>
-    </table>
-
-    <?php if ($form_details): ?>
-        <?php foreach ($form_details as $key => $value): ?>
-            <h2><?php echo ucwords(str_replace('_', ' ', $key)); ?></h2>
-            <div class="input-box"><?php echo htmlspecialchars($value); ?></div>
-        <?php endforeach; ?>
+    <!-- Display formatted form HTML -->
+    <?php if ($formatted_html): ?>
+        <div class="form-display-container">
+            <h1 style="text-align:center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px;">
+                Danville-Boyle County Planning & Zoning Commission<br>
+                <span style="font-size: 16px; color: #666;"><?php echo htmlspecialchars($form['form_type']); ?></span>
+            </h1>
+            <?php echo $formatted_html; ?>
+        </div>
+    <?php elseif (!$form_details && $view_name): ?>
+        <div class="form-display-container">
+            <div class="error-message">
+                <strong>Form data not available:</strong><br>
+                The form details view (<?php echo htmlspecialchars($view_name); ?>) is not returning any data for this form.
+                This typically means either:
+                <ul>
+                    <li>The view does not exist in the database</li>
+                    <li>The form has not been submitted with all required information</li>
+                    <li>There is a database configuration issue</li>
+                </ul>
+                Please contact the system administrator if this problem persists.
+            </div>
+        </div>
     <?php else: ?>
-        <p class="no-data">Form details are not available for display.</p>
+        <div class="form-display-container">
+            <p class="no-data">Form details are not available for display.</p>
+        </div>
     <?php endif; ?>
-</div>
 
     
     <?php if (count($corrections) > 0): ?>

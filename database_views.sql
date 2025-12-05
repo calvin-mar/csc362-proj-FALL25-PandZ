@@ -316,20 +316,7 @@ LEFT JOIN type_one_applicants t1a ON alf.t1_applicant_id = t1a.t1_applicant_id
 LEFT JOIN applicant_owner_link olf ON f.form_id = olf.form_id
 LEFT JOIN type_one_owners t1o ON olf.t1_owner_id = t1o.t1_owner_id
 WHERE f.form_type = 'Major Subdivision Plat Application'
-GROUP BY f.form_id, mspa.mspa_topographic_survey, mspa.mspa_proposed_plot_layout,
-         mspa.mspa_plat_restrictions, mspa.mspa_property_owner_convenants,
-         mspa.mspa_association_covenants, mspa.mspa_master_deed,
-         mspa.mspa_construction_plans, mspa.mspa_traffic_impact_study,
-         mspa.mspa_geologic_study, mspa.mspa_drainage_plan, mspa.mspa_pavement_design,
-         mspa.mspa_SWPPP_EPSC_plan, mspa.mspa_construction_bond_est,
-         tf.technical_app_filing_date, tf.technical_review_date,
-         tf.technical_prelim_approval_date, tf.technical_final_approval_date,
-         s.surveyor_first_name, s.surveyor_last_name, s.surveyor_firm,
-         s.surveyor_email, s.surveyor_phone, s.surveyor_cell,
-         e.engineer_first_name, e.engineer_last_name, e.engineer_firm,
-         e.engineer_email, e.engineer_phone, e.engineer_cell,
-         p.PVA_parcel_number, p.property_acreage, p.property_current_zoning,
-         a.address_street, a.address_city, a.state_code, a.address_zip_code;
+GROUP BY f.form_id;
 
 -- 8. Minor Subdivision Plat Application - Complete View
 CREATE OR REPLACE VIEW vw_minor_subdivision_complete AS
