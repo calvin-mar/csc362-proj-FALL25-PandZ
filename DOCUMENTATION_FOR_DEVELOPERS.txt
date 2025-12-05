@@ -71,8 +71,8 @@ INCLUDING BUT NOT LIMITED TO JOE GAUDY, GARRETT GEORGE, CALVIN MAR, AND DR. WILL
 ----------------------------------
 0.1:
 ----------------------------------INTRODUCTION, HOW TO USE THIS DOCUMENT------------------------
-This document serves as the documentation for developers.  The goal is that it might be of use to anyone who is in attempting to understand, debug, modify,
-or extend the project.  The project in question is a fullstack (frontend and backend) LAMP (Linux, Apache, MySQL and PHP)application built for the Planning
+This document serves as the documentation for developers.  The goal is that it might be of use to anyone who is attempting to understand, debug, modify,
+or extend the project.  The project in question is a fullstack (frontend and backend) LAMP (Linux, Apache, MariaDB and PHP)application built for the Planning
 and Zoning office of Danville, Kentucky.  It aims to implement a way for webusing citizens to turn in applications online, and the office staff and departments
 to view these applications, manipulate them, etc.  For a better description, see README.  In theory this may be a 'starter' package of sorts, so the description
 is kept a bit vague.
@@ -159,9 +159,20 @@ also housed in html subdirectory.  The forms marked v2 have some sort of functio
 3
 These are the above php code implementations of forms.  These may actually work better than the functionized versions due to time constraints in implementing
 the functionized versions.  These may serve as a good guide for refactoring into clean, maintainable, functionized forms, but they are primarily left as an archived
-remnant of a previous version and it is not recommended that they are interacted with directly.
+remnant of a previous version and it is not recommended that they are interacted with directly.  Found in directory of html old_insert_forms.  If you choose to
+modify these files do not mark them with v2_, to prevent confusion with the current form implentations
         2.26
           -- HELPER FILES: CONFIG, GENERATE_FORMS, FORM_FUNCTIONS, ETC
+form_insert_functions.php
+form_update_functions.php
+generate_form_pdf.php
+generate_variance_pdf.php
+login.php
+logout.php
+pdf_generation_functions.php
+setup_passwords.php
+May be others not listed
+
 
 
           
