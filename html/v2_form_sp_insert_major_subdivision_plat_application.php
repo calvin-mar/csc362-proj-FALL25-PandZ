@@ -1,3 +1,4 @@
+
 <?php
 // REPLACE THE PHP PROCESSING SECTION (lines 1-200) with this code
 // Keep all the HTML/JavaScript from line 200 onwards
@@ -39,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $linkResult = linkFormToClient($conn, $form_id, $client_id);
                     
                     if ($linkResult['success']) {
-                        $success = "Major Subdivision Plat Application submitted successfully! Form ID: " . $form_id;
+                         $success = "Major Subdivision Plat Application submitted successfully! Form ID: " . $form_id;
                     } else {
                         $error = $linkResult['message'];
                     }

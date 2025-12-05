@@ -353,65 +353,282 @@ function generateSignPermitHtml($form_id, $form_details) {
 }
 
 // 7. MAJOR SUBDIVISION PLAT APPLICATION
-function generateMajorSubdivisionHtml($form_id, $form_details) {
-    ob_start(); ?>
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Major Subdivision Plat - ID: <?php echo htmlspecialchars($form_id); ?></title>
-        <style><?php echo getCommonStyles(); ?></style>
-    </head>
-    <body>
-        <h1>DANVILLE-BOYLE COUNTY PLANNING & ZONING COMMISSION<br>MAJOR SUBDIVISION PLAT APPLICATION</h1>
 
-        <h2>APPLICATION DATES</h2>
-        <table class="info-table">
-            <tr>
-                <th>Filing Date:</th>
-                <td><?php echo htmlspecialchars($form_details['technical_app_filing_date'] ?? ''); ?></td>
-                <th>Review Date:</th>
-                <td><?php echo htmlspecialchars($form_details['technical_review_date'] ?? ''); ?></td>
-            </tr>
-            <tr>
-                <th>Preliminary Approval:</th>
-                <td><?php echo htmlspecialchars($form_details['technical_prelim_approval_date'] ?? ''); ?></td>
-                <th>Final Approval:</th>
-                <td><?php echo htmlspecialchars($form_details['technical_final_approval_date'] ?? ''); ?></td>
-            </tr>
-        </table>
 
-        <h2>APPLICANT(S)</h2>
-        <div class="input-box"><?php echo htmlspecialchars($form_details['applicants'] ?? ''); ?></div>
-
-        <h2>PROPERTY INFORMATION</h2>
-        <div class="field-label">Property Address:</div>
-        <div class="input-box"><?php echo formatAddress($form_details, 'property'); ?></div>
-        <div class="field-label">PVA Parcel Number:</div>
-        <div class="input-box"><?php echo htmlspecialchars($form_details['pva_parcel_number'] ?? ''); ?></div>
-        <div class="field-label">Acreage:</div>
-        <div class="input-box"><?php echo htmlspecialchars($form_details['property_acreage'] ?? ''); ?></div>
-
-        <h2>SURVEYOR</h2>
-        <div class="input-box"><?php echo htmlspecialchars(($form_details['surveyor_first_name'] ?? '') . ' ' . ($form_details['surveyor_last_name'] ?? '') . ' - ' . ($form_details['surveyor_firm'] ?? '')); ?></div>
-
-        <h2>ENGINEER</h2>
-        <div class="input-box"><?php echo htmlspecialchars(($form_details['engineer_first_name'] ?? '') . ' ' . ($form_details['engineer_last_name'] ?? '') . ' - ' . ($form_details['engineer_firm'] ?? '')); ?></div>
-
-        <h2>REQUIRED DOCUMENTS</h2>
-        <div class="checkbox-item">Topographic Survey: <?php echo $form_details['mspa_topographic_survey'] ? 'Yes' : 'No'; ?></div>
-        <div class="checkbox-item">Proposed Plot Layout: <?php echo $form_details['mspa_proposed_plot_layout'] ? 'Yes' : 'No'; ?></div>
-        <div class="checkbox-item">Plat Restrictions: <?php echo $form_details['mspa_plat_restrictions'] ? 'Yes' : 'No'; ?></div>
-        <div class="checkbox-item">Construction Plans: <?php echo $form_details['mspa_construction_plans'] ? 'Yes' : 'No'; ?></div>
-        <div class="checkbox-item">Traffic Impact Study: <?php echo $form_details['mspa_traffic_impact_study'] ? 'Yes' : 'No'; ?></div>
-        <div class="checkbox-item">SWPPP/EPSC Plan: <?php echo $form_details['mspa_SWPPP_EPSC_plan'] ? 'Yes' : 'No'; ?></div>
-
-        <?php echo getFooter($form_details); ?>
-    </body>
-    </html>
+function renderHeader($title) {
+    ?>
+    <h1>
+        DANVILLE-BOYLE COUNTY PLANNING & ZONING COMMISSION<br>
+        <?= htmlspecialchars($title) ?>
+    </h1>
     <?php
-    return ob_get_clean();
 }
+
+function renderApplicationDates($form_details) {
+    $dates = [
+        'Filing Date' => getValue($form_details, 'technical_app_filing_date'),
+        'Review Date' => getValue($form_details, 'technical_review_date'),
+        'Preliminary Approval' => getValue($form_details, 'technical_prelim_approval_date'),
+        'Final Approval' => getValue($form_details, 'technical_final_approval_date')
+    ];
+    
+    // Check if any dates exist
+    $hasDates = array_filter($dates, fn($date) => !empty($date));
+    ?>
+    <section class="section">
+        <h2>APPLICATION DATES</h2>
+        <?php if (empty($hasDates)): ?>
+            <div class="empty-state">No application dates recorded</div>
+        <?php else: ?>
+            <table class="info-table">
+                <tr>
+                    <th>Filing Date:</th>
+                    <td><?= formatDateValue($dates['Filing Date']) ?></td>
+                    <th>Review Date:</th>
+                    <td><?= formatDateValue($dates['Review Date']) ?></td>
+                </tr>
+                <tr>
+                    <th>Preliminary Approval:</th>
+                    <td><?= formatDateValue($dates['Preliminary Approval']) ?></td>
+                    <th>Final Approval:</th>
+                    <td><?= formatDateValue($dates['Final Approval']) ?></td>
+                </tr>
+            </table>
+        <?php endif; ?>
+    </section>
+    <?php
+}
+
+function renderApplicants($form_details) {
+    $applicants = getValue($form_details, 'applicants');
+    ?>
+    <section class="section">
+        <h2>APPLICANT(S)</h2>
+        <div class="input-box <?= empty($applicants) ? 'empty' : '' ?>">
+            <?= !empty($applicants) ? htmlspecialchars($applicants) : '<span class="placeholder">No applicants listed</span>' ?>
+        </div>
+    </section>
+    <?php
+}
+
+function renderPropertyInformation($form_details) {
+    $fields = [
+        'Property Address' => formatAddress($form_details, 'property'),
+        'PVA Parcel Number' => getValue($form_details, 'pva_parcel_number'),
+        'Acreage' => getValue($form_details, 'property_acreage'),
+        'Current Zoning' => getValue($form_details, 'property_current_zoning')
+    ];
+    
+    // Check if any property information exists
+    $hasPropertyInfo = array_filter($fields, fn($value) => !empty($value));
+    ?>
+    <section class="section">
+        <h2>PROPERTY INFORMATION</h2>
+        <?php if (empty($hasPropertyInfo)): ?>
+            <div class="empty-state">No property information available</div>
+        <?php else: ?>
+            <?php foreach ($fields as $label => $value): ?>
+                <div class="field-group">
+                    <div class="field-label"><?= htmlspecialchars($label) ?>:</div>
+                    <div class="input-box <?= empty($value) ? 'empty' : '' ?>">
+                        <?= !empty($value) ? htmlspecialchars($value) : '<span class="placeholder">Not provided</span>' ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </section>
+    <?php
+}
+
+function renderProfessionals($form_details) {
+    $professionals = [
+        'SURVEYOR' => [
+            'first_name' => getValue($form_details, 'surveyor_first_name'),
+            'last_name' => getValue($form_details, 'surveyor_last_name'),
+            'firm' => getValue($form_details, 'surveyor_firm'),
+            'email' => getValue($form_details, 'surveyor_email'),
+            'phone' => getValue($form_details, 'surveyor_phone')
+        ],
+        'ENGINEER' => [
+            'first_name' => getValue($form_details, 'engineer_first_name'),
+            'last_name' => getValue($form_details, 'engineer_last_name'),
+            'firm' => getValue($form_details, 'engineer_firm'),
+            'email' => getValue($form_details, 'engineer_email'),
+            'phone' => getValue($form_details, 'engineer_phone')
+        ]
+    ];
+    ?>
+    <section class="section">
+        <h2>PROFESSIONAL CONTACTS</h2>
+        <?php foreach ($professionals as $title => $person): ?>
+            <div class="professional-group">
+                <h3><?= $title ?></h3>
+                <?php 
+                $formatted = formatProfessionalInfo($person);
+                ?>
+                <div class="input-box <?= $formatted['isEmpty'] ? 'empty' : '' ?>">
+                    <?= $formatted['html'] ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </section>
+    <?php
+}
+
+function renderRequiredDocuments($form_details) {
+    $documents = [
+        'Topographic Survey' => 'mspa_topographic_survey',
+        'Proposed Plot Layout' => 'mspa_proposed_plot_layout',
+        'Plat Restrictions' => 'mspa_plat_restrictions',
+        'Property Owner Covenants' => 'mspa_property_owner_convenants',
+        'Association Covenants' => 'mspa_association_covenants',
+        'Master Deed' => 'mspa_master_deed',
+        'Construction Plans' => 'mspa_construction_plans',
+        'Traffic Impact Study' => 'mspa_traffic_impact_study',
+        'Geologic Study' => 'mspa_geologic_study',
+        'Drainage Plan' => 'mspa_drainage_plan',
+        'Pavement Design' => 'mspa_pavement_design',
+        'SWPPP/EPSC Plan' => 'mspa_SWPPP_EPSC_plan',
+        'Construction Bond Estimate' => 'mspa_construction_bond_est'
+    ];
+    
+    // Count submitted documents
+    $submittedCount = 0;
+    foreach ($documents as $key) {
+        if (!empty($form_details[$key])) {
+            $submittedCount++;
+        }
+    }
+    ?>
+    <section class="section">
+        <h2>REQUIRED DOCUMENTS</h2>
+        <div class="document-summary">
+            <span class="summary-text">
+                <?= $submittedCount ?> of <?= count($documents) ?> documents submitted
+            </span>
+            <?php if ($submittedCount === count($documents)): ?>
+                <span class="badge badge-success">Complete</span>
+            <?php elseif ($submittedCount > 0): ?>
+                <span class="badge badge-warning">Incomplete</span>
+            <?php else: ?>
+                <span class="badge badge-danger">No documents</span>
+            <?php endif; ?>
+        </div>
+        
+        <div class="document-checklist">
+            <?php foreach ($documents as $label => $key): ?>
+                <?php 
+                $value = getValue($form_details, $key);
+                $isSubmitted = !empty($value);
+                ?>
+                <div class="checkbox-item <?= $isSubmitted ? 'submitted' : 'not-submitted' ?>">
+                    <span class="checkbox <?= $isSubmitted ? 'checked' : 'unchecked' ?>">
+                        <?= $isSubmitted ? '✓' : '☐' ?>
+                    </span>
+                    <span class="checkbox-label"><?= htmlspecialchars($label) ?></span>
+                    <?php if ($isSubmitted && $value !== '1' && $value !== 'Yes'): ?>
+                        <span class="file-name" title="<?= htmlspecialchars($value) ?>">
+                            (<?= htmlspecialchars(truncateFileName($value, 30)) ?>)
+                        </span>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </section>
+    <?php
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Format a date value with null handling
+ */
+function formatDateValue($date) {
+    if (empty($date)) {
+        return '<span class="placeholder">Not set</span>';
+    }
+    
+    // Try to format the date nicely
+    try {
+        $dateObj = new DateTime($date);
+        return htmlspecialchars($dateObj->format('M d, Y'));
+    } catch (Exception $e) {
+        return htmlspecialchars($date);
+    }
+}
+
+
+/**
+ * Format professional contact information with null handling
+ */
+function formatProfessionalInfo($person) {
+    $firstName = getValue($person, 'first_name');
+    $lastName = getValue($person, 'last_name');
+    $firm = getValue($person, 'firm');
+    $email = getValue($person, 'email');
+    $phone = getValue($person, 'phone');
+    
+    // Build name
+    $nameParts = array_filter([$firstName, $lastName]);
+    $name = !empty($nameParts) ? implode(' ', $nameParts) : null;
+    
+    // Check if we have any information
+    $hasInfo = $name || $firm || $email || $phone;
+    
+    if (!$hasInfo) {
+        return [
+            'html' => '<span class="placeholder">Not assigned</span>',
+            'isEmpty' => true
+        ];
+    }
+    
+    // Build HTML
+    $html = '';
+    
+    if ($name) {
+        $html .= '<div class="professional-name">' . htmlspecialchars($name) . '</div>';
+    }
+    
+    if ($firm) {
+        $html .= '<div class="professional-firm">' . htmlspecialchars($firm) . '</div>';
+    }
+    
+    $contactParts = [];
+    if ($email) {
+        $contactParts[] = '<a href="mailto:' . htmlspecialchars($email) . '">' . htmlspecialchars($email) . '</a>';
+    }
+    if ($phone) {
+        $contactParts[] = '<a href="tel:' . htmlspecialchars($phone) . '">' . htmlspecialchars($phone) . '</a>';
+    }
+    
+    if (!empty($contactParts)) {
+        $html .= '<div class="professional-contact">' . implode(' • ', $contactParts) . '</div>';
+    }
+    
+    return [
+        'html' => $html,
+        'isEmpty' => false
+    ];
+}
+
+/**
+ * Truncate a filename to a maximum length
+ */
+function truncateFileName($filename, $maxLength = 30) {
+    if (strlen($filename) <= $maxLength) {
+        return $filename;
+    }
+    
+    $extension = pathinfo($filename, PATHINFO_EXTENSION);
+    $basename = pathinfo($filename, PATHINFO_FILENAME);
+    
+    $truncated = substr($basename, 0, $maxLength - strlen($extension) - 4) . '...';
+    
+    return $truncated . '.' . $extension;
+}
+
 
 // 8. MINOR SUBDIVISION PLAT APPLICATION
 function generateMinorSubdivisionHtml($form_id, $form_details) {
@@ -1292,141 +1509,318 @@ function generateZoningPermitHtml($form_id, $form_details) {
 // HELPER FUNCTIONS
 // ========================================
 
+/**
+ * Enhanced common styles with better null state handling
+ */
 function getCommonStyles() {
     return <<<CSS
-        @page { margin: 15mm; }
-        body { 
-            font-family: 'DejaVu Sans', sans-serif; 
-            font-size: 11pt; 
-            line-height: 1.4;
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
             padding: 20px;
+            background-color: #f5f5f5;
         }
-        h1 { 
-            text-align: center; 
-            font-size: 14pt; 
-            font-weight: bold; 
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 1.5em;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .section {
+            background: white;
+            padding: 25px;
             margin-bottom: 20px;
-            text-transform: uppercase;
-            line-height: 1.3;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        h2 { 
-            font-size: 11pt; 
-            font-weight: bold;
-            margin-top: 20px; 
-            margin-bottom: 10px;
-            background-color: #e0e0e0;
-            padding: 5px 8px;
-            text-transform: uppercase;
-        }
-        .header-grid {
-            width: 100%;
-            border-collapse: collapse;
+        
+        h2 {
+            color: #2c3e50;
+            font-size: 1.2em;
             margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
         }
-        .header-grid td {
-            padding: 8px;
-            border: 1px solid #000;
-            vertical-align: top;
+        
+        h3 {
+            color: #495057;
+            font-size: 1em;
+            margin-bottom: 10px;
+            font-weight: 600;
         }
-        .label { 
-            font-weight: bold; 
-            width: 40%;
-        }
-        .value {
-            width: 60%;
-        }
+        
         .info-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin: 15px 0;
         }
+        
+        .info-table th,
         .info-table td {
-            padding: 6px 8px;
-            border: 1px solid #000;
-            vertical-align: top;
-        }
-        .info-table th {
-            padding: 6px 8px;
-            border: 1px solid #000;
-            background-color: #f0f0f0;
-            font-weight: bold;
+            padding: 12px;
             text-align: left;
+            border: 1px solid #ddd;
         }
-        .field-label {
-            font-weight: bold;
-            margin-top: 10px;
-            margin-bottom: 3px;
+        
+        .info-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            width: 25%;
         }
-        .input-box { 
-            border: 1px solid #000; 
-            min-height: 22px; 
-            padding: 5px; 
-            margin-bottom: 8px;
+        
+        .info-table td {
             background-color: #fff;
         }
-        .large-input {
-            min-height: 80px;
+        
+        .field-group {
+            margin-bottom: 15px;
         }
-        .xlarge-input {
-            min-height: 120px;
+        
+        .field-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 5px;
+            font-size: 0.95em;
         }
-        .checkbox-item { 
-            margin: 8px 0;
-            padding-left: 20px;
-            position: relative;
+        
+        .input-box {
+            padding: 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            min-height: 40px;
+            color: #212529;
         }
-        .checkbox-item:before {
-            content: '☐';
-            position: absolute;
-            left: 0;
-            font-size: 14pt;
+        
+        .input-box.empty {
+            background-color: #fff8e1;
+            border-color: #ffc107;
+            border-style: dashed;
         }
-        .signature-section {
+        
+        .placeholder {
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .empty-state {
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            background-color: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 4px;
+            font-style: italic;
+        }
+        
+        .professional-group {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .professional-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .professional-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        
+        .professional-firm {
+            color: #495057;
+            margin-bottom: 4px;
+        }
+        
+        .professional-contact {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        
+        .professional-contact a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .professional-contact a:hover {
+            text-decoration: underline;
+        }
+        
+        .document-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .summary-text {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .badge-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .document-checklist {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 10px;
             margin-top: 15px;
         }
-        .signature-line {
-            border-bottom: 1px solid #000;
-            display: inline-block;
-            min-width: 300px;
-            margin: 0 10px;
-        }
-        .footer { 
-            font-size: 9pt; 
-            margin-top: 30px; 
-            text-align: center;
-            border-top: 2px solid #000;
-            padding-top: 10px;
-        }
-        .page-break { 
-            page-break-before: always; 
-        }
-        .note {
-            font-style: italic;
-            font-size: 10pt;
-            margin: 10px 0;
-        }
-        .important-note {
-            font-weight: bold;
-            text-align: center;
-            margin: 15px 0;
-            font-size: 11pt;
-        }
-        ul {
-            margin: 10px 0;
-            padding-left: 30px;
-        }
-        ul li {
-            margin: 8px 0;
-        }
-        .fee-section {
-            margin-top: 20px;
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
             padding: 10px;
-            border: 1px solid #000;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .checkbox-item.submitted {
+            background-color: #d4edda;
+        }
+        
+        .checkbox-item.not-submitted {
+            background-color: #fff;
+            border: 1px dashed #dee2e6;
+        }
+        
+        .checkbox-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            border: 2px solid #6c757d;
+            border-radius: 4px;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        
+        .checkbox.checked {
+            background-color: #28a745;
+            border-color: #28a745;
+            color: white;
+        }
+        
+        .checkbox.unchecked {
+            background-color: white;
+            color: #6c757d;
+        }
+        
+        .checkbox-label {
+            font-weight: 500;
+            color: #495057;
+            flex: 1;
+        }
+        
+        .file-name {
+            margin-left: 10px;
+            font-size: 0.85em;
+            color: #6c757d;
+            font-style: italic;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+            }
+            
+            .section {
+                box-shadow: none;
+                page-break-inside: avoid;
+            }
+            
+            h1 {
+                background: #2c3e50;
+                color: white;
+            }
+            
+            .professional-contact a {
+                color: #667eea;
+                text-decoration: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .info-table {
+                font-size: 0.9em;
+            }
+            
+            .info-table th,
+            .info-table td {
+                padding: 8px;
+            }
+            
+            .document-checklist {
+                grid-template-columns: 1fr;
+            }
+            
+            .document-summary {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
         }
 CSS;
 }
-
+/*
 function formatAddress($form_details, $prefix) {
     $parts = [];
     
@@ -1504,7 +1898,7 @@ function formatAddress($form_details, $prefix) {
     }
     
     return htmlspecialchars(implode(', ', $parts));
-}
+}*/
 
 function getFooter($form_details) {
     ob_start(); ?>
