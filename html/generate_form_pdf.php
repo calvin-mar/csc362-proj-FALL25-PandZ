@@ -1,6 +1,5 @@
 <?php
 // generate_form_pdf.php
-
 // Show all errors during development (optional, good for debugging)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);

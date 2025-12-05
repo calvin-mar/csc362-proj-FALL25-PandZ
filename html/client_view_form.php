@@ -427,7 +427,7 @@ if ($form_details) {
     
     <?php if (count($corrections) > 0): ?>
     <div class="interactions-section">
-        <h2>⚠️ Corrections Required</h2>
+        <h2>Corrections Required</h2>
         <?php foreach ($corrections as $correction): ?>
             <div class="correction-item">
                 <div class="correction-header">

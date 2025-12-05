@@ -1,9 +1,18 @@
 <?php
+    // Show all errors from the PHP interpreter.
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+
+    // Show all errors from the MySQLi Extension.
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);  
+?>
+<?php
 // Replace the entire PHP logic section at the top of form_sp_insert_general_development_plan_application.php
 // with this refactored code:
 
 require_once 'config.php';
-require_once __DIR__ . '/../../html/zoning_form_functions.php'; // Adjust path as needed
+require_once __DIR__ . '/zoning_form_functions.php'; // Adjust path as needed
 
 requireLogin();
 

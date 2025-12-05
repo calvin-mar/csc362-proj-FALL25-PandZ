@@ -1960,14 +1960,12 @@ function insertMinorSubdivisionPlatApplication($conn, array $formData): array
         $formData['additional_owner_zip_codes'],
         $formData['additional_owner_other_addresses'],
         $formData['additional_owner_emails'],
-        $formData['surveyor_id'],
         $formData['surveyor_first_name'],
         $formData['surveyor_last_name'],
         $formData['surveyor_firm'],
         $formData['surveyor_email'],
         $formData['surveyor_phone'],
         $formData['surveyor_cell'],
-        $formData['engineer_id'],
         $formData['engineer_first_name'],
         $formData['engineer_last_name'],
         $formData['engineer_firm'],
@@ -2237,7 +2235,7 @@ function validateMajorSubdivisionPlatData(array $formData): array
 function insertMajorSubdivisionPlatApplication($conn, array $formData): array
 {
     // Build SQL with 105 parameters
-    $sql = "CALL sp_insert_major_subdivision_plat_application(" . str_repeat("?,", 104) . "?)";
+    $sql = "CALL sp_insert_major_subdivision_plat_application(" . str_repeat("?,", 102) . "?)";
     
     $stmt = $conn->prepare($sql);
     
@@ -2251,9 +2249,9 @@ function insertMajorSubdivisionPlatApplication($conn, array $formData): array
     
     // Build the type string (105 parameters)
     // s = string, i = integer, d = decimal/double
-    $types = 'sssssssssssssssssssssssssssssssssssissssssssssssssssssssssssssssssssssiiiiiiiiiiiiiiissssssssssssssssssss';
+    $types = 'sssssssssssssssssssssssssssssssssssissssssssssssssssssssssssssssssssssiiiiiiiiiiiiiiissssssssssssssssss';
     
-    // Build params array in correct order (105 parameters)
+    // Build params array in correct order (103 parameters)
     $params = [
         // Technical dates (4)
         $formData['application_filing_date'],
@@ -2309,7 +2307,6 @@ function insertMajorSubdivisionPlatApplication($conn, array $formData): array
         $formData['additional_owner_emails'],
         
         // Surveyor (7)
-        $formData['surveyor_id'],
         $formData['surveyor_first_name'],
         $formData['surveyor_last_name'],
         $formData['surveyor_firm'],
@@ -2318,7 +2315,6 @@ function insertMajorSubdivisionPlatApplication($conn, array $formData): array
         $formData['surveyor_cell'],
         
         // Engineer (7)
-        $formData['engineer_id'],
         $formData['engineer_first_name'],
         $formData['engineer_last_name'],
         $formData['engineer_firm'],
@@ -2381,6 +2377,7 @@ function insertMajorSubdivisionPlatApplication($conn, array $formData): array
         $formData['file_bond_estimate'],
         $formData['file_construction_contract'],
         $formData['file_construction_bond'],
+
     ];
     
     // Create references for bind_param
