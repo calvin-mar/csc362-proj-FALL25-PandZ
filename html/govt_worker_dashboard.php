@@ -1,4 +1,12 @@
 <?php
+/**
+ * Main dashboard for govt_workers
+ * Shows:
+ *  - High-level stats
+ *  - A filterable table of all forms
+ *  - If user is an admin:
+ *    - Actions to create new departments and new govt_worker accounts.
+ */
 session_start();
 require_once 'config.php';
 requireLogin();
@@ -41,25 +49,25 @@ $query = "SELECT f.form_id, f.form_type, f.form_datetime_submitted, f.form_datet
 
 $param_types = '';
 $bind_values = [];
-
+// Form type filter
 if (!empty($form_type_filter)) {
     $query .= " AND f.form_type = ?";
     $param_types .= "s";
     $bind_values[] = &$form_type_filter;
 }
-
+// Date from filter
 if (!empty($date_from)) {
     $query .= " AND DATE(f.form_datetime_submitted) >= ?";
     $param_types .= "s";
     $bind_values[] = &$date_from;
 }
-
+// Date to filter
 if (!empty($date_to)) {
     $query .= " AND DATE(f.form_datetime_submitted) <= ?";
     $param_types .= "s";
     $bind_values[] = &$date_to;
 }
-
+// Paid/Unpaid filter
 if ($paid_filter !== '' && $paid_filter !== null) {
     $query .= " AND f.form_paid_bool = ?";
     $param_types .= "i";
@@ -544,6 +552,11 @@ $conn->close(); // Close connection at the end of the script
     </div>
     
     <script>
+        /**
+         * Expand/collapse 'Admin Actions' panel for admin users.
+         * - Toggles open class on content div for height animation.
+         * - Toggles open class on arrow indicator to rotate it
+         */
         function toggleAdmin() {
             const content = document.getElementById('adminContent');
             const toggle = document.getElementById('adminToggle');

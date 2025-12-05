@@ -1,8 +1,8 @@
 <?php
 /**
- * Refactored Administrative Appeal Request Application Form Handler
- * Replace the existing POST handling in form_sp_insert_administrative_appeal_request.php
- * with this code block (lines 21-144 in original file)
+ * Display AA form to clients.
+ * On POST, extract and validate the submitted form data
+ * Insert the application into db and link it to the currently logged in client.
  */
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script>
         let appellantCount = 0;
         let ownerCount = 0;
-
+        // Add an extra appellant (beyond the primary)
         function addAppellant() {
             appellantCount++;
             const container = document.getElementById('appellants-container');
@@ -155,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             `;
             container.appendChild(div);
         }
-
+        // Add an extra property owner (beyond the primary)
         function addOwner() {
             ownerCount++;
             const container = document.getElementById('owners-container');
@@ -171,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             `;
             container.appendChild(div);
         }
-
+        // Remove a dynamically added element by id
         function removeElement(id) {
             const element = document.getElementById(id);
             if (element) {

@@ -1,8 +1,8 @@
 <?php
 /**
- * Refactored Conditional Use Permit Application Form Handler
- * Replace the existing POST handling in form_sp_insert_conditional_use_permit_application.php
- * with this code block (lines 24-188 in original file)
+ * Display Conditional use permit form.
+ * On POST, extract and validate submitted form data.
+ * Insert application into db and report sucess/failure
  */
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -174,7 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     let ownerCount = 0;
     let officerCount = 0;
     let additionalOfficerCounters = {};
-
+    //Add an officer to the main 'officers' list
     function addOfficer() {
       officerCount++;
       const container = document.getElementById('officers-container');
@@ -190,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       `;
       container.appendChild(div);
     }
-
+    // Add an officer entry for specific additional applicant.
     function addAdditionalApplicantOfficer(applicantId) {
       if (!additionalOfficerCounters[applicantId]) {
         additionalOfficerCounters[applicantId] = 0;
@@ -209,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       `;
       container.appendChild(div);
     }
-
+    // Add an additional applicant block
     function addApplicant() {
       applicantCount++;
       const container = document.getElementById('additional-applicants');
@@ -290,7 +290,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       `;
       container.appendChild(div);
     }
-
+    // Add additonal property owner block
     function addOwner() {
       ownerCount++;
       const container = document.getElementById('additional-owners');
@@ -363,7 +363,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       `;
       container.appendChild(div);
     }
-
+    // Utility function to remove dynamically created block
     function removeElement(id) {
       const element = document.getElementById(id);
       if (element) {

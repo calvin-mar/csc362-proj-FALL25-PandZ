@@ -1,4 +1,12 @@
 <?php
+/**
+ * Allow govt worker w/ admin role to creat a new govt worker user account
+ * On POST:
+ *  - Validate all required fields and role
+ *  - Ensure username is unique and selected department exists
+ *  - Hashes password w/ password_hash()
+ *  - Insert new govt_worker row and redirect back to dashboard
+ */
 session_start();
 require_once 'config.php';
 requireLogin();

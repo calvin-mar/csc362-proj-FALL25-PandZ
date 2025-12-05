@@ -1,4 +1,9 @@
 <?php
+/**
+ * Displays a single submitted form for the currently logged in client
+ * Loads form specific detail from appropriate view.
+ * Loads related department interactions and correction boxes.
+ */
 // Show all errors from the PHP interpreter.
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);

@@ -1,4 +1,14 @@
 <?php
+/**
+ * Dashboard for logged in clients:
+ * - Fetch and display all submitted forms for the currents client
+ * - Fetch and display all incomplete drafts for the client
+ * Provide Links to:
+ *    -submit new form
+ *    -view form details
+ *    -manage account
+ *    -logout
+ */
 session_start();
 require_once 'config.php';
 requireLogin();

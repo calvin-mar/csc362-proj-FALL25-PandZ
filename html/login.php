@@ -1,4 +1,12 @@
 <?php
+/**
+ * Handles user authentication into P&Z system.
+ * - Displays login form
+ * - Validates both fields provided
+ * - Verify password w/ password_verify().
+ * - Store user info. in the session
+ * - Redirect to correct dashboard based on client type
+ */
 require_once 'config.php';
 
 $error = '';

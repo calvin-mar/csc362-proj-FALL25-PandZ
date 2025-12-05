@@ -17,11 +17,11 @@
 */
 
 require_once 'config.php';
-
+//Hash a plain-text password using PHP's password_hash() function
 function createPassword($plain_password) {
     return password_hash($plain_password, PASSWORD_DEFAULT);
 }
-
+// Handle account creation form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
     $password_plain = $_POST['password'];

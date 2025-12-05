@@ -1,4 +1,11 @@
 <?php
+/**
+ * Allow a government worker to create a new department record in departments table
+ * User must be logged in w/ type govt_worker with admin role.
+ * On POST:
+ *  - Validate department name provided and check for duplicates
+ *  - Insert new department and redirect back to dashboard.
+ */
 session_start();
 require_once 'config.php';
 requireLogin();

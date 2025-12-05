@@ -3,7 +3,7 @@
 // PDF GENERATION FUNCTIONS FOR ALL FORM TYPES
 // ========================================
 
-
+//Variance application
 function generateVarianceApplicationHtml($form_id, $form_details) {
     ob_start(); ?>
     <!DOCTYPE html>

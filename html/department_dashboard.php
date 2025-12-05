@@ -1,4 +1,11 @@
 <?php
+/**
+ * Main dashboard for department level users
+ * Allow users to:
+ *  - Filter and View submitted forms
+ *  - See department interactions
+ *  - Add new department interactions to a selected form
+ */
 require_once 'config.php';
 requireLogin();
 
@@ -84,7 +91,7 @@ if ($status_filter === 'resolved') {
 $query .= " GROUP BY f.form_id ORDER BY f.form_datetime_submitted DESC";
 
 $stmt = $conn->prepare($query);
-
+// Bind parameters if any filters that require them
 if (!empty($bind_values)) {
     array_unshift($bind_values, $param_types);
     call_user_func_array([$stmt, 'bind_param'], $bind_values);
@@ -388,11 +395,15 @@ $conn->close();
     </div>
     
     <script>
+        /**
+         * Open add interaction modal and sets hidden form id
+         * input so the sever knows which form this interaction belongs to
+         */
         function openModal(formId) {
             document.getElementById('modal_form_id').value = formId;
             document.getElementById('interactionModal').style.display = 'block';
         }
-        
+        //Hides add interaction modal.
         function closeModal() {
             document.getElementById('interactionModal').style.display = 'none';
         }

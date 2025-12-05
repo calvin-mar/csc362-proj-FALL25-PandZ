@@ -8,6 +8,11 @@
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);  
 ?>
 <?php
+/** Page that allows a logged in client to
+ *  - Change email
+ *  - Change password
+ *  - Delete account enirely
+ */
 require_once 'config.php';
 requireLogin();
 $conn = getDBConnection(); 
@@ -19,13 +24,14 @@ if (isset($_GET['status'])) {
     $message = htmlspecialchars($_GET['status']);
 }
 
-// Handle POST requests
+// Handle POST requests (from submissions)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $status = "";
     // Update Email with confirmation
     if (isset($_POST['update_email'])) {
         $email = trim($_POST['email']);
         $confirm_email = trim($_POST['confirm_email']);
+        // Validate email
         if ($email === $confirm_email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $stmt = $conn->prepare("UPDATE clients SET email = ? WHERE client_id = ?");
             $stmt->bind_param("ss", $email, $client_id);
@@ -40,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password = trim($_POST['password']);
         $confirm_password = trim($_POST['confirm_password']);
         $pattern = '/^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=]).{8,}$/';
-
+        // Validate password w/ fields match and regex
         if ($password === $confirm_password && preg_match($pattern, $password)) {
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
             $stmt = $conn->prepare("UPDATE clients SET password = ? WHERE client_id = ?");
@@ -87,6 +93,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         #strength { font-size: 12px; font-weight: bold; }
     </style>
     <script>
+        /**
+         * Client side validation
+         * Ensure that the email and confirmation fields match before submit
+         */
         function validateEmailForm() {
             const email = document.querySelector('input[name="email"]').value;
             const confirmEmail = document.querySelector('input[name="confirm_email"]').value;
@@ -96,7 +106,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             return true;
         }
-
+        /**
+         * Client side validation for change password form.
+         * Passwords must match
+         * Passwords must follow same pattern as enforced on the server
+         */
         function validatePasswordForm() {
             const password = document.querySelector('input[name="password"]').value;
             const confirmPassword = document.querySelector('input[name="confirm_password"]').value;
@@ -112,11 +126,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             return true;
         }
-
+        //Remind user that delete is permanent
         function confirmDelete() {
             return confirm("⚠️ Are you sure you want to delete your account? This cannot be undone.");
         }
-
+        /**
+         * Password strength indicator
+         * Updates text w/ Too short, Medium(missing reqs), and Strong
+         */
         function checkStrength() {
             const password = document.querySelector('input[name="password"]').value;
             const strengthText = document.getElementById('strength');

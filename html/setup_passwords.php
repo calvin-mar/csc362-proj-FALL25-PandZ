@@ -1,8 +1,10 @@
 
 <?php
 /*
-  Run this script once to generate password hashes for your users.
-  Then copy the hashes into your database.
+* Helper tool used during development to generate secure password hashes.
+* How to use:
+* - Run this script once to generate password hashes for your users.
+* - Then copy the hashes into your database.
 */
 
 function createPassword($plain_password) {
