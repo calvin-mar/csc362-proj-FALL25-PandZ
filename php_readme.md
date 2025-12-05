@@ -116,7 +116,7 @@ If you used the sample data from auth_schema.sql:
 - Username: admin
 - Password: password123
 
-⚠️ **IMPORTANT:** Change these default passwords immediately in production!
+ **IMPORTANT:** Change these default passwords immediately in production!
 
 ## Features
 
