@@ -1,122 +1,136 @@
 <?php
-/**
- * Allow govt worker w/ admin role to creat a new govt worker user account
- * On POST:
- *  - Validate all required fields and role
- *  - Ensure username is unique and selected department exists
- *  - Hashes password w/ password_hash()
- *  - Insert new govt_worker row and redirect back to dashboard
- */
 session_start();
 require_once 'config.php';
+session_start();
 requireLogin();
-
-if (getUserType() != 'govt_worker') {
-    header('Location: login.php');
-    exit();
-}
 
 $conn = getDBConnection();
 
-// Verify user is admin
+// Verify current user is an admin govt_worker
 $current_user_id = $_SESSION['user_id'] ?? null;
 $is_admin = false;
 if ($current_user_id) {
-    $role_query = "SELECT govt_worker_role FROM govt_workers WHERE govt_worker_id = ?";
-    $role_stmt = $conn->prepare($role_query);
-    $role_stmt->bind_param("i", $current_user_id);
-    $role_stmt->execute();
-    $role_result = $role_stmt->get_result();
-    if ($role_row = $role_result->fetch_assoc()) {
-        $is_admin = ($role_row['govt_worker_role'] === 'Admin');
+    $role_stmt = $conn->prepare("SELECT govt_worker_role FROM govt_workers WHERE client_id = ?");
+    if ($role_stmt) {
+        $role_stmt->bind_param('i', $current_user_id);
+        $role_stmt->execute();
+        $res = $role_stmt->get_result();
+        $row = $res->fetch_assoc();
+        if ($row && isset($row['govt_worker_role']) && $row['govt_worker_role'] === 'Admin') {
+            $is_admin = true;
+        }
+        $role_stmt->close();
     }
-    $role_stmt->close();
 }
 
 if (!$is_admin) {
-    $_SESSION['error_message'] = "Access denied. Admin privileges required.";
+    $_SESSION['error_message'] = 'Access denied. Admin privileges required.';
     header('Location: govt_worker_dashboard.php');
     exit();
 }
 
-// Handle form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $full_name = trim($_POST['full_name'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $department_id = $_POST['department_id'] ?? '';
-    $role = $_POST['role'] ?? 'Regular';
-    
-    // Validate required fields
-    if (empty($username) || empty($password) || empty($full_name) || empty($email) || empty($department_id)) {
-        $_SESSION['error_message'] = "All fields are required.";
-        header('Location: govt_worker_dashboard.php');
-        exit();
-    }
-    
-    // Validate role
-    if (!in_array($role, ['Regular', 'Admin'])) {
-        $_SESSION['error_message'] = "Invalid role specified.";
-        header('Location: govt_worker_dashboard.php');
-        exit();
-    }
-    
-    // Check if username already exists
-    $check_query = "SELECT govt_worker_id FROM govt_workers WHERE govt_worker_username = ?";
-    $check_stmt = $conn->prepare($check_query);
-    $check_stmt->bind_param("s", $username);
-    $check_stmt->execute();
-    $check_result = $check_stmt->get_result();
-    
-    if ($check_result->num_rows > 0) {
-        $_SESSION['error_message'] = "Username already exists. Please choose a different username.";
-        $check_stmt->close();
-        $conn->close();
-        header('Location: govt_worker_dashboard.php');
-        exit();
-    }
-    $check_stmt->close();
-    
-    // Verify department exists
-    $dept_check_query = "SELECT department_id FROM departments WHERE department_id = ?";
-    $dept_check_stmt = $conn->prepare($dept_check_query);
-    $dept_check_stmt->bind_param("i", $department_id);
-    $dept_check_stmt->execute();
-    $dept_check_result = $dept_check_stmt->get_result();
-    
-    if ($dept_check_result->num_rows === 0) {
-        $_SESSION['error_message'] = "Invalid department selected.";
-        $dept_check_stmt->close();
-        $conn->close();
-        header('Location: govt_worker_dashboard.php');
-        exit();
-    }
-    $dept_check_stmt->close();
-    
-    // Hash password
-    $password_hash = password_hash($password, PASSWORD_DEFAULT);
-    
-    // Insert new government worker
-    $insert_query = "INSERT INTO govt_workers (govt_worker_username, govt_worker_password_hash, 
-                     govt_worker_full_name, govt_worker_email, department_id, govt_worker_role) 
-                     VALUES (?, ?, ?, ?, ?, ?)";
-    $insert_stmt = $conn->prepare($insert_query);
-    $insert_stmt->bind_param("ssssis", $username, $password_hash, $full_name, $email, $department_id, $role);
-    
-    if ($insert_stmt->execute()) {
-        $_SESSION['success_message'] = "Government worker account '$username' created successfully as $role!";
-    } else {
-        $_SESSION['error_message'] = "Error creating account: " . $insert_stmt->error;
-    }
-    
-    $insert_stmt->close();
-    $conn->close();
-    header('Location: govt_worker_dashboard.php');
-    exit();
-} else {
-    // If not POST, redirect back
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: govt_worker_dashboard.php');
     exit();
 }
+
+// Collect and validate input
+$username = trim($_POST['username'] ?? '');
+$password = $_POST['password'] ?? '';
+$full_name = trim($_POST['full_name'] ?? '');
+$email = trim($_POST['email'] ?? '');
+$department_client_id = intval($_POST['department_id'] ?? 0);
+$role = $_POST['role'] ?? 'Regular';
+
+if ($username === '' || $password === '' || $full_name === '' || $email === '' || $department_client_id <= 0) {
+    $_SESSION['error_message'] = 'All fields are required.';
+    header('Location: govt_worker_dashboard.php');
+    exit();
+}
+
+if (!in_array($role, ['Regular', 'Admin'])) {
+    $_SESSION['error_message'] = 'Invalid role specified.';
+    header('Location: govt_worker_dashboard.php');
+    exit();
+}
+
+// Ensure username isn't already taken in clients
+$stmt = $conn->prepare('SELECT client_id FROM clients WHERE client_username = ?');
+if (!$stmt) {
+    $_SESSION['error_message'] = 'Database error: ' . $conn->error;
+    header('Location: govt_worker_dashboard.php');
+    exit();
+}
+$stmt->bind_param('s', $username);
+$stmt->execute();
+$result = $stmt->get_result();
+if ($result && $result->num_rows > 0) {
+    $_SESSION['error_message'] = 'Username already exists. Choose a different username.';
+    $stmt->close();
+    $conn->close();
+    header('Location: govt_worker_dashboard.php');
+    exit();
+}
+$stmt->close();
+
+// Verify department exists (departments.client_id is the PK in this schema)
+$stmt = $conn->prepare('SELECT client_id FROM departments WHERE client_id = ?');
+if (!$stmt) {
+    $_SESSION['error_message'] = 'Database error: ' . $conn->error;
+    header('Location: govt_worker_dashboard.php');
+    exit();
+}
+$stmt->bind_param('i', $department_client_id);
+$stmt->execute();
+$res = $stmt->get_result();
+if (!$res || $res->num_rows === 0) {
+    $_SESSION['error_message'] = 'Invalid department selected.';
+    $stmt->close();
+    $conn->close();
+    header('Location: govt_worker_dashboard.php');
+    exit();
+}
+$stmt->close();
+
+// Create client account (used for login)
+$password_hash = password_hash($password, PASSWORD_DEFAULT);
+$stmt = $conn->prepare('INSERT INTO clients (client_username, client_password, client_email, client_type) VALUES (?, ?, ?, ?)');
+if (!$stmt) {
+    $_SESSION['error_message'] = 'Database error: ' . $conn->error;
+    header('Location: govt_worker_dashboard.php');
+    exit();
+}
+$client_type = 'govt_worker';
+$stmt->bind_param('ssss', $username, $password_hash, $email, $client_type);
+if (!$stmt->execute()) {
+    $_SESSION['error_message'] = 'Error creating client account: ' . $stmt->error;
+    $stmt->close();
+    $conn->close();
+    header('Location: govt_worker_dashboard.php');
+    exit();
+}
+$new_client_id = $conn->insert_id;
+$stmt->close();
+
+// Link into govt_workers (client_id PK, role)
+$stmt = $conn->prepare('INSERT INTO govt_workers (client_id, govt_worker_role) VALUES (?, ?)');
+if (!$stmt) {
+    $_SESSION['error_message'] = 'Database error: ' . $conn->error;
+    header('Location: govt_worker_dashboard.php');
+    exit();
+}
+$stmt->bind_param('is', $new_client_id, $role);
+if (!$stmt->execute()) {
+    $_SESSION['error_message'] = 'Error creating govt worker record: ' . $stmt->error;
+    $stmt->close();
+    $conn->close();
+    header('Location: govt_worker_dashboard.php');
+    exit();
+}
+$stmt->close();
+
+$_SESSION['success_message'] = "Government worker '{$username}' created successfully with role {$role}.";
+$conn->close();
+header('Location: govt_worker_dashboard.php');
+exit();
 ?>

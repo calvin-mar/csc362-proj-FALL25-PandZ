@@ -391,10 +391,24 @@ $conn->close(); // Close connection at the end of the script
         </div>
     </div>
     <div class="container">
+        <?php if (!empty($_SESSION['success_message']) || !empty($_SESSION['error_message'])): ?>
+            <div style="margin-bottom:20px;">
+                <?php if (!empty($_SESSION['success_message'])): ?>
+                    <div class="card" style="border-left:4px solid #28a745;padding:10px;color:#155724;background:#d4edda;">
+                        <?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?>
+                    </div>
+                <?php endif; ?>
+                <?php if (!empty($_SESSION['error_message'])): ?>
+                    <div class="card" style="border-left:4px solid #dc3545;padding:10px;color:#721c24;background:#f8d7da;">
+                        <?php echo htmlspecialchars($_SESSION['error_message']); unset($_SESSION['error_message']); ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
         <?php if ($is_admin): ?>
         <div class="card admin-section">
             <div class="admin-header" onclick="toggleAdmin()">
-                <h2>⚙️ Admin Actions</h2>
+                <h2>Admin Actions</h2>
                 <span class="admin-toggle" id="adminToggle">▼</span>
             </div>
             <div class="admin-content" id="adminContent">
@@ -410,6 +424,10 @@ $conn->close(); // Close connection at the end of the script
                             <div class="form-group">
                                 <label>Department Description</label>
                                 <input type="text" name="department_description" placeholder="Optional description">
+                            </div>
+                            <div class="form-group">
+                                <label>Password</label>
+                                <input type="password" name="password" required placeholder="Enter password">
                             </div>
                             <button type="submit" class="btn btn-success">Create Department</button>
                         </form>
@@ -440,7 +458,7 @@ $conn->close(); // Close connection at the end of the script
                                 <select name="department_id" required>
                                     <option value="">Select Department</option>
                                     <?php foreach ($departments as $dept): ?>
-                                        <option value="<?php echo htmlspecialchars($dept['department_id']); ?>">
+                                        <option value="<?php echo htmlspecialchars($dept['client_id']); ?>">
                                             <?php echo htmlspecialchars($dept['department_name']); ?>
                                         </option>
                                     <?php endforeach; ?>
