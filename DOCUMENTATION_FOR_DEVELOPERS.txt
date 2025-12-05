@@ -1,5 +1,251 @@
-----------------------------------DOCUMENTATION FOR A DEVELOPERS-----------------------------------
+
+----------------------------------TABLE OF CONTENTS-----------------------------------
+0.0
+    TITLE
+0.1
+    INTRODUCTION, HOW TO USE THIS DOCUMENT
+0.2
+    "I'M NEW TO THIS PROJECT, HOW DO I GET IT INSTALLED?", GUIDE TO INFO NOT IN THIS FILE BUT IS DOCUMENTED IN THIS REPOSITORY (WE HOPE)
+1.0
+    THE BASICS OF WHAT THE PROJECT IS, IN DEVELOPMENTAL TERMS
+2.0
+    "I HAVE IT INSTALLED, BUT I'M SORT OF LOST",
+      -- GUIDE THROUGH THE 9 CIRCLES OF HELL, WELL NO, ACTUALLY, ITS JUST A DATABASE
+    2.1
+      -- DEPENDENCIES AND THEIR USE
+        2.11
+          -- COMPOSER 
+        2.12
+          -- DOMPDF
+    
+    2.2
+      -- CODE STRUCTURE
+        2.21
+          -- SQL CODE
+        2.22
+          -- PHP DASHBOARDS
+            2.23
+              -- CLIENTS
+              -- GOVERNMENT WORKERS
+              -- DEPARTMENTS
+        2.24
+          -- PHP FORM PAGES
+            2.25
+              --OLD FORMS EXPLAINED
+        2.26
+          -- HELPER FILES: CONFIG, GENERATE_FORMS, FORM_FUNCTIONS, ETC
+
+          
+    
+3.0 
+    -- 'ASK NOT WHAT PLANNING AND ZONING CAN DO FOR YOU, BUT WHAT YOU CAN DO FOR PLANNING AND ZONING" - FUTURE PROJECT IDEAS FOR DEVELOPERS
+        AS WELL AS POSSIBLE CONCERNS, NOTES, AND BRIEF GUIDANCE ON HOW TO BEGIN TO APPROACH SOME OF THESE PROBLEMS
+    3.1
+        -- FUNCTIONIZING FORMS COMPLETION
+    3.2
+        -- SAVEABLE AND EDITABLE FORMS
+    3.3
+        -- FILE UPLOAD AND DOWNLOAD, SOME NOTES ON IMPLEMENTING, PROBLEMS, AND SAFETY CONCERNS
+    3.4
+        -- PASSWORD STORAGE
+    3.5
+        -- SIGNATURE HANDLING
+    3.6
+        -- JAVASCRIPT AND WIX
+    3.7
+        -- PAYMENTS
+    3.8
+        -- PERMIT DELETION UPON NON-PAYMENT AFTER A PRESCRIBED PERIOD
+
+
+
+0.0:
+----------------------------------DOCUMENTATION FOR DEVELOPERS----------------------------------
 NOTES ON THE STRUCTURE OF THE DATABASE AND ITS COMPONENTS
-AND OTHER MISCELLANIES WHICH MAY BE PRUDENT TO THOSE WISHING TO UNDERSTAND
-WRITTEN BY CHET WRIGHT;
+AND OTHER MISCELLANIES WHICH MAY BE APPLICABLE FOR THOSE SEEKING TO MODIFY,
+OR OTHERWISE INTERACT WITH THE DATABASE AND ITS CONSTITUENT WEB REPRESENTATION
+IN A MEANINGFUL WAY.
+WRITTEN BY CHET WRIGHT - WITH POSSIBLE ADDITIONS AND GUIDANCE FROM HIGLY ESTEEMED CONTRIBUTORS,
+INCLUDING BUT NOT LIMITED TO JOE GAUDY, GARRETT GEORGE, CALVIN MAR, AND DR. WILLIAM BAILEY'
+
+----------------------------------
+0.1:
+----------------------------------INTRODUCTION, HOW TO USE THIS DOCUMENT------------------------
+This document serves as the documentation for developers.  The goal is that it might be of use to anyone who is in attempting to understand, debug, modify,
+or extend the project.  The project in question is a fullstack (frontend and backend) LAMP (Linux, Apache, MySQL and PHP)application built for the Planning
+and Zoning office of Danville, Kentucky.  It aims to implement a way for webusing citizens to turn in applications online, and the office staff and departments
+to view these applications, manipulate them, etc.  For a better description, see README.  In theory this may be a 'starter' package of sorts, so the description
+is kept a bit vague.
+
+To use this document, look at the table of contents and search for terms related to what you want to know about, in general there has been an attempt to keep the
+numbering of sections fairly consistent.
+----------------------------------
+1.0
+----"I'M NEW TO THIS PROJECT, HOW DO I GET IT INSTALLED?", GUIDE TO INFO NOT IN THIS FILE BUT IS DOCUMENTED IN THIS REPOSITORY (WE HOPE)
+This section does not concern itself with installation, see README for a guide on installation and deployment.
+
+2.0
+----"I HAVE IT INSTALLED, BUT I'M SORT OF LOST",
+      -- A BRIEF GUIDE THROUGH THE 9 CIRCLES OF HELL, WELL NO, ACTUALLY, IT'S JUST A FULLSTACK LAMP APPLICATION
+----------------------------------
+This section describes some general rules, things to know and mainly focuses on the code structure.
+    2.1
+      -- DEPENDENCIES AND THEIR USE
+        2.11
+          -- COMPOSER 
+Necessary for testing php code.  Installation guide in README.md
+        2.12
+          -- DOMPDF
+----------------------------------
+https://github.com/dompdf/dompdf
+This is the link to the repository for dompdf, a way to convert html to pdf.  This is important for the office to make printable pdfs of submitted forms
+and as such it is a dependency for deploying this project.  Installation guide in README.md
+    
+    2.2
+      -- CODE STRUCTURE
+----------------------------------
+There are 4 main 'levels' of structure in this implementation.  There might be more added by future developers, but I doubt these will be removed or changed
+unless it is opted that something like a major refactor is due, in the event that php or html becomes unsupported, other extreme events, etc.  Seems unlikely at
+present, but worth note.
+----------------------------------
+        2.21
+          -- SQL CODE
+----------------------------------
+The database is implemented in the mariadb flavor of SQL, therefore other flavors are not guaranteed to successfully implement the database.  While the general logic
+should work peculiarities of the flavor likely are present. Proceed with caution if attempting to modify using other variants for obvious reasons (syntax, supported 
+methods, etc)
+----------------------------------
+        2.22
+          -- PHP DASHBOARDS
+----------------------------------
+
+----------------------------------
+
+            2.23
+              -- CLIENTS
+----------------------------------
+
+----------------------------------
+              -- GOVERNMENT WORKERS
+----------------------------------
+----------------------------------
+              -- DEPARTMENTS
+----------------------------------
+----------------------------------
+        2.24
+          -- PHP FORM PAGES
+----------------------------------
+These contain the code which implements the actual php and html the forms run on.  Below is a few of there file names.  All of them have the same pattern:
+v2_form_sp_insert_adjacent_property_owners_form.php
+v2_form_sp_insert_administrative_appeal_request.php
+v2_form_sp_insert_conditional_use_permit_application.php
+v2_form_sp_insert_future_land_use_map_application.php
+v2_form_sp_insert_general_development_plan_application.php
+v2_form_sp_insert_major_subdivision_plat_application.php
+v2_form_sp_insert_minor_subdivision_plat_application.php
+v2_form_sp_insert_open_records_request.php
+v2_form_sp_insert_sign_permit_application.php
+v2_form_sp_insert_site_development_plan_application.php
+v2_form_sp_insert_variance_application.php
+v2_form_sp_insert_zoning_map_amendment_application.php
+v2_form_sp_insert_zoning_permit_application.php
+v2_form_sp_insert_zoning_verification_application.php
+zoning_form_functions.php
+They are all housed in the html subdirectory and must be housed therein or link back to it somehow as they depend on functions and other php programs which are
+also housed in html subdirectory.  The forms marked v2 have some sort of functionization implemented.  As of now they do not necessarily work as intended.
+---------------------------------- 
+        2.25
+              --OLD FORMS EXPLAINED
+3
+These are the above php code implementations of forms.  These may actually work better than the functionized versions due to time constraints in implementing
+the functionized versions.  These may serve as a good guide for refactoring into clean, maintainable, functionized forms, but they are primarily left as an archived
+remnant of a previous version and it is not recommended that they are interacted with directly.
+        2.26
+          -- HELPER FILES: CONFIG, GENERATE_FORMS, FORM_FUNCTIONS, ETC
+
+
+          
+    
+3.0 
+    -- 'ASK NOT WHAT PLANNING AND ZONING CAN DO FOR YOU, BUT WHAT YOU CAN DO FOR PLANNING AND ZONING" - FUTURE PROJECT IDEAS FOR DEVELOPERS
+        AS WELL AS POSSIBLE CONCERNS, NOTES, AND BRIEF GUIDANCE ON HOW TO BEGIN TO APPROACH SOME OF THESE PROBLEMS
+----------------------------------
+This section may be a bit less informational and formal, since it deals not with what is but what might be.
+As things change, future developers will likely want to archive large parts of this section and add to it.
+I will try to keep it brief anyway but I will include some leads that we have found on implementing these things,
+some food for thought on why they might be needed, what risks their development might carry, and perhaps even why they were pushed back.
+    3.1
+        -- FUNCTIONIZING FORMS COMPLETION
+----------------------------------
+For the purpose of facilitating additions to the forms all old forms should be properly functionized.  This has been begun but not all forms are working.  Reference the old
+version in the html folder for the originals and try to make this happen.  I would HIGHLY recommend that this be the first thing you do before attempting any other
+modifications.  Any future modifications should be functionized from the beginning.
+    3.2
+        -- SAVEABLE AND EDITABLE FORMS
+These should use blobs to read the incomplete forms into a binary string, perhaps making them downloadable, allowing deletion of unwanted forms, etc might be good to.
+This will hopefully allow users to edit forms, save them, delete them, and come back to them for later.  It is CRITICAL that submitted forms cannot be deleted by
+applicants, and that applications for which payment has been made cannot be deleted from the database.  A forms-paid table implementation in the sql backend
+may help to ensure this security if it is linked with the submitted-forms, searched with subquerys so that they cannot be easily deleted without some extreme
+developer measure, such as turning off all foreign key constraints.  I don't know how to do this, nor have I thought much on this security aspect, but that is
+how I would begin to navigate it, that being said take that piece of advice with a grain of salt, it may be improper
+    3.3
+        -- FILE UPLOAD AND DOWNLOAD, SOME NOTES ON IMPLEMENTING, PROBLEMS, AND SAFETY CONCERNS
+----------------------------------
+In some version which may be lost to time the beginnings of file upload and download for images, pdfs, etc was implemented by me, however,
+to do this fully will require some greater work.  Since it was not native to the original implementation LONG BLOBs need to be added to every place in the SQL where
+this might need to be done.  Furthermore, this does open up risks like sql injection, virus distribution, etc.  Some protections need to be implemented.
+In the php v2_sp_form_x.php files add handling for the POST and GET functionality here.  In insert_forms it is important that both the insert and extract have code added
+which can handle this.  A php routine to download said files is also necessary.  See a rough outline in my branch pertaining to adjacent_property_owners and major subdivisions
+for a sort of guide on how to begin thinking about this problem.  There may or may not be a folder blobtesting which provides a mini website of limited functionality.
+I highly recommend that before beginning this you complete 3.1 as otherwise the maintenance will be arduous, error prone, and will make functionization somewhat harder.
+    3.4
+        -- PASSWORD STORAGE
+----------------------------------
+Passwords are stored in the database.  Currently this is probably ok, but it may become necessary to store them outside using some external software
+especially if this project grows into something larger where greater entities are involved
+----------------------------------
+    3.5
+        -- SIGNATURE HANDLING
+----------------------------------
+The handling of signatures becomes a sensitive task, especially if this project grows into something which interfaces with large application fees.
+We do not currently allow handwritten signatures, but something like docusign could possibly be implemented
+here to allow this.  Caution must be taken that these signatures are not open to easy access by malicious conspirators if this is done.  It does not seem wise
+at this time to attempt to do this without an external program since several such programs exist and are fairly secure.
+    3.6
+        -- JAVASCRIPT AND WIX
+----------------------------------
+The current website of Danville planning and zoning, which provides pdfs of the forms for printing by the public is implemented in wix.  Unfortunately this 
+project is implemented using php and there is no clean way to implement these with wix since wix is js based.  Though refactoring into js is possible,
+it would be a big task.  Perhaps consider implementing something like containers, which may or may not be possible in js, to run the php in a 'docker'.
+Further it might be possible to implement with a simple link to our php website from wix using js, but the php must still be run from an apache server.
+----------------------------------
+    3.7
+        -- PAYMENTS
+----------------------------------
+In order for processing of a form to take place their needs to be payment of necessary application fees.  These fees currently have to be turned in
+in-person and were deemed out of the scope of our time and resources and online processing of payment was deemed a liability.  However, this unfortunate
+fact does somewhat nullify certain quality-of-life aspects for the end-user and I believe that the city government does have a system setup to do online payments
+which might be helpful in implementing this.  Proceed with extreme caution when implementing this, and if choosing to implement this alongside Future Project 3.8 make
+sure that you can interface this online payment with the permit deletion rules detailed so that a pecuniary loss is not incurred on our userbase, lest
+disgruntlement become rampant.
+----------------------------------
+    3.8
+        -- PERMIT DELETION UPON NON-PAYMENT AFTER A PRESCRIBED PERIOD
+----------------------------------
+Hannah Gray has brought it to our attention that permit applications, etc which are currently all on paper are collected and stored by
+department.  Upon payment of the fee the processing process begins.  Since these are important documents they are never thrown away but
+as an unfortunate result of previous management they are not entirely organized such that they can easily be found, especially for older ones.
+This database supposedly can help with this problem, putting them in central and accessible location, but they will probably be printed out
+and kept in hard copy eventually.  It is important to not that these forms are not entirely. Above we covered the users ability to save forms to come back to,
+which also makes it possible for users to delete forms before they are turned in.  As noted it is important that users not have the ability to delete forms once
+submitted, however, they can effectively nullify their request, either intentionally or unintentionally by not paying.  This will here, as it has in the paper forms,
+created a backlog of forms for which the fee has never been paid.  It is very important that any form for which official processing has begun not be deleted for
+obvious reasons, but it was proposed that perhaps after a prescribed amount of time has elapsed applications for which necessary processing fees are not paid
+should be removed from the database.  Implementing this might involve some use of unix "epoch of creation timestamps".  Any developer wishing to work on this
+should be prudent in following the wishes of the office in what this time might be for automatic deletion.  It may also be useful to implement an automatic mailing
+system for these forms so that users are warned that payment is due or resubmission will become necessary for the processing of their form.
+    
+
+
+
 
