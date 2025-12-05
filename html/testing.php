@@ -8,7 +8,16 @@
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);  
 ?>
 <?php
+/**
+ * Purpose:
+ *  - Read SQL query from 'show_orr_applicants.sql'
+ *  - Executes query and shows result as HTML table.
+ * Notes:
+ *  - Script is meant as a reporting/debugging page.
+ *  - Shows all errors to help during development.
+ */
 
+// Convery MYSQLi result object into basic HTML table
 function result_to_html_table($result) {
         $qryres = $result->fetch_all();
         $n_rows = $result->num_rows;

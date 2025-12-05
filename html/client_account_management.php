@@ -4,7 +4,12 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-
+/**
+ * Allows a logged in client to:
+ * - View basic account info.
+ * - Update email
+ * - Update password
+ */
 require_once 'config.php';
 requireLogin();
 
@@ -50,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = "Emails do not match or are invalid.";
         }
     }
-
+    // Handle password update request
     if (isset($_POST['update_password'])) {
         $new_password = trim($_POST['password']);
         $confirm_password = trim($_POST['confirm_password']);
@@ -71,6 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+// Map sucess flags from query string
 if (isset($_GET['success'])) {
     if ($_GET['success'] === 'email') {
         $message = "Email updated successfully!";
@@ -100,6 +106,11 @@ if (isset($_GET['success'])) {
         .note { font-size: 12px; color: #555; }
     </style>
     <script>
+        /**
+         * Client side validation for change password form
+         * Enforces same policy as on the server
+         * Checks password and confirmation match.
+         */
         function validatePassword() {
             const password = document.querySelector('input[name="password"]').value;
             const confirmPassword = document.querySelector('input[name="confirm_password"]').value;

@@ -1,4 +1,8 @@
 <?php
+/**
+ * Allows a logged in client to choose which form they want.
+ * Selects from a dropdown list, and redirects to PHP file containing the full form.
+ */
 require_once 'config.php';
 requireLogin();
 
@@ -58,6 +62,7 @@ $error = '';
   </form>
   </div>
   <?php
+  // Redirection logic
   if (!empty($_GET['file'])) {
     $f = basename($_GET['file']);
     header('Location: ' . $f);

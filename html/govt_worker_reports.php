@@ -1,4 +1,8 @@
 <?php
+/**
+ * Reporting dashboard for government workers:
+ * - Shows wide range of metrics and performance stats.
+ */
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);

@@ -258,6 +258,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
+/**
+ * Client side dynamic form logic
+ */
 document.addEventListener('DOMContentLoaded', function() {
     const neighborsContainer = document.getElementById('neighbors_container');
     const addNeighborBtn = document.getElementById('add_neighbor_btn');
@@ -310,7 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renumberNeighbors();
         }
     });
-
+    //Build a new adjacent property block for the given neighbor index
     function createNeighborCard(index) {
         const card = document.createElement('div');
         card.className = 'neighbor-card';
@@ -352,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         return card;
     }
-
+    // Creat DOM node for ann owner entry for given neighbor
     function createOwnerEntry(neighborIndex, ownerIndex) {
         const div = document.createElement('div');
         div.className = 'owner-entry';
@@ -360,7 +363,7 @@ document.addEventListener('DOMContentLoaded', function() {
         div.innerHTML = createOwnerEntryHTML(neighborIndex, ownerIndex);
         return div;
     }
-
+    // Return the inner HTML string for a signle owner entry block.
     function createOwnerEntryHTML(neighborIndex, ownerIndex) {
         return `
             <div class="owner-entry-header">
@@ -400,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
     }
-
+    // Show or hide Remove Property buttons depending on how many neighbor cards exist.
     function updateRemoveButtons() {
         const neighborCards = neighborsContainer.querySelectorAll('.neighbor-card');
         neighborCards.forEach((card, index) => {
@@ -408,7 +411,7 @@ document.addEventListener('DOMContentLoaded', function() {
             removeBtn.style.display = neighborCards.length > 1 ? 'block' : 'none';
         });
     }
-
+    //Show/hide remove buttons for owners within a single neighbor
     function updateOwnerRemoveButtons(neighborCard) {
         const ownerEntries = neighborCard.querySelectorAll('.owner-entry');
         ownerEntries.forEach((entry, index) => {
@@ -416,14 +419,14 @@ document.addEventListener('DOMContentLoaded', function() {
             removeBtn.style.display = ownerEntries.length > 1 ? 'block' : 'none';
         });
     }
-
+    //After deleting a neighbor card, renumber headings
     function renumberNeighbors() {
         const neighborCards = neighborsContainer.querySelectorAll('.neighbor-card');
         neighborCards.forEach((card, index) => {
             card.querySelector('.neighbor-card-header h5').textContent = `Adjacent Property #${index + 1}`;
         });
     }
-
+    //After deleting an owner, renumber the owner labels.
     function renumberOwners(neighborCard) {
         const ownerEntries = neighborCard.querySelectorAll('.owner-entry');
         ownerEntries.forEach((entry, index) => {
