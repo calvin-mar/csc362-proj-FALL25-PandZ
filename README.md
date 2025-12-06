@@ -65,6 +65,8 @@ After accessing MariaDB you will then need to SOURCE the database_project_main.s
 
 To access the database through the PHP Application you will need to create a symbolic link for your system or virtual machine you are using to host the website. 
 
+One last important installation note is that you need to install PHP dependencies through composer install. 
+
 # Important steps for database interaction permissions
 
 1. Log in as root
