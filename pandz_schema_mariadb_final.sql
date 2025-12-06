@@ -17,7 +17,7 @@ CREATE TABLE correction_forms(
 
 CREATE TABLE states (
     state_code CHAR(2),
-    PRIMARY KEY(state_code)
+    PRIMARY KEY(state_code) -- state ids
 );
 
 CREATE TABLE addresses(
