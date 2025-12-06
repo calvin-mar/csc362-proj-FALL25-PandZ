@@ -1,6 +1,7 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
 /*
+This file creates the schema for the Database
 Please use my link to view the table viewing webpage http://34.29.71.136/html/testing.php
 */
 
