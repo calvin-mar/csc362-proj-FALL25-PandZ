@@ -1,4 +1,4 @@
-
+-- Creates and replaces duplicate functions
 DELIMITER //
 CREATE OR REPLACE FUNCTION find_duplicate_surveyor_id(
     s_first VARCHAR(255),
