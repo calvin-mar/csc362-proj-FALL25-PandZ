@@ -40,24 +40,24 @@
 
           
     
-3.0 
+4.0 
     -- "ASK NOT WHAT PLANNING AND ZONING CAN DO FOR YOU, BUT WHAT YOU CAN DO FOR PLANNING AND ZONING" - FUTURE PROJECT IDEAS FOR DEVELOPERS
         AS WELL AS POSSIBLE CONCERNS, NOTES, AND BRIEF GUIDANCE ON HOW TO BEGIN TO APPROACH SOME OF THESE PROBLEMS
-    3.1
+    4.1
         -- FUNCTIONIZING FORMS COMPLETION
-    3.2
+    4.2
         -- SAVEABLE AND EDITABLE FORMS
-    3.3
+    4.3
         -- FILE UPLOAD AND DOWNLOAD, SOME NOTES ON IMPLEMENTING, PROBLEMS, AND SAFETY CONCERNS
-    3.4
+    4.4
         -- PASSWORD STORAGE
-    3.5
+    4.5
         -- SIGNATURE HANDLING
-    3.6
+    4.6
         -- JAVASCRIPT AND WIX
-    3.7
+    4.7
         -- PAYMENTS
-    3.8
+    4.8
         -- PERMIT DELETION UPON NON-PAYMENT AFTER A PRESCRIBED PERIOD
 
 
@@ -77,13 +77,17 @@ INCLUDING BUT NOT NECESSARILY LIMITED TO JOE GAUDY, GARRETT GEORGE, CALVIN MAR, 
 This document serves as the documentation for developers.  The goal is that it might be of use to anyone who is attempting to understand, debug, modify,
 or extend the project.  The project in question is a fullstack (frontend and backend) LAMP (Linux, Apache, MariaDB and PHP)application built for the Planning
 and Zoning office of Danville, Kentucky.  It aims to implement a way for webusing citizens to turn in applications online, and the office staff and departments
-to view these applications, manipulate them, etc.  For a better description, see README.  In theory this may be a 'starter' package of sorts, so the description is kept a bit vague here on purpose.
+to view these applications, manipulate them, etc.  For a better description, see README.  In theory this may be a 'starter' package of sorts, so the description
+is kept a bit vague here on purpose.
 
-To use this document, look at the table of contents and search for terms related to what you want to know about, in general there has been an attempt to keep the numbering of sections fairly consistent.  If you are a developer wishing to extend this documentation, it is advised to add your section to the table of contents above and use a corresponding title and number when you document.
+To use this document, look at the table of contents and search for terms related to what you want to know about, in general there has been an attempt to keep 
+the numbering of sections fairly consistent.  If you are a developer wishing to extend this documentation, it is advised to add your section to the table of contents
+above and use a corresponding title and number when you document.
 ----------------------------------
 1.0
 ----"I'M NEW TO THIS PROJECT, HOW DO I GET IT INSTALLED?", GUIDE TO INFO NOT IN THIS FILE BUT IS DOCUMENTED IN THIS REPOSITORY (WE HOPE)
-This section is not concerned with installation and deployment, see README for a guide on installation and deployment.  Anything not covered here, might be in the README.
+This section is not concerned with installation and deployment, see README for a guide on installation and deployment.  Anything not covered here, might be in
+the README.
 
 2.0
 ----"I HAVE IT INSTALLED, BUT I'M SORT OF LOST",
@@ -106,29 +110,58 @@ This is the link to the repository for dompdf, a way to convert html code to pdf
 ----------------------------------
 There are 4 main 'levels' of structure in this implementation.  There might be more added by future developers, but I doubt these will be removed or changed
 unless it is opted that something like a major refactor is due, in the event that php or html becomes unsupported, other extreme events, etc.  Seems unlikely at
-present, but worth note.  SQL Code, php dashboards, views, and reports, php forms, and php helper functions.  At the 
+present, but worth note.  SQL Code, php dashboards, views, and reports, php forms, and php helper functions.
 ----------------------------------
         2.21
           -- SQL CODE
 ----------------------------------
-The database is implemented in the mariadb flavor of SQL, therefore other flavors are not guaranteed to successfully implement the database.  While the general logic
+The database is implemented in the mariadb flavor of SQL, therefore, other flavors are not guaranteed to successfully implement the database.  While the general logic
 should work peculiarities of the flavor likely are present. Proceed with caution if attempting to modify using other variants for obvious reasons (syntax, supported 
-methods, etc)
+methods, etc).  Obviously this could result in a non-working implementation, but perhaps worse it could result in an implementation which only appears to work
+as expected.
+When interacting with the SQL if there is any confusion, reference the ER-diagram.  If changing the SQL it is advised to change the corresponding parts of the
+ER-diagram.  There are several files that are CRITICAL if you want to change the SQL. 
+
+pandz_schema_mariadb_final.sql
 ----------------------------------
+    Contains the master schema for the database.  
+----------------------------------
+
+database_project_main.sql
+----------------------------------
+    This file loads all the necessary SQL tables and fields into the database
+----------------------------------
+
+database_views.sql
+----------------------------------
+    Creates views
+----------------------------------
+
+auth_schema.sql 
+----------------------------------
+    Handles hashed passwords for secure storage and authentication purposes when new passwords are made
+----------------------------------
+
+There is also some automated testing script in the main directory for an example of how to do that, written in python. test_database_project_main_test.py
+
+
         2.22
           -- PHP DASHBOARDS, VIEWS, AND REPORTS
 ----------------------------------
-There are three main user types which could be expanded on later, government workers, departments and clients.  Each of these has their own dashboards corresponding to the kinds of activities which they will be using the site for.  The corresponding dashboard files generate these dashboards and authenticate that they are authorized to access the elements. The characteristics are covered very briefly here.  The best way to experiment is to use the site and the provided passwords to see the differences.  These are some examples, not necessarily an exhaustive explanation.
+There are three main user types which could be expanded on later, government workers, departments and clients.  Each of these has their own dashboards
+corresponding to the kinds of activities which they will be using the site for.  The corresponding dashboard files generate these dashboards and authenticate
+that they are authorized to access the elements. The characteristics are covered very briefly here.  The best way to experiment is to use the site and the
+provided passwords to see the differences.  These are some examples, not necessarily an exhaustive explanation.
 ----------------------------------
 
             2.23
               -- CLIENTS
 ----------------------------------
-Clients have the ability to generate forms, etc
+Clients have the ability to fill out forms, submit, view status of submitted forms
 ----------------------------------
               -- GOVERNMENT WORKERS
 ----------------------------------
-Receive and process forms, etc
+Receive and process forms, change status of submitted forms, etc
 ----------------------------------
               -- DEPARTMENTS
 ----------------------------------
@@ -137,7 +170,8 @@ Provides functionality for the various departments and administration
         2.24
           -- PHP FORM PAGES
 ----------------------------------
-These contain the code which implements the actual php and html the forms run on.  Below is a few of their file names.  All of them have the v2 marker (version2) and try to follow similar naming style conventions when making new ones:
+These contain the code which implements the actual php and html the forms run on.  Below is a few of their file names.  All of them have the v2 marker 
+(version2) and try to follow similar naming style conventions when making new ones:
 v2_form_sp_insert_adjacent_property_owners_form.php
 v2_form_sp_insert_administrative_appeal_request.php
 v2_form_sp_insert_conditional_use_permit_application.php
@@ -168,8 +202,9 @@ modify these files do not title them with v2_, to prevent confusion with the cur
 Examples of php language helper files which are stored in the html subdirectory.
 form_insert_functions.php
 ---------------------------------- 
-    Implements functions which are 
+    Implements insertion into the database from data on the website
 ---------------------------------- 
+
 form_update_functions.php
 ---------------------------------- 
     Updates the form for the function
@@ -178,18 +213,22 @@ generate_form_pdf.php
 ---------------------------------- 
     Uses dompdf to render html code as a pdf
 ---------------------------------- 
+
 login.php
 ---------------------------------- 
     This loads the login html page, and handles user logins, password verification, etc
 ---------------------------------- 
+
 logout.php
 ---------------------------------- 
     handles user logout, destroying the session
 ---------------------------------- 
+
 pdf_generation_functions.php
 ---------------------------------- 
     This generates the pdfs of forms, for all types of forms in the database
 ---------------------------------- 
+
 setup_passwords.php
 ---------------------------------- 
     This is a script which generates password hashes for users.  The hashes are then used in database
@@ -200,17 +239,37 @@ but it should be done with a high level of caution since many are used by other 
         2.27
           -- FIELD SPECS
 ---------------------------------- 
-In short these are md type field specification forms.  They correspond with the various aspects of the ER Diagram, describing it more specifically.  If you are unfamiliar with the format look at the forms and do some research.  Ideally these should be added when some part of the basic Database is changed or addended to, especially if it is an important addition.
+In short these are md type field specification forms.  They correspond with the various aspects of the ER Diagram, describing it more specifically.  If you 
+are unfamiliar with the format look at the forms and do some research.  Ideally these should be added when some part of the basic Database is changed or addended 
+to, especially if it is an important addition.
         2.28
-          -- BRIEF SUMMATION OF OVERALL STRUCTURE WITHOUT STRESSING THE CODE ASPECT
+          -- BRIEF SUMMARY OF OVERALL STRUCTURE WITHOUT STRESSING THE TECHNICAL ASPECTS
                 - HOW TO UNDERSTAND IT AND MAKE CHANGES IN THE BIG PICTURE
 ----------------------------------
-Rather than to commit to writing all of the structure, I will direct you to look at the ER-diagram.  This will give a sense of the main structure of the project at its 'basic' level.  Familiarizing yourself with the kinds of notation used will be critical to understanding it if you are not well versed in ER-diagramming.
-A few things to keep in mind, especially if you have not engaged with this kind of project before would be that the sql written in here is the backbone.  The php and html handle the web portion and allow remmote interaction with the database, as well as security (authorizing using permissions, etc).  Any serious expansions should be addended onto the ER-diagram, with a field spec form written and corresponding additions to the database relating to the discussion of the various SQL files detailed above.  Testing in SQL first is probably most advisable when addding new content, web functionality can be added later.  Keep normal forms in mind if making any changes to the underlying structure of the database.
+Rather than to commit to writing all of the structure, I will direct you to look at the ER-diagram.  This will give a sense of the main structure of the project at
+its 'basic' level.  Familiarizing yourself with the kinds of notation used will be critical to understanding it if you are not well versed in ER-diagramming.
+A few things to keep in mind, especially if you have not engaged with this kind of project before would be that the SQL written in here is the backbone and defines 
+and queries the database.  The php and html handle the web portion and allow remote interaction with the database, as well as security (authorizing using permissions, 
+etc, though these are also actually done through the SQL database at the basic level of password and user information storage)
+Any serious expansions should be addended to the ER-diagram, with a field spec form written and corresponding additions to the database relating to the
+discussion of the various SQL files detailed above.  Testing in SQL first is probably most advisable when adding new content, web functionality can be added later.  
+Keep observance of normal forms in mind if making any changes to the underlying structure of the database.
 
-          
-    
-3.0 
+3.0
+    -- "I'VE MADE SOME CHANGES, HOW DO I TEST THEM?"
+            TESTING THE DATABASE AND WEBSITE
+It is important that we document the worst part of writing a functional and maintainable project, testing.  This section will outline how its done in this project
+    3.1.
+      --PHP TESTS
+For testing the php a very extensive php testing file is found in the subdirectory phptesting/tests subdirectory.  Test files for php should follow the naming 
+convention x_Test.php as best practice. 
+    3.2
+     --SQL TEST
+SQL code can be tested a few different ways.  The files can be tested with SQL itself.  It can also be tested using an external program in a
+language like python.  View the file test_database_project_main_test.py to see an example of this being done.
+libraries
+SQL 
+4.0 
     -- 'ASK NOT WHAT PLANNING AND ZONING CAN DO FOR YOU, BUT WHAT YOU CAN DO FOR PLANNING AND ZONING" - FUTURE PROJECT IDEAS FOR DEVELOPERS
         AS WELL AS POSSIBLE CONCERNS, NOTES, AND BRIEF GUIDANCE ON HOW TO BEGIN TO APPROACH SOME OF THESE PROBLEMS
 ----------------------------------
@@ -218,44 +277,52 @@ This section may be a bit less informational and formal, since it deals not with
 As things change, future developers will likely want to archive large parts of this section and add to it.
 I will try to keep it brief anyway but I will include some leads that we have found on implementing these things,
 some food for thought on why they might be needed, what risks their development might carry that need to be implemented.
-    3.1
+    4.1
         -- FUNCTIONIZING FORMS COMPLETION
 ----------------------------------
-For the purpose of facilitating additions to the forms all old forms should be properly functionized.  This has been begun but not all forms are working.  Reference the old
-version in the html folder for the originals and try to make this happen.  I would HIGHLY recommend that this be the first thing you do before attempting any other
-modifications.  Any future modifications should be functionized from the beginning.
-    3.2
+For the purpose of facilitating additions to the forms all old forms should be properly functionized.  This has been begun but not all forms are working.  
+Reference the old version in the html folder for the originals and try to make this happen.  I would HIGHLY recommend that this be the first thing you do
+before attempting any other modifications.  Any future modifications should be functionized from the beginning.
+    4.2
         -- SAVEABLE AND EDITABLE FORMS
 This would allow forms to be saveable before submission, perhaps making them downloadable, allowing deletion of old forms, etc might be good too.
 This will hopefully allow users to edit forms, save them, delete them, and come back to them for later.  It is CRITICAL that submitted forms cannot be deleted by
 applicants, and that applications for which payment has been made cannot be deleted from the database.  A forms-paid table implementation in the sql backend
 may help to ensure this security if it is linked with the submitted-forms, searched with subquerys so that they cannot be easily deleted without some extreme
-developer measure, such as turning off all foreign key constraints.  I don't know how to do this, nor have I thought much on this security aspect, so take this with a grain of salt.  One possible way to implement this could with BLOBs, reading the files into a binary string.  Another way might be with foreign key manipulation.  Another might be to add to these files 
-how I would begin to navigate it.  Another way to do this might be to make use of the pdf and html conversion methods already devised, allowing users to upload and download partially completed forms... Doing it this way might open the door for some other interesting future projects like allowing users to download forms and edit them as they have done previously on their own, then convert the uploaded form to a pdf format
-    3.3
+developer measure, such as turning off all foreign key constraints.  I don't know how to do this, nor have I thought much on this security aspect, so take this
+with a grain of salt.  One possible way to implement this could with BLOBs,
+reading the files into a binary string.  Another way might be with foreign key manipulation.  
+ 
+Another way to do this might be to make use of the pdf and html conversion methods already devised, allowing users to upload
+and download partially completed forms... Doing it this way might open the door for some other interesting future projects like allowing users to download forms and 
+edit them as they have done previously on their own, then convert the uploaded form to a pdf format
+    4.3
         -- FILE UPLOAD AND DOWNLOAD, SOME NOTES ON IMPLEMENTING, PROBLEMS, AND SAFETY CONCERNS
 ----------------------------------
 In some version which may be lost to time the beginnings of file upload and download for images, pdfs, etc was implemented by me, however,
 to do this fully will require some greater work.  Since it was not native to the original implementation LONG BLOBs need to be added to every place in the SQL where
 this might need to be done.  Furthermore, this does open up risks like sql injection, virus distribution, etc, so some protections need to be implemented.
-In the php v2_sp_form_x.php files add handling for the POST and GET functionality here.  In insert_forms it is important that both the insert and extract function for each form have code added
-which can handle this.  A php routine to download said files is also necessary.  See a rough outline in my branch pertaining to adjacent_property_owners and major subdivisions
+In the php v2_sp_form_x.php files add handling for the POST and GET functionality here.  
+In insert_forms it is important that both the insert and extract function for each form have code added
+which can handle this.  A php routine to download said files is also necessary.  See a rough outline in my branch pertaining to adjacent_property_owners
+and major subdivisions
 for a sort of guide on how to begin thinking about this problem.  There may or may not be a folder blobtesting which provides a mini website of limited functionality.
 I highly recommend that before beginning this you complete 3.1 as otherwise the maintenance will be arduous, error prone, and will make functionization somewhat harder.
-    3.4
+    4.4
         -- PASSWORD STORAGE
 ----------------------------------
 Passwords are stored in the database.  Currently this is probably ok, but it may become necessary to store them outside using some external software
-especially if this project grows into something larger.  Individual user passwords are probably not of that much interest, but it is concievable that there is some risk of maliciounsess involved if firms are making applications for something, like an unpopular subdivision application, etc.
+especially if this project grows into something larger.  Individual user passwords are probably not of that much interest, but it is conceivable that there 
+is some risk of maliciounsess involved if firms are making applications for something, like say, an unpopular subdivision application, etc.
 ----------------------------------
-    3.5
+    4.5
         -- SIGNATURE HANDLING
 ----------------------------------
 The handling of signatures becomes a sensitive task, especially if this project grows into something which interfaces with large application fees.
 We do not currently allow handwritten signatures, but something like docusign could possibly be implemented
 here to allow this.  Caution must be taken that these signatures are not open to easy access by malicious conspirators if this is done.  It does not seem wise
 at this time to attempt to do this without an external program since several such programs exist and are fairly secure.
-    3.6
+    4.6
         -- JAVASCRIPT AND WIX
 ----------------------------------
 The current website of Danville planning and zoning, which provides pdfs of the forms for printing by the public is implemented in wix.  Unfortunately this 
@@ -263,7 +330,7 @@ project is implemented using php and there is no clean way to implement these wi
 it would be a big task.  Perhaps consider implementing something like containers, which may or may not be possible in js, to run the php in a 'docker'.
 Further it might be possible to implement with a simple link to our php website from wix using js, but the php must still be run from an apache server.
 ----------------------------------
-    3.7
+    4.7
         -- PAYMENTS
 ----------------------------------
 In order for processing of a form to take place their needs to be payment of necessary application fees.  These fees currently have to be turned in
@@ -273,7 +340,7 @@ which might be helpful in implementing this.  Proceed with extreme caution when 
 sure that you can interface this online payment with the permit deletion rules detailed so that a pecuniary loss is not incurred on our userbase, lest
 disgruntlement become rampant.
 ----------------------------------
-    3.8
+    4.8
         -- PERMIT DELETION UPON NON-PAYMENT AFTER A PRESCRIBED PERIOD
 ----------------------------------
 Hannah Gray has brought it to our attention that permit applications, etc which are currently all on paper are collected and stored by
